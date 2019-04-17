@@ -1,5 +1,6 @@
 package org.checkerframework.checker.builder.qual;
 
+import org.checkerframework.framework.qual.DefaultQualifierInHierarchy;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 import java.lang.annotation.ElementType;
@@ -17,7 +18,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({})
+@DefaultQualifierInHierarchy
 public @interface CalledMethods {
     /** A list of methods that have been called on the annotated object. */
-    public String[] value();
+    public String[] value() default {};
 }
