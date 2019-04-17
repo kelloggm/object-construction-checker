@@ -31,7 +31,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     /**
      * Default constructor matching super. Should be called automatically.
      */
-    public TypesafeBuilderAnnotatedTypeFactory(BaseTypeChecker checker) {
+    public TypesafeBuilderAnnotatedTypeFactory(final BaseTypeChecker checker) {
         super(checker);
         TOP = createCalledMethods();
         BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
@@ -39,7 +39,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
 
     /** Creates a @CalledMethods annotation whose values are the given strings. */
-    public AnnotationMirror createCalledMethods(String... val) {
+    public AnnotationMirror createCalledMethods(final String... val) {
         AnnotationBuilder builder = new AnnotationBuilder(processingEnv, CalledMethods.class);
         Arrays.sort(val);
         builder.setValue("value", val);
@@ -47,7 +47,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
 
     @Override
-    public QualifierHierarchy createQualifierHierarchy(MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
+    public QualifierHierarchy createQualifierHierarchy(final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
         return new TypesafeBuilderQualifierHierarchy(factory);
     }
 
@@ -56,12 +56,12 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * declaratively defined subtyping relationships, like our @CalledMethods annotation.
      */
     private class TypesafeBuilderQualifierHierarchy extends MultiGraphQualifierHierarchy {
-        public TypesafeBuilderQualifierHierarchy(MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
+        public TypesafeBuilderQualifierHierarchy(final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
             super(factory);
         }
 
         @Override
-        public AnnotationMirror getTopAnnotation(AnnotationMirror start) {
+        public AnnotationMirror getTopAnnotation(final AnnotationMirror start) {
             return TOP;
         }
 
@@ -70,7 +70,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
          * unless one of them is bottom, in which case the result is also bottom.
          */
         @Override
-        public AnnotationMirror greatestLowerBound(AnnotationMirror a1, AnnotationMirror a2) {
+        public AnnotationMirror greatestLowerBound(final AnnotationMirror a1, final AnnotationMirror a2) {
             if (AnnotationUtils.areSame(a1, BOTTOM) || AnnotationUtils.areSame(a2, BOTTOM)) {
                 return BOTTOM;
             }
@@ -85,7 +85,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
          * unless one of them is bottom, in which case the result is the other annotation.
          */
         @Override
-        public AnnotationMirror leastUpperBound(AnnotationMirror a1, AnnotationMirror a2) {
+        public AnnotationMirror leastUpperBound(final AnnotationMirror a1, final AnnotationMirror a2) {
             if (AnnotationUtils.areSame(a1, BOTTOM)) {
                 return a2;
             }  else if (AnnotationUtils.areSame(a2, BOTTOM)) {
@@ -101,10 +101,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
          * isSubtype in this type system is subset
          */
         @Override
-        public boolean isSubtype(AnnotationMirror subAnno, AnnotationMirror superAnno) {
-            System.out.println(subAnno);
-            System.out.println(superAnno);
-
+        public boolean isSubtype(final AnnotationMirror subAnno, final AnnotationMirror superAnno) {
             if (AnnotationUtils.areSame(subAnno, BOTTOM)) {
                 return true;
             } else if (AnnotationUtils.areSame(superAnno, BOTTOM)) {
@@ -120,7 +117,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * Gets the value field of an annotation with a list of strings in its value field.
      * The empty list is returned if no value field is defined.
      */
-    public static List<String> getValueOfAnnotationWithStringArgument(AnnotationMirror anno) {
+    public static List<String> getValueOfAnnotationWithStringArgument(final AnnotationMirror anno) {
         if (!AnnotationUtils.hasElementValue(anno, "value")) {
             return Collections.emptyList();
         }
