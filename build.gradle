@@ -1,6 +1,7 @@
 plugins {
     // Apply the java plugin to add support for Java
     id 'java'
+    id 'maven-publish'
 }
 
 repositories {
@@ -23,3 +24,15 @@ dependencies {
 tasks.withType(JavaCompile).all {
     options.compilerArgs.add("-Xlint:all")
 }
+
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                groupId = 'org.checkerframework'
+                artifactId = 'typesafe-builder'
+                version = '0.1-SNAPSHOT'
+
+                from components.java
+            }
+        }
+    }
