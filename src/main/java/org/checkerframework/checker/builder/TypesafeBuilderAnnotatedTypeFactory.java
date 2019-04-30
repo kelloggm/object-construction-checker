@@ -47,20 +47,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         this.postInit();
     }
 
-    /**
-     * Gets the value field of an annotation with a list of strings in its value field.
-     * The empty list is returned if no value field is defined.
-     */
-    public static List<String> getValueOfAnnotationWithStringArgument(final AnnotationMirror anno) {
-        if (!AnnotationUtils.hasElementValue(anno, "value")) {
-            return Collections.emptyList();
-        }
-        return AnnotationUtils.getElementValueArray(anno, "value", String.class, true);
-    }
-
-    /**
-     * Creates a @CalledMethods annotation whose values are the given strings.
-     */
+    /** Creates a @CalledMethods annotation whose values are the given strings. */
     public AnnotationMirror createCalledMethods(final String... val) {
         AnnotationBuilder builder = new AnnotationBuilder(processingEnv, CalledMethods.class);
         Arrays.sort(val);
@@ -185,5 +172,16 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             Set<String> superVal = getValueOfAnnotationWithStringArgument(superAnno).stream().collect(Collectors.toSet());
             return subVal.containsAll(superVal);
         }
+    }
+
+    /**
+     * Gets the value field of an annotation with a list of strings in its value field.
+     * The empty list is returned if no value field is defined.
+     */
+    public static List<String> getValueOfAnnotationWithStringArgument(final AnnotationMirror anno) {
+        if (!AnnotationUtils.hasElementValue(anno, "value")) {
+            return Collections.emptyList();
+        }
+        return AnnotationUtils.getElementValueArray(anno, "value", String.class, true);
     }
 }
