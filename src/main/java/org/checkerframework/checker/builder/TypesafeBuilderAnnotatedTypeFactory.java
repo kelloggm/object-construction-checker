@@ -1,10 +1,17 @@
 package org.checkerframework.checker.builder;
 
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.MethodInvocationTree;
 import org.checkerframework.checker.builder.qual.CalledMethods;
 import org.checkerframework.checker.builder.qual.CalledMethodsBottom;
+import org.checkerframework.checker.index.IndexUtil;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.framework.type.AnnotatedTypeFactory;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
+import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -46,6 +53,43 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         return builder.build();
     }
 
+  /*  @Override
+    public TreeAnnotator createTreeAnnotator() {
+        return new ListTreeAnnotator(super.createTreeAnnotator(), new TypesafeBuilderTreeAnnotator(this));
+    }*/
+
+    /**
+     * This tree annotator is needed to create types for fluent builders:
+     * new Builder().a().b().build() doesn't have a representation in FlowExpressions
+     */
+    private class TypesafeBuilderTreeAnnotator extends TreeAnnotator {
+        public TypesafeBuilderTreeAnnotator(AnnotatedTypeFactory atypeFactory) {
+            super(atypeFactory);
+        }
+
+        @Override
+        public Void visitMethodInvocation(MethodInvocationTree tree, AnnotatedTypeMirror type) {
+
+            String receiverWithMethodName = tree.getMethodSelect().toString();
+
+            if (!"super".equals(receiverWithMethodName)) {
+                String methodName = receiverWithMethodName.contains(".") ?
+                        receiverWithMethodName.substring(receiverWithMethodName.lastIndexOf('.') + 1)
+                        : receiverWithMethodName;
+
+                AnnotationMirror cmAnno = createCalledMethods(methodName);
+                AnnotationMirror oldCMAnno = type.getAnnotationInHierarchy(TOP);
+                AnnotationMirror newCMAnno =
+                        oldCMAnno == null ?
+                        cmAnno
+                        : getQualifierHierarchy().greatestLowerBound(cmAnno, oldCMAnno);
+
+                type.replaceAnnotation(newCMAnno);
+            }
+            return super.visitMethodInvocation(tree, type);
+        }
+    }
+
     @Override
     public QualifierHierarchy createQualifierHierarchy(final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
         return new TypesafeBuilderQualifierHierarchy(factory);
@@ -74,6 +118,14 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             if (AnnotationUtils.areSame(a1, BOTTOM) || AnnotationUtils.areSame(a2, BOTTOM)) {
                 return BOTTOM;
             }
+            if (!AnnotationUtils.hasElementValue(a1, "value")) {
+                return a2;
+            }
+
+            if (!AnnotationUtils.hasElementValue(a2, "value")) {
+                return a1;
+            }
+
             Set<String> a1Val = getValueOfAnnotationWithStringArgument(a1).stream().collect(Collectors.toSet());
             Set<String> a2Val = getValueOfAnnotationWithStringArgument(a2).stream().collect(Collectors.toSet());
             a1Val.addAll(a2Val);
@@ -123,5 +175,4 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         }
         return AnnotationUtils.getElementValueArray(anno, "value", String.class, true);
     }
-
 }

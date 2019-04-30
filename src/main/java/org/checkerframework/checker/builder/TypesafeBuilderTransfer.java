@@ -68,6 +68,9 @@ public class TypesafeBuilderTransfer extends CFTransfer {
         CFStore thenStore = result.getThenStore();
         CFStore elseStore = result.getElseStore();
 
+        System.out.println(receiverReceiver + " is getting this type: " + newType);
+        System.out.println("receiver: " + receiver);
+
         thenStore.insertValue(receiverReceiver, newType);
         elseStore.insertValue(receiverReceiver, newType);
 
