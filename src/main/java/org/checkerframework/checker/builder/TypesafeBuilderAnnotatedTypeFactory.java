@@ -4,7 +4,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import org.checkerframework.checker.builder.qual.CalledMethods;
 import org.checkerframework.checker.builder.qual.CalledMethodsBottom;
-import org.checkerframework.checker.index.IndexUtil;
+import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -15,8 +15,10 @@ import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TreeUtils;
 
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +47,20 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         this.postInit();
     }
 
-    /** Creates a @CalledMethods annotation whose values are the given strings. */
+    /**
+     * Gets the value field of an annotation with a list of strings in its value field.
+     * The empty list is returned if no value field is defined.
+     */
+    public static List<String> getValueOfAnnotationWithStringArgument(final AnnotationMirror anno) {
+        if (!AnnotationUtils.hasElementValue(anno, "value")) {
+            return Collections.emptyList();
+        }
+        return AnnotationUtils.getElementValueArray(anno, "value", String.class, true);
+    }
+
+    /**
+     * Creates a @CalledMethods annotation whose values are the given strings.
+     */
     public AnnotationMirror createCalledMethods(final String... val) {
         AnnotationBuilder builder = new AnnotationBuilder(processingEnv, CalledMethods.class);
         Arrays.sort(val);
@@ -53,14 +68,19 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         return builder.build();
     }
 
-  /*  @Override
+    @Override
     public TreeAnnotator createTreeAnnotator() {
         return new ListTreeAnnotator(super.createTreeAnnotator(), new TypesafeBuilderTreeAnnotator(this));
-    }*/
+    }
+
+    @Override
+    public QualifierHierarchy createQualifierHierarchy(final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
+        return new TypesafeBuilderQualifierHierarchy(factory);
+    }
 
     /**
-     * This tree annotator is needed to create types for fluent builders:
-     * new Builder().a().b().build() doesn't have a representation in FlowExpressions
+     * This tree annotator is needed to create types for fluent builders
+     * that have @ReturnsReceiver annotations.
      */
     private class TypesafeBuilderTreeAnnotator extends TreeAnnotator {
         public TypesafeBuilderTreeAnnotator(AnnotatedTypeFactory atypeFactory) {
@@ -70,29 +90,31 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         @Override
         public Void visitMethodInvocation(MethodInvocationTree tree, AnnotatedTypeMirror type) {
 
-            String receiverWithMethodName = tree.getMethodSelect().toString();
+            // Check to see if the @ReturnsReceiver annotation is present
+            Element element = TreeUtils.elementFromUse(tree);
+            AnnotationMirror returnsReceiver = getDeclAnnotation(element, ReturnsReceiver.class);
 
-            if (!"super".equals(receiverWithMethodName)) {
-                String methodName = receiverWithMethodName.contains(".") ?
-                        receiverWithMethodName.substring(receiverWithMethodName.lastIndexOf('.') + 1)
-                        : receiverWithMethodName;
+            if (returnsReceiver != null) {
 
+                // Fetch the current type of the receiver, or top if none exists
+                ExpressionTree receiverTree = TreeUtils.getReceiverTree(tree.getMethodSelect());
+                AnnotatedTypeMirror receiverType = getAnnotatedType(receiverTree);
+                AnnotationMirror receiverAnno = receiverType.getAnnotationInHierarchy(TOP);
+                if (receiverAnno == null) {
+                    receiverAnno = TOP;
+                }
+
+                // Construct a new @CM annotation with just the method name
+                String methodName = TreeUtils.methodName(tree).toString();
                 AnnotationMirror cmAnno = createCalledMethods(methodName);
-                AnnotationMirror oldCMAnno = type.getAnnotationInHierarchy(TOP);
-                AnnotationMirror newCMAnno =
-                        oldCMAnno == null ?
-                        cmAnno
-                        : getQualifierHierarchy().greatestLowerBound(cmAnno, oldCMAnno);
 
-                type.replaceAnnotation(newCMAnno);
+                // Replace the return type of the method with the GLB (= union) of the two types above
+                AnnotationMirror newAnno = getQualifierHierarchy().greatestLowerBound(cmAnno, receiverAnno);
+                type.replaceAnnotation(newAnno);
             }
+
             return super.visitMethodInvocation(tree, type);
         }
-    }
-
-    @Override
-    public QualifierHierarchy createQualifierHierarchy(final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
-        return new TypesafeBuilderQualifierHierarchy(factory);
     }
 
     /**
@@ -140,7 +162,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         public AnnotationMirror leastUpperBound(final AnnotationMirror a1, final AnnotationMirror a2) {
             if (AnnotationUtils.areSame(a1, BOTTOM)) {
                 return a2;
-            }  else if (AnnotationUtils.areSame(a2, BOTTOM)) {
+            } else if (AnnotationUtils.areSame(a2, BOTTOM)) {
                 return a1;
             }
             Set<String> a1Val = getValueOfAnnotationWithStringArgument(a1).stream().collect(Collectors.toSet());
@@ -163,16 +185,5 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             Set<String> superVal = getValueOfAnnotationWithStringArgument(superAnno).stream().collect(Collectors.toSet());
             return subVal.containsAll(superVal);
         }
-    }
-
-    /**
-     * Gets the value field of an annotation with a list of strings in its value field.
-     * The empty list is returned if no value field is defined.
-     */
-    public static List<String> getValueOfAnnotationWithStringArgument(final AnnotationMirror anno) {
-        if (!AnnotationUtils.hasElementValue(anno, "value")) {
-            return Collections.emptyList();
-        }
-        return AnnotationUtils.getElementValueArray(anno, "value", String.class, true);
     }
 }
