@@ -16,6 +16,8 @@ import org.checkerframework.javacutil.AnnotationUtils;
 import javax.lang.model.element.AnnotationMirror;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The transfer function for the typesafe builder type system.
@@ -54,10 +56,11 @@ public class TypesafeBuilderTransfer extends CFTransfer {
         }
 
         String methodName = node.getTarget().getMethod().getSimpleName().toString();
-        List<String> newList = new ArrayList<>();
-        newList.add(methodName);
         List<String> currentMethods = TypesafeBuilderAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(type);
-        newList.addAll(currentMethods);
+        List<String> newList = Stream.concat(
+                Stream.of(methodName),
+                currentMethods.stream()).collect(Collectors.toList());
+
 
         AnnotationMirror newType = atypefactory.createCalledMethods(newList.toArray(new String[0]));
 

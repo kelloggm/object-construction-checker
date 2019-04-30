@@ -12,9 +12,9 @@ import org.checkerframework.javacutil.AnnotationUtils;
 import javax.lang.model.element.AnnotationMirror;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * The annotated type factory for the typesafe builder checker. Primarily responsible
@@ -74,8 +74,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             if (AnnotationUtils.areSame(a1, BOTTOM) || AnnotationUtils.areSame(a2, BOTTOM)) {
                 return BOTTOM;
             }
-            Set<String> a1Val = getValueOfAnnotationWithStringArgument(a1).stream().collect(Collectors.toSet());
-            Set<String> a2Val = getValueOfAnnotationWithStringArgument(a2).stream().collect(Collectors.toSet());
+            Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
+            Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
             a1Val.addAll(a2Val);
             return createCalledMethods(a1Val.toArray(new String[0]));
         }
@@ -91,8 +91,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             }  else if (AnnotationUtils.areSame(a2, BOTTOM)) {
                 return a1;
             }
-            Set<String> a1Val = getValueOfAnnotationWithStringArgument(a1).stream().collect(Collectors.toSet());
-            Set<String> a2Val = getValueOfAnnotationWithStringArgument(a2).stream().collect(Collectors.toSet());
+            Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
+            Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
             a1Val.retainAll(a2Val);
             return createCalledMethods(a1Val.toArray(new String[0]));
         }
@@ -107,8 +107,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             } else if (AnnotationUtils.areSame(superAnno, BOTTOM)) {
                 return false;
             }
-            Set<String> subVal = getValueOfAnnotationWithStringArgument(subAnno).stream().collect(Collectors.toSet());
-            Set<String> superVal = getValueOfAnnotationWithStringArgument(superAnno).stream().collect(Collectors.toSet());
+            Set<String> subVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(subAnno));
+            Set<String> superVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(superAnno));
             return subVal.containsAll(superVal);
         }
     }
