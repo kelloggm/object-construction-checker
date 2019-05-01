@@ -1,15 +1,24 @@
 package org.checkerframework.checker.builder;
 
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.MethodInvocationTree;
 import org.checkerframework.checker.builder.qual.CalledMethods;
 import org.checkerframework.checker.builder.qual.CalledMethodsBottom;
+import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.framework.type.AnnotatedTypeFactory;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
+import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TreeUtils;
 
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -47,8 +56,52 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
 
     @Override
+    public TreeAnnotator createTreeAnnotator() {
+        return new ListTreeAnnotator(super.createTreeAnnotator(), new TypesafeBuilderTreeAnnotator(this));
+    }
+
+    @Override
     public QualifierHierarchy createQualifierHierarchy(final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
         return new TypesafeBuilderQualifierHierarchy(factory);
+    }
+
+    /**
+     * This tree annotator is needed to create types for fluent builders
+     * that have @ReturnsReceiver annotations.
+     */
+    private class TypesafeBuilderTreeAnnotator extends TreeAnnotator {
+        public TypesafeBuilderTreeAnnotator(AnnotatedTypeFactory atypeFactory) {
+            super(atypeFactory);
+        }
+
+        @Override
+        public Void visitMethodInvocation(MethodInvocationTree tree, AnnotatedTypeMirror type) {
+
+            // Check to see if the @ReturnsReceiver annotation is present
+            Element element = TreeUtils.elementFromUse(tree);
+            AnnotationMirror returnsReceiver = getDeclAnnotation(element, ReturnsReceiver.class);
+
+            if (returnsReceiver != null) {
+
+                // Fetch the current type of the receiver, or top if none exists
+                ExpressionTree receiverTree = TreeUtils.getReceiverTree(tree.getMethodSelect());
+                AnnotatedTypeMirror receiverType = getAnnotatedType(receiverTree);
+                AnnotationMirror receiverAnno = receiverType.getAnnotationInHierarchy(TOP);
+                if (receiverAnno == null) {
+                    receiverAnno = TOP;
+                }
+
+                // Construct a new @CM annotation with just the method name
+                String methodName = TreeUtils.methodName(tree).toString();
+                AnnotationMirror cmAnno = createCalledMethods(methodName);
+
+                // Replace the return type of the method with the GLB (= union) of the two types above
+                AnnotationMirror newAnno = getQualifierHierarchy().greatestLowerBound(cmAnno, receiverAnno);
+                type.replaceAnnotation(newAnno);
+            }
+
+            return super.visitMethodInvocation(tree, type);
+        }
     }
 
     /**
@@ -74,6 +127,15 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             if (AnnotationUtils.areSame(a1, BOTTOM) || AnnotationUtils.areSame(a2, BOTTOM)) {
                 return BOTTOM;
             }
+
+            if (!AnnotationUtils.hasElementValue(a1, "value")) {
+                return a2;
+            }
+
+            if (!AnnotationUtils.hasElementValue(a2, "value")) {
+                return a1;
+            }
+
             Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
             Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
             a1Val.addAll(a2Val);
@@ -88,7 +150,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         public AnnotationMirror leastUpperBound(final AnnotationMirror a1, final AnnotationMirror a2) {
             if (AnnotationUtils.areSame(a1, BOTTOM)) {
                 return a2;
-            }  else if (AnnotationUtils.areSame(a2, BOTTOM)) {
+            } else if (AnnotationUtils.areSame(a2, BOTTOM)) {
                 return a1;
             }
             Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
@@ -123,5 +185,4 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         }
         return AnnotationUtils.getElementValueArray(anno, "value", String.class, true);
     }
-
 }
