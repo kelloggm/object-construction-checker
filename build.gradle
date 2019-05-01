@@ -19,3 +19,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     testCompile 'org.checkerframework:testlib:2.5.4'
 }
+
+tasks.withType(JavaCompile).all {
+    options.compilerArgs.add("-Xlint:all")
+}
