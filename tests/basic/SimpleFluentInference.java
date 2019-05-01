@@ -42,4 +42,15 @@ class SimpleFluentInference {
                 // :: error: method.invocation.invalid
                 .build();
     }
+
+    static void fluentLoop() {
+        SimpleFluentInference s = new SimpleFluentInference().a();
+        int i = 10;
+        while (i > 0) {
+            // :: error: method.invocation.invalid
+            s.b().build();
+            i--;
+            s = new SimpleFluentInference();
+        }
+    }
 }
