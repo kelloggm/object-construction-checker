@@ -13,7 +13,7 @@ sourceCompatibility = 1.8
 
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
-    implementation 'org.checkerframework:checker:2.8.0'
+    implementation 'org.checkerframework:checker:2.8.1'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
