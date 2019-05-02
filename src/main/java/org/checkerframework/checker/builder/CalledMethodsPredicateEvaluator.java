@@ -50,14 +50,12 @@ public class CalledMethodsPredicateEvaluator extends AbstractEvaluator<String> {
     }
 
     private boolean getValue(String literal) {
-        return cmMethods.contains(literal) || literal.endsWith("=true");
+        return cmMethods.contains(literal) || "true".equals(literal);
     }
 
     @Override
     protected String evaluate(Operator operator, Iterator<String> operands,
                               Object evaluationContext) {
-        @SuppressWarnings("unchecked") // for this evaluator, evaluationContext will always be a list of strings
-        List<String> tree = (List<String>) evaluationContext;
         String o1 = operands.next();
         String o2 = operands.next();
         Boolean result;
@@ -68,8 +66,6 @@ public class CalledMethodsPredicateEvaluator extends AbstractEvaluator<String> {
         } else {
             throw new IllegalArgumentException();
         }
-        String eval = "(" + o1 + " " + operator.getSymbol() + " " + o2 + ")=" + result;
-        tree.add(eval);
-        return eval;
+        return result.toString();
     }
 }

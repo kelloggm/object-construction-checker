@@ -201,8 +201,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
                 // superAnno is a CMP annotation, so we need to evaluate the predicate
                 String predicate = AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
                 CalledMethodsPredicateEvaluator evaluator = new CalledMethodsPredicateEvaluator(subVal);
-                String evalTree = evaluator.evaluate(predicate, new ArrayList<String>());
-                String result = evalTree.substring(evalTree.lastIndexOf('=') + 1);
+                String result = evaluator.evaluate(predicate);
                 return Boolean.parseBoolean(result);
             } else {
                 // superAnno is a CM annotation, so compare the sets
