@@ -1,6 +1,9 @@
 plugins {
     // Apply the java plugin to add support for Java
     id 'java'
+
+    // For bringing in AWS dependencies
+    id 'io.spring.dependency-management' version '1.0.7.RELEASE'
 }
 
 repositories {
@@ -17,12 +20,21 @@ dependencies {
 
     // For the @CalledMethodsPredicate evaluation
     implementation 'com.fathzer:javaluator:3.0.2'
-    
+
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
-    
+
     // CF testing infrastructure
     testCompile 'org.checkerframework:testlib:2.5.4'
+
+    // For CVE tests
+    testCompile 'com.amazonaws:aws-java-sdk-ec2'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom 'com.amazonaws:aws-java-sdk-bom:1.11.228'
+    }
 }
 
 tasks.withType(JavaCompile).all {

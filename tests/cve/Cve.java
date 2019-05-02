@@ -7,11 +7,22 @@ import com.amazonaws.services.ec2.AmazonEC2;
 public class Cve {
     private static final String IMG_NAME = "some_linux_img";
 
-    public static void exec(AmazonEC2 client) {
+    public static void onlyNames(AmazonEC2 client) {
         // Should not be allowed unless .withOwner is also used
-        // :: error: argument.type.incompatible
         DescribeImagesResult result = client.describeImages(new DescribeImagesRequest()
+                // :: error: argument.type.incompatible
                 .withFilters(new Filter("name").withValues(IMG_NAME)));
 
+    }
+
+    public static void correct1(AmazonEC2 client) {
+        DescribeImagesResult result = client.describeImages(new DescribeImagesRequest()
+                .withFilters(new Filter("name").withValues(IMG_NAME))
+                .withOwners("martin"));
+    }
+
+    public static void correct2(AmazonEC2 client) {
+        DescribeImagesResult result = client.describeImages(new DescribeImagesRequest()
+                .withImageIds("myImageId"));
     }
 }
