@@ -15,8 +15,13 @@ dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation 'org.checkerframework:checker:2.8.1'
 
+    // For the @CalledMethodsPredicate evaluation
+    implementation 'com.fathzer:javaluator:3.0.2'
+    
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
+    
+    // CF testing infrastructure
     testCompile 'org.checkerframework:testlib:2.5.4'
 }
 
