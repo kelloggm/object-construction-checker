@@ -4,6 +4,8 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import org.checkerframework.checker.builder.qual.CalledMethods;
 import org.checkerframework.checker.builder.qual.CalledMethodsBottom;
+import org.checkerframework.checker.builder.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.builder.qual.CalledMethodsTop;
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -42,13 +44,16 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      */
     public TypesafeBuilderAnnotatedTypeFactory(final BaseTypeChecker checker) {
         super(checker);
-        TOP = createCalledMethods();
+        TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
         BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
         this.postInit();
     }
 
     /** Creates a @CalledMethods annotation whose values are the given strings. */
     public AnnotationMirror createCalledMethods(final String... val) {
+        if (val.length == 0) {
+            return TOP;
+        }
         AnnotationBuilder builder = new AnnotationBuilder(processingEnv, CalledMethods.class);
         Arrays.sort(val);
         builder.setValue("value", val);
@@ -70,12 +75,12 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * that have @ReturnsReceiver annotations.
      */
     private class TypesafeBuilderTreeAnnotator extends TreeAnnotator {
-        public TypesafeBuilderTreeAnnotator(AnnotatedTypeFactory atypeFactory) {
+        public TypesafeBuilderTreeAnnotator(final AnnotatedTypeFactory atypeFactory) {
             super(atypeFactory);
         }
 
         @Override
-        public Void visitMethodInvocation(MethodInvocationTree tree, AnnotatedTypeMirror type) {
+        public Void visitMethodInvocation(final MethodInvocationTree tree, final AnnotatedTypeMirror type) {
 
             // Check to see if the @ReturnsReceiver annotation is present
             Element element = TreeUtils.elementFromUse(tree);
@@ -153,6 +158,15 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             } else if (AnnotationUtils.areSame(a2, BOTTOM)) {
                 return a1;
             }
+
+            if (!AnnotationUtils.hasElementValue(a1, "value")) {
+                return a1;
+            }
+
+            if (!AnnotationUtils.hasElementValue(a2, "value")) {
+                return a2;
+            }
+
             Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
             Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
             a1Val.retainAll(a2Val);
@@ -169,9 +183,29 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             } else if (AnnotationUtils.areSame(superAnno, BOTTOM)) {
                 return false;
             }
+
+            if (AnnotationUtils.areSame(superAnno, TOP)) {
+                return true;
+            } else if (AnnotationUtils.areSame(subAnno, TOP)) {
+                return false;
+            }
+
+            if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
+                return false;
+            }
+
             Set<String> subVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(subAnno));
-            Set<String> superVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(superAnno));
-            return subVal.containsAll(superVal);
+
+            if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
+                // superAnno is a CMP annotation, so we need to evaluate the predicate
+                String predicate = AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
+                CalledMethodsPredicateEvaluator evaluator = new CalledMethodsPredicateEvaluator(subVal);
+                String result = evaluator.evaluate(predicate);
+                return Boolean.parseBoolean(result);
+            } else {
+                // superAnno is a CM annotation, so compare the sets
+                return subVal.containsAll(getValueOfAnnotationWithStringArgument(superAnno));
+            }
         }
     }
 

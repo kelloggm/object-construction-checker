@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
  * It should rarely, if ever, be written by a programmer.
  */
 
-@SubtypeOf(CalledMethods.class)
+@SubtypeOf({CalledMethods.class, CalledMethodsPredicate.class})
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @TargetLocations({TypeUseLocation.EXPLICIT_LOWER_BOUND, TypeUseLocation.EXPLICIT_UPPER_BOUND})
