@@ -6,7 +6,6 @@ import com.fathzer.soft.javaluator.Operator;
 import com.fathzer.soft.javaluator.Parameters;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -18,11 +17,13 @@ public class CalledMethodsPredicateEvaluator extends AbstractEvaluator<String> {
     /**
      * The logical AND operator.
      */
-    final static Operator AND = new Operator("&&", 2, Operator.Associativity.LEFT, 2);
+    private final static Operator AND =
+            new Operator("&&", 2, Operator.Associativity.LEFT, 2);
     /**
      * The logical OR operator.
      */
-    final static Operator OR = new Operator("||", 2, Operator.Associativity.LEFT, 1);
+    private final static Operator OR =
+            new Operator("||", 2, Operator.Associativity.LEFT, 1);
 
     private static final Parameters PARAMETERS;
 
@@ -39,23 +40,23 @@ public class CalledMethodsPredicateEvaluator extends AbstractEvaluator<String> {
         PARAMETERS.addExpressionBracket(BracketPair.PARENTHESES);
     }
 
-    public CalledMethodsPredicateEvaluator(Set<String> cmMethods) {
+    public CalledMethodsPredicateEvaluator(final Set<String> cmMethods) {
         super(PARAMETERS);
         this.cmMethods = cmMethods;
     }
 
     @Override
-    protected String toValue(String literal, Object evaluationContext) {
+    protected String toValue(final String literal, final Object evaluationContext) {
         return literal;
     }
 
-    private boolean getValue(String literal) {
+    private boolean getValue(final String literal) {
         return cmMethods.contains(literal) || "true".equals(literal);
     }
 
     @Override
-    protected String evaluate(Operator operator, Iterator<String> operands,
-                              Object evaluationContext) {
+    protected String evaluate(final Operator operator, final Iterator<String> operands,
+                              final Object evaluationContext) {
         String o1 = operands.next();
         String o2 = operands.next();
         Boolean result;

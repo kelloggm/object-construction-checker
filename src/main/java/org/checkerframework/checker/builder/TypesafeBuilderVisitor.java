@@ -16,7 +16,7 @@ public class TypesafeBuilderVisitor extends BaseTypeVisitor<TypesafeBuilderAnnot
     /**
      * @param checker the type-checker associated with this visitor
      */
-    public TypesafeBuilderVisitor(BaseTypeChecker checker) {
+    public TypesafeBuilderVisitor(final BaseTypeChecker checker) {
         super(checker);
     }
 
@@ -24,7 +24,7 @@ public class TypesafeBuilderVisitor extends BaseTypeVisitor<TypesafeBuilderAnnot
      * Checks each @CalledMethodsPredicate annotation to make sure the predicate is well-formed.
      */
     @Override
-    public Void visitAnnotation(AnnotationTree node, Void p) {
+    public Void visitAnnotation(final AnnotationTree node, final Void p) {
         AnnotationMirror anno = TreeUtils.annotationFromAnnotationTree(node);
         if (AnnotationUtils.areSameByClass(anno, CalledMethodsPredicate.class)) {
             String predicate =

@@ -21,7 +21,6 @@ import org.checkerframework.javacutil.TreeUtils;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -76,12 +75,12 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * that have @ReturnsReceiver annotations.
      */
     private class TypesafeBuilderTreeAnnotator extends TreeAnnotator {
-        public TypesafeBuilderTreeAnnotator(AnnotatedTypeFactory atypeFactory) {
+        public TypesafeBuilderTreeAnnotator(final AnnotatedTypeFactory atypeFactory) {
             super(atypeFactory);
         }
 
         @Override
-        public Void visitMethodInvocation(MethodInvocationTree tree, AnnotatedTypeMirror type) {
+        public Void visitMethodInvocation(final MethodInvocationTree tree, final AnnotatedTypeMirror type) {
 
             // Check to see if the @ReturnsReceiver annotation is present
             Element element = TreeUtils.elementFromUse(tree);
