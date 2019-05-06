@@ -4,6 +4,8 @@ plugins {
 
     // For bringing in AWS dependencies
     id 'io.spring.dependency-management' version '1.0.7.RELEASE'
+
+    id 'maven-publish'
 }
 
 repositories {
@@ -40,3 +42,15 @@ dependencyManagement {
 tasks.withType(JavaCompile).all {
     options.compilerArgs.add("-Xlint:all")
 }
+
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                groupId = 'org.checkerframework'
+                artifactId = 'typesafe-builder'
+                version = '0.1-SNAPSHOT'
+
+                from components.java
+            }
+        }
+    }
