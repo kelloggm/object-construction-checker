@@ -205,8 +205,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
                 return Boolean.parseBoolean(result);
             } else {
                 // superAnno is a CM annotation, so compare the sets
-                Set<String> superVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(superAnno));
-                return subVal.containsAll(superVal);
+                return subVal.containsAll(getValueOfAnnotationWithStringArgument(superAnno));
             }
         }
     }
