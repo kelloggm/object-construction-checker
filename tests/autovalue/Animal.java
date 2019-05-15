@@ -1,9 +1,14 @@
 import com.google.auto.value.AutoValue;
 import org.checkerframework.checker.builder.qual.*;
 
+/**
+ * Adapted from the standard AutoValue example code:
+ * https://github.com/google/auto/blob/master/value/userguide/builders.md
+ */
 @AutoValue
 abstract class Animal {
   abstract String name();
+
   abstract int numberOfLegs();
 
   static Builder builder() {
@@ -13,7 +18,9 @@ abstract class Animal {
   @AutoValue.Builder
   abstract static class Builder {
     abstract Builder setName(String value);
+
     abstract Builder setNumberOfLegs(int value);
+
     abstract Animal build(@CalledMethods({"setName", "setNumberOfLegs"}) Builder this);
   }
 
@@ -24,8 +31,21 @@ abstract class Animal {
     b.build();
   }
 
+  public static void buildSomethingRight() {
+    Builder b = builder();
+    b.setName("Frank");
+    b.setNumberOfLegs(4);
+    b.build();
+  }
+
   public static void buildSomethingWrongFluent() {
     // :: error: method.invocation.invalid
     builder().setName("Frank").build();
   }
+
+  public static void buildSomethingRightFluent() {
+    // :: error: method.invocation.invalid
+    builder().setName("Jim").setNumberOfLegs(7).build();
+  }
+
 }
