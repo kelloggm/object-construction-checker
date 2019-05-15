@@ -4,8 +4,8 @@ import org.checkerframework.checker.builder.qual.*;
 
 class AmazonEC2 {
     DescribeImagesResult describeImages(
-    // any combination of withX/setX has to be permitted if both a filter and an owner has been set or an imageId has been set
-    @CalledMethodsPredicate("((withFilters || setFilters) && (withOwners || setOwners)) || (withImageIds || setImageIds)")
+    // any combination of withX/setX has to be permitted if an owner has been set or an imageId has been set
+    @CalledMethodsPredicate("(withOwners || setOwners) || (withImageIds || setImageIds)")
     DescribeImagesRequest request);
 }
 
