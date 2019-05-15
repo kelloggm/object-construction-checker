@@ -24,7 +24,7 @@ dependencies {
     implementation 'org.checkerframework:checker:2.8.1'
 
     // For the @CalledMethodsPredicate evaluation
-    implementation 'com.fathzer:javaluator:3.0.2'
+    implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'

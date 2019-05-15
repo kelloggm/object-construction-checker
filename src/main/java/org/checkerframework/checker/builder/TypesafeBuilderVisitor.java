@@ -7,9 +7,9 @@ import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.source.Result;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.springframework.expression.spel.SpelParseException;
 
 import javax.lang.model.element.AnnotationMirror;
-import java.util.ArrayList;
 import java.util.Collections;
 
 public class TypesafeBuilderVisitor extends BaseTypeVisitor<TypesafeBuilderAnnotatedTypeFactory> {
@@ -31,8 +31,8 @@ public class TypesafeBuilderVisitor extends BaseTypeVisitor<TypesafeBuilderAnnot
                     AnnotationUtils.getElementValue(anno, "value", String.class, false);
 
             try {
-                new CalledMethodsPredicateEvaluator(Collections.emptySet()).evaluate(predicate, new ArrayList<>());
-            } catch (IllegalArgumentException e) {
+                new CalledMethodsPredicateEvaluator(Collections.emptySet()).evaluate(predicate);
+            } catch (SpelParseException e) {
                 checker.report(Result.failure("predicate.invalid", e.getMessage()), node);
                 return null;
             }
