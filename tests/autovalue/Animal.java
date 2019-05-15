@@ -17,8 +17,10 @@ abstract class Animal {
 
   @AutoValue.Builder
   abstract static class Builder {
+    @ReturnsReceiver
     abstract Builder setName(String value);
 
+    @ReturnsReceiver
     abstract Builder setNumberOfLegs(int value);
 
     abstract Animal build(@CalledMethods({"setName", "setNumberOfLegs"}) Builder this);
@@ -44,8 +46,6 @@ abstract class Animal {
   }
 
   public static void buildSomethingRightFluent() {
-    // :: error: method.invocation.invalid
     builder().setName("Jim").setNumberOfLegs(7).build();
   }
-
 }
