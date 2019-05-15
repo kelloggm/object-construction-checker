@@ -45,8 +45,13 @@ public class TypesafeBuilderTransfer extends CFTransfer {
     }
 
     AnnotatedTypeMirror currentType = atypefactory.getReceiverType(node.getTree());
+    AnnotationMirror type;
+    if (currentType == null) {
+      type = atypefactory.TOP;
+    } else {
+      type = currentType.getAnnotationInHierarchy(atypefactory.TOP);
+    }
 
-    AnnotationMirror type = currentType.getAnnotationInHierarchy(atypefactory.TOP);
     if (AnnotationUtils.areSame(type, atypefactory.BOTTOM)) {
       return result;
     }

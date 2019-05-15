@@ -17,13 +17,15 @@ abstract class Animal {
     abstract Animal build(@CalledMethods({"setName", "setNumberOfLegs"}) Builder this);
   }
 
-//  public static void buildSomethingWrong() {
-//    Builder b = builder();
-//    b.setName("Frank");
-//    b.build();
-//  }
+  public static void buildSomethingWrong() {
+    Builder b = builder();
+    b.setName("Frank");
+    // :: error: method.invocation.invalid
+    b.build();
+  }
 
-//  public static void buildSomethingWrongFluent() {
-//    builder().setName("Frank").build();
-//  }
+  public static void buildSomethingWrongFluent() {
+    // :: error: method.invocation.invalid
+    builder().setName("Frank").build();
+  }
 }
