@@ -36,6 +36,10 @@ dependencies {
 
     // For CVE tests
     testCompile 'com.amazonaws:aws-java-sdk-ec2'
+
+    // For AutoValue Builders
+    testCompile 'com.google.auto.value:auto-value-annotations:1.6.5'
+    testCompile 'com.google.auto.value:auto-value:1.6.5'
 }
 
 dependencyManagement {
