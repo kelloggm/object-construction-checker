@@ -9,6 +9,8 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.7.RELEASE'
 
     id 'maven-publish'
+
+    id "com.diffplug.gradle.spotless" version "3.23.0"
 }
 
 repositories {
@@ -46,14 +48,21 @@ tasks.withType(JavaCompile).all {
     options.compilerArgs.add("-Xlint:all")
 }
 
-    publishing {
-        publications {
-            maven(MavenPublication) {
-                groupId = 'org.checkerframework'
-                artifactId = 'typesafe-builder'
-                version = '0.1-SNAPSHOT'
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.checkerframework'
+            artifactId = 'typesafe-builder'
+            version = '0.1-SNAPSHOT'
 
-                from components.java
-            }
+            from components.java
         }
     }
+}
+
+// run google java format
+spotless {
+    java {
+        googleJavaFormat()
+    }
+}
