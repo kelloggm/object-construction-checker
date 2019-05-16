@@ -21,4 +21,13 @@ class DescribeImagesRequest {
 
     @ReturnsReceiver
     DescribeImagesRequest withImageIds(String... i);
+
+    @ReturnsReceiver
+    DescribeImagesRequest withFilters(Collection<Filter> f);
+
+    @ReturnsReceiver
+    DescribeImagesRequest withOwners(Collection<String> o);
+
+    @ReturnsReceiver
+    DescribeImagesRequest withImageIds(Collection<String> i);
 }
