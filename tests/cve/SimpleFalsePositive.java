@@ -7,7 +7,7 @@ import java.util.*;
 
 // A simple (potential) false positive case with mutliple filters.
 class SimpleFalsePositive {
-    void test(AmazonEC2 ec2client, String namePrefix) {
+    void test(AmazonEC2 ec2Client, String namePrefix) {
         DescribeImagesRequest request = new DescribeImagesRequest()
                 .withOwners("martin")
                 .withFilters(Arrays.asList(
