@@ -1,7 +1,7 @@
 package org.checkerframework.checker.builder;
 
 import java.util.LinkedHashSet;
-import org.checkerframework.checker.builder.lombok.LombokBuilderChecker;
+import org.checkerframework.checker.builder.autovalue.AutoValueBuilderChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.source.SuppressWarningsKeys;
 
@@ -16,7 +16,7 @@ public class TypesafeBuilderChecker extends BaseTypeChecker {
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
     LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
         super.getImmediateSubcheckerClasses();
-    checkers.add(LombokBuilderChecker.class);
+    checkers.add(AutoValueBuilderChecker.class);
     return checkers;
   }
 }

@@ -2,8 +2,15 @@ package org.checkerframework.checker.builder;
 
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
-import org.checkerframework.checker.builder.lombok.LombokBuilderChecker;
+import java.lang.annotation.Annotation;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import org.checkerframework.checker.builder.autovalue.AutoValueBuilderChecker;
 import org.checkerframework.checker.builder.qual.*;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -16,13 +23,6 @@ import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
-
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
-import java.lang.annotation.Annotation;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 /**
  * The annotated type factory for the typesafe builder checker. Primarily responsible for the
@@ -42,7 +42,6 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     super(checker);
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
-    System.out.println("ATF was initialized");
     this.postInit();
   }
 
@@ -56,15 +55,15 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
             CalledMethodsPredicate.class));
   }
 
-  private BaseAnnotatedTypeFactory getLombokCheckerAnnotatedTypeFactory() {
-    return getTypeFactoryOfSubchecker(LombokBuilderChecker.class);
+  private BaseAnnotatedTypeFactory getAutoValueBuilderCheckerAnnotatedTypeFactory() {
+    return getTypeFactoryOfSubchecker(AutoValueBuilderChecker.class);
   }
 
   /* @Override
   public void addComputedTypeAnnotations(Element element, AnnotatedTypeMirror type) {
       super.addComputedTypeAnnotations(element, type);
       if (element != null) {
-          AnnotatedTypeMirror lombokType = getLombokCheckerAnnotatedTypeFactory().getAnnotatedType(element);
+          AnnotatedTypeMirror lombokType = getAutoValueBuilderCheckerAnnotatedTypeFactory().getAnnotatedType(element);
           if (!lombokType.hasAnnotation(TOP) && !lombokType.hasAnnotation(BOTTOM)) {
               type.addAnnotation(lombokType.getAnnotationInHierarchy(TOP));
           }
@@ -74,14 +73,15 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   @Override
   public void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
     super.addComputedTypeAnnotations(tree, type, iUseFlow);
-    if (iUseFlow && tree != null && TreeUtils.isExpressionTree(tree)) {
-      AnnotatedTypeMirror lombokType =
-          getLombokCheckerAnnotatedTypeFactory().getAnnotatedType(tree);
-      AnnotationMirror lombokAnm = lombokType.getAnnotationInHierarchy(TOP);
-      if (lombokAnm != null
-          && !AnnotationUtils.areSame(lombokAnm, TOP)
-          && !AnnotationUtils.areSame(lombokAnm, BOTTOM)) {
-        type.addAnnotation(lombokAnm);
+    if (iUseFlow && tree != null && tree instanceof MethodTree) {
+      MethodTree mt = (MethodTree) tree;
+      AnnotatedTypeMirror avBuilderType =
+          getAutoValueBuilderCheckerAnnotatedTypeFactory().getAnnotatedType(tree);
+      AnnotationMirror avBuilderAnm = avBuilderType.getAnnotationInHierarchy(TOP);
+      if (avBuilderAnm != null
+          && !AnnotationUtils.areSame(avBuilderAnm, TOP)
+          && !AnnotationUtils.areSame(avBuilderAnm, BOTTOM)) {
+        type.addAnnotation(avBuilderAnm);
       }
     }
   }
