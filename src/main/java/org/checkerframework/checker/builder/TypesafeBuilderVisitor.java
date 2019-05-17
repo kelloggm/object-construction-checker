@@ -1,8 +1,6 @@
 package org.checkerframework.checker.builder;
 
 import com.sun.source.tree.AnnotationTree;
-import java.util.Collections;
-import javax.lang.model.element.AnnotationMirror;
 import org.checkerframework.checker.builder.qual.CalledMethodsPredicate;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -10,6 +8,9 @@ import org.checkerframework.framework.source.Result;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.springframework.expression.spel.SpelParseException;
+
+import javax.lang.model.element.AnnotationMirror;
+import java.util.Collections;
 
 public class TypesafeBuilderVisitor extends BaseTypeVisitor<TypesafeBuilderAnnotatedTypeFactory> {
   /** @param checker the type-checker associated with this visitor */

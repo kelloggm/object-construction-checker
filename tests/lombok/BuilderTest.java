@@ -22,7 +22,7 @@ public class BuilderTest {
 
         BuilderTest.builder().y(0).z(5).build();  // good builder
 
-        // :: error: (lombok.builder.nonnull)
+        // :: error: (method.invocation.invalid)
         BuilderTest.builder().x(0).build(); // bad builder
     }
 
@@ -33,7 +33,7 @@ public class BuilderTest {
         goodBuilder.build();
 
         final BuilderTest.BuilderTestBuilder badBuilder = new BuilderTestBuilder();
-        // :: error: (lombok.builder.nonnull)
+        // :: error: (method.invocation.invalid)
         badBuilder.build();
     }
 }

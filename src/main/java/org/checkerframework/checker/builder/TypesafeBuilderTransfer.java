@@ -57,8 +57,7 @@ public class TypesafeBuilderTransfer extends CFTransfer {
     }
 
     String methodName = node.getTarget().getMethod().getSimpleName().toString();
-    List<String> currentMethods =
-        TypesafeBuilderAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(type);
+    List<String> currentMethods = CalledMethodsUtil.getValueOfAnnotationWithStringArgument(type);
     List<String> newList =
         Stream.concat(Stream.of(methodName), currentMethods.stream()).collect(Collectors.toList());
 
