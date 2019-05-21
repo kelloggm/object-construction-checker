@@ -12,6 +12,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import org.checkerframework.checker.builder.autovalue.AutoValueBuilderChecker;
 import org.checkerframework.checker.builder.qual.*;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -77,11 +78,24 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
       MethodTree mt = (MethodTree) tree;
       AnnotatedTypeMirror avBuilderType =
           getAutoValueBuilderCheckerAnnotatedTypeFactory().getAnnotatedType(tree);
-      AnnotationMirror avBuilderAnm = avBuilderType.getAnnotationInHierarchy(TOP);
-      if (avBuilderAnm != null
-          && !AnnotationUtils.areSame(avBuilderAnm, TOP)
-          && !AnnotationUtils.areSame(avBuilderAnm, BOTTOM)) {
-        type.addAnnotation(avBuilderAnm);
+      // we're only annotating receivers for now
+      AnnotatedTypeMirror.AnnotatedDeclaredType receiverType = ((AnnotatedTypeMirror.AnnotatedExecutableType) avBuilderType).getReceiverType();
+
+      if (receiverType != null) {
+        AnnotationMirror avBuilderAnm = receiverType.getAnnotationInHierarchy(TOP);
+        if (avBuilderAnm != null
+            && !AnnotationUtils.areSame(avBuilderAnm, TOP)
+            && !AnnotationUtils.areSame(avBuilderAnm, BOTTOM)) {
+          AnnotatedTypeMirror.AnnotatedDeclaredType origReceiverType = ((AnnotatedTypeMirror.AnnotatedExecutableType) type)
+                  .getReceiverType();
+          AnnotationMirror receiverAnno = origReceiverType.getAnnotationInHierarchy(TOP);
+          if (receiverAnno == null) {
+            receiverAnno = TOP;
+          }
+
+          AnnotationMirror newAnno = getQualifierHierarchy().greatestLowerBound(avBuilderAnm, receiverAnno);
+          origReceiverType.replaceAnnotation(newAnno);
+        }
       }
     }
   }
