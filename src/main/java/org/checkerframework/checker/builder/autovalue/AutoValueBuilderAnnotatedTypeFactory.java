@@ -1,31 +1,35 @@
 package org.checkerframework.checker.builder.autovalue;
 
 import com.google.auto.value.AutoValue;
-import com.sun.source.tree.*;
-import java.lang.annotation.Annotation;
-import java.util.*;
-import java.util.stream.Collectors;
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.Name;
-
+import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.Tree;
 import org.checkerframework.checker.builder.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.builder.CalledMethodsUtil;
 import org.checkerframework.checker.builder.TypesafeBuilderQualifierHierarchy;
-import org.checkerframework.checker.builder.qual.*;
+import org.checkerframework.checker.builder.qual.CalledMethods;
+import org.checkerframework.checker.builder.qual.CalledMethodsBottom;
+import org.checkerframework.checker.builder.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.builder.qual.CalledMethodsTop;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
-import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
+import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
+import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy.MultiGraphFactory;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
+
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import java.lang.annotation.Annotation;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /** Responsible for placing appropriate annotations on Lombok builders. */
 public class AutoValueBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
@@ -66,15 +70,21 @@ public class AutoValueBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFacto
     return createCalledMethods(calledMethodNames.toArray(new String[0]));
   }
 
+//  @Override
+//  public TreeAnnotator createTreeAnnotator() {
+//    return new ListTreeAnnotator(
+//        super.createTreeAnnotator(), new AutoValueBuilderTreeAnnotator(this));
+//  }
+
+
   @Override
-  public TreeAnnotator createTreeAnnotator() {
-    return new ListTreeAnnotator(
-        super.createTreeAnnotator(), new AutoValueBuilderTreeAnnotator(this));
+  protected TypeAnnotator createTypeAnnotator() {
+    return new ListTypeAnnotator(super.createTypeAnnotator(), new AutoValueBuilderTypeAnnotator(this));
   }
 
-  private class AutoValueBuilderTreeAnnotator extends TreeAnnotator {
+  private class AutoValueBuilderTypeAnnotator extends TypeAnnotator {
 
-    public AutoValueBuilderTreeAnnotator(AnnotatedTypeFactory atypeFactory) {
+    public AutoValueBuilderTypeAnnotator(AnnotatedTypeFactory atypeFactory) {
       super(atypeFactory);
     }
 
@@ -84,16 +94,18 @@ public class AutoValueBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFacto
     //      return super.visitClass(tree, type);
     //    }
 
+
     @Override
-    public Void visitMethod(final MethodTree node, final AnnotatedTypeMirror type) {
-      // TODO: Lombok @Generated builder classes should have the following type annotations placed
-      // automatically:
-      // on setters: @ReturnsReceiver as a decl annotation
-      // on the finalizer (build()) method: @CalledMethods(A), where A is the set of lombok.@NonNull
-      // fields
+    public Void visitExecutable(AnnotatedTypeMirror.AnnotatedExecutableType t, Void p) {
+      MethodTree methodTree = (MethodTree) declarationFromElement(t.getElement());
+      if (methodTree == null) {
+        return super.visitExecutable(t, p);
+      }
+      ClassTree enclosingClass = TreeUtils.enclosingClass(getPath(methodTree));
 
-      ClassTree enclosingClass = TreeUtils.enclosingClass(getPath(node));
-
+      if (enclosingClass == null) {
+        return super.visitExecutable(t, p);
+      }
       //      System.out.println(node.getName().toString() + " is visited method in class " +
       // enclosingClass.getSimpleName());
 
@@ -108,7 +120,7 @@ public class AutoValueBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFacto
       //   to its receiver
       if (inAutoValueBuilder) {
         // get the name of the method
-        String methodName = node.getName().toString();
+        String methodName = methodTree.getName().toString();
 
         ClassTree autoValueClass =
             TreeUtils.enclosingClass(getPath(enclosingClass).getParentPath());
@@ -122,7 +134,6 @@ public class AutoValueBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFacto
           // if its a finalizer, add the @CalledMethods annotation with the field names
           // to the receiver
           List<String> requiredProperties = getRequiredProperties(autoValueClass);
-          VariableTree receiverTree = node.getReceiverParameter();
           AnnotationMirror newCalledMethodsAnno = createCalledMethods(requiredProperties);
           System.out.println(
               "adding this annotation "
@@ -130,21 +141,11 @@ public class AutoValueBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFacto
                   + " to the receiver of this method "
                   + methodName);
 
-          ((AnnotatedTypeMirror.AnnotatedExecutableType)type).getReceiverType().addAnnotation(newCalledMethodsAnno);
-//          System.out.println("receiver tree " + receiverTree);
-//          getAnnotatedType(receiverTree).addAnnotation(newCalledMethodsAnno);
-        } /*else if (isAVBuilderSetterMethod(node, enclosingClass)) {
-            AnnotationMirror newReturnsReceiverAnno =
-                AnnotationBuilder.fromClass(elements, ReturnsReceiver.class);
-            System.out.println("adding @ReturnsReceiver to this method " + methodName);
-            // gotta use this weird formulation b/c we're adding a declaration annotation, not
-            // a type annotation
-            // TODO check if it already has the annotation???
-            // type.addAnnotation(newReturnsReceiverAnno);
-            type.getAnnotations().add(newReturnsReceiverAnno);
-          }*/
-      }
-      return super.visitMethod(node, type);
+          t.getReceiverType().addAnnotation(newCalledMethodsAnno);
+        }
+        }
+
+      return super.visitExecutable(t, p);
     }
 
     private boolean isAVBuilderSetterMethod(MethodTree node, ClassTree enclosingClass) {

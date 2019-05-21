@@ -74,27 +74,30 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   @Override
   public void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
     super.addComputedTypeAnnotations(tree, type, iUseFlow);
-    if (iUseFlow && tree != null && tree instanceof MethodTree) {
-      MethodTree mt = (MethodTree) tree;
+    if (iUseFlow && tree != null) {
       AnnotatedTypeMirror avBuilderType =
           getAutoValueBuilderCheckerAnnotatedTypeFactory().getAnnotatedType(tree);
       // we're only annotating receivers for now
-      AnnotatedTypeMirror.AnnotatedDeclaredType receiverType = ((AnnotatedTypeMirror.AnnotatedExecutableType) avBuilderType).getReceiverType();
+      if (avBuilderType instanceof AnnotatedTypeMirror.AnnotatedExecutableType) {
+        AnnotatedTypeMirror.AnnotatedDeclaredType receiverType =
+            ((AnnotatedTypeMirror.AnnotatedExecutableType) avBuilderType).getReceiverType();
 
-      if (receiverType != null) {
-        AnnotationMirror avBuilderAnm = receiverType.getAnnotationInHierarchy(TOP);
-        if (avBuilderAnm != null
-            && !AnnotationUtils.areSame(avBuilderAnm, TOP)
-            && !AnnotationUtils.areSame(avBuilderAnm, BOTTOM)) {
-          AnnotatedTypeMirror.AnnotatedDeclaredType origReceiverType = ((AnnotatedTypeMirror.AnnotatedExecutableType) type)
-                  .getReceiverType();
-          AnnotationMirror receiverAnno = origReceiverType.getAnnotationInHierarchy(TOP);
-          if (receiverAnno == null) {
-            receiverAnno = TOP;
+        if (receiverType != null) {
+          AnnotationMirror avBuilderAnm = receiverType.getAnnotationInHierarchy(TOP);
+          if (avBuilderAnm != null
+              && !AnnotationUtils.areSame(avBuilderAnm, TOP)
+              && !AnnotationUtils.areSame(avBuilderAnm, BOTTOM)) {
+            AnnotatedTypeMirror.AnnotatedDeclaredType origReceiverType =
+                ((AnnotatedTypeMirror.AnnotatedExecutableType) type).getReceiverType();
+            AnnotationMirror receiverAnno = origReceiverType.getAnnotationInHierarchy(TOP);
+            if (receiverAnno == null) {
+              receiverAnno = TOP;
+            }
+
+            AnnotationMirror newAnno =
+                getQualifierHierarchy().greatestLowerBound(avBuilderAnm, receiverAnno);
+            origReceiverType.replaceAnnotation(newAnno);
           }
-
-          AnnotationMirror newAnno = getQualifierHierarchy().greatestLowerBound(avBuilderAnm, receiverAnno);
-          origReceiverType.replaceAnnotation(newAnno);
         }
       }
     }
