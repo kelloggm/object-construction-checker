@@ -9,7 +9,6 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
-
 import org.checkerframework.checker.builder.autovalue.AutoValueBuilderChecker;
 import org.checkerframework.checker.builder.qual.*;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;

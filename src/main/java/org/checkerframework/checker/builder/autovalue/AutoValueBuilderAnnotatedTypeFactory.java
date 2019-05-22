@@ -1,6 +1,7 @@
 package org.checkerframework.checker.builder.autovalue;
 
 import com.google.auto.value.AutoValue;
+import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
@@ -8,7 +9,6 @@ import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import org.checkerframework.checker.builder.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.builder.CalledMethodsUtil;
@@ -110,12 +110,6 @@ public class AutoValueBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFacto
           // to the receiver
           List<String> requiredProperties = getRequiredProperties(autoValueClass);
           AnnotationMirror newCalledMethodsAnno = createCalledMethods(requiredProperties);
-          System.out.println(
-              "adding this annotation "
-                  + newCalledMethodsAnno
-                  + " to the receiver of this method "
-                  + methodName);
-
           t.getReceiverType().addAnnotation(newCalledMethodsAnno);
         }
       }
@@ -131,10 +125,18 @@ public class AutoValueBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFacto
           // should be an instance method
           if (!methodTree.getModifiers().getFlags().contains(Modifier.STATIC)) {
             String name = methodTree.getName().toString();
-            System.out.println(methodTree);
             if (!IGNORED_METHOD_NAMES.contains(name)
                 && !methodTree.getReturnType().toString().equals("void")) {
-              requiredPropertyNames.add(name);
+              // shouldn't have a nullable return
+              List<? extends AnnotationTree> annotations =
+                  methodTree.getModifiers().getAnnotations();
+              boolean hasNullable =
+                  annotations.stream()
+                      .map(TreeUtils::annotationFromAnnotationTree)
+                      .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
+              if (!hasNullable) {
+                requiredPropertyNames.add(name);
+              }
             }
           }
         }

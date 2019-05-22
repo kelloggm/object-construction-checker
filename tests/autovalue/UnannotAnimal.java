@@ -1,5 +1,6 @@
 import com.google.auto.value.AutoValue;
 import org.checkerframework.checker.builder.qual.*;
+import org.checkerframework.checker.nullness.qual.*;
 
 /**
  * Adapted from the standard AutoValue example code:
@@ -8,6 +9,8 @@ import org.checkerframework.checker.builder.qual.*;
 @AutoValue
 abstract class UnannotAnimal {
   abstract String name();
+
+  abstract @Nullable String habitat();
 
   abstract int numberOfLegs();
 
@@ -21,6 +24,8 @@ abstract class UnannotAnimal {
     abstract Builder setName(String value);
 
     abstract Builder setNumberOfLegs(int value);
+
+    abstract Builder setHabitat(String value);
 
     abstract UnannotAnimal build();
   }
@@ -36,6 +41,14 @@ abstract class UnannotAnimal {
     Builder b = builder();
     b.setName("Frank");
     b.setNumberOfLegs(4);
+    b.build();
+  }
+
+  public static void buildSomethingRightIncludeOptional() {
+    Builder b = builder();
+    b.setName("Frank");
+    b.setNumberOfLegs(4);
+    b.setHabitat("jungle");
     b.build();
   }
 
