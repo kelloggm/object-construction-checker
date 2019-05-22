@@ -8,6 +8,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Modifier;
+
 import org.checkerframework.checker.builder.autovalue.AutoValueBuilderChecker;
 import org.checkerframework.checker.builder.qual.*;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -129,6 +131,10 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     private boolean isAutoValueBuilderSetter(Element element) {
       MethodTree methodTree = (MethodTree) declarationFromElement(element);
       if (methodTree == null) {
+        return false;
+      }
+
+      if (!methodTree.getModifiers().getFlags().contains(Modifier.ABSTRACT)) {
         return false;
       }
       ClassTree enclosingClass = TreeUtils.enclosingClass(getPath(methodTree));
