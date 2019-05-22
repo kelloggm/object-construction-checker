@@ -1,9 +1,7 @@
 package org.checkerframework.checker.builder;
 
-import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.MethodTree;
-import com.sun.source.tree.Tree;
+import com.google.auto.value.AutoValue;
+import com.sun.source.tree.*;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -12,7 +10,6 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import org.checkerframework.checker.builder.autovalue.AutoValueBuilderChecker;
 import org.checkerframework.checker.builder.qual.*;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -20,6 +17,8 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
+import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
+import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -60,49 +59,6 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     return getTypeFactoryOfSubchecker(AutoValueBuilderChecker.class);
   }
 
-  /* @Override
-  public void addComputedTypeAnnotations(Element element, AnnotatedTypeMirror type) {
-      super.addComputedTypeAnnotations(element, type);
-      if (element != null) {
-          AnnotatedTypeMirror lombokType = getAutoValueBuilderCheckerAnnotatedTypeFactory().getAnnotatedType(element);
-          if (!lombokType.hasAnnotation(TOP) && !lombokType.hasAnnotation(BOTTOM)) {
-              type.addAnnotation(lombokType.getAnnotationInHierarchy(TOP));
-          }
-      }
-  }*/
-
-  @Override
-  public void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
-    super.addComputedTypeAnnotations(tree, type, iUseFlow);
-    if (iUseFlow && tree != null) {
-      AnnotatedTypeMirror avBuilderType =
-          getAutoValueBuilderCheckerAnnotatedTypeFactory().getAnnotatedType(tree);
-      // we're only annotating receivers for now
-      if (avBuilderType instanceof AnnotatedTypeMirror.AnnotatedExecutableType) {
-        AnnotatedTypeMirror.AnnotatedDeclaredType receiverType =
-            ((AnnotatedTypeMirror.AnnotatedExecutableType) avBuilderType).getReceiverType();
-
-        if (receiverType != null) {
-          AnnotationMirror avBuilderAnm = receiverType.getAnnotationInHierarchy(TOP);
-          if (avBuilderAnm != null
-              && !AnnotationUtils.areSame(avBuilderAnm, TOP)
-              && !AnnotationUtils.areSame(avBuilderAnm, BOTTOM)) {
-            AnnotatedTypeMirror.AnnotatedDeclaredType origReceiverType =
-                ((AnnotatedTypeMirror.AnnotatedExecutableType) type).getReceiverType();
-            AnnotationMirror receiverAnno = origReceiverType.getAnnotationInHierarchy(TOP);
-            if (receiverAnno == null) {
-              receiverAnno = TOP;
-            }
-
-            AnnotationMirror newAnno =
-                getQualifierHierarchy().greatestLowerBound(avBuilderAnm, receiverAnno);
-            origReceiverType.replaceAnnotation(newAnno);
-          }
-        }
-      }
-    }
-  }
-
   /** Creates a @CalledMethods annotation whose values are the given strings. */
   public AnnotationMirror createCalledMethods(final String... val) {
     return CalledMethodsUtil.createCalledMethodsImpl(TOP, processingEnv, val);
@@ -112,6 +68,12 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   public TreeAnnotator createTreeAnnotator() {
     return new ListTreeAnnotator(
         super.createTreeAnnotator(), new TypesafeBuilderTreeAnnotator(this));
+  }
+
+  @Override
+  protected TypeAnnotator createTypeAnnotator() {
+    return new ListTypeAnnotator(
+        super.createTypeAnnotator(), new TypesafeBuilderTypeAnnotator(this));
   }
 
   @Override
@@ -133,11 +95,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     public Void visitMethodInvocation(
         final MethodInvocationTree tree, final AnnotatedTypeMirror type) {
 
-      // Check to see if the @ReturnsReceiver annotation is present
-      Element element = TreeUtils.elementFromUse(tree);
-      AnnotationMirror returnsReceiver = getDeclAnnotation(element, ReturnsReceiver.class);
-
-      if (returnsReceiver != null) {
+      if (hasReturnsReceiver(tree)) {
 
         // Fetch the current type of the receiver, or top if none exists
         ExpressionTree receiverTree = TreeUtils.getReceiverTree(tree.getMethodSelect());
@@ -157,6 +115,82 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
       }
 
       return super.visitMethodInvocation(tree, type);
+    }
+
+    private boolean hasReturnsReceiver(MethodInvocationTree tree) {
+      // Check to see if the @ReturnsReceiver annotation is present
+      Element element = TreeUtils.elementFromUse(tree);
+      if (getDeclAnnotation(element, ReturnsReceiver.class) != null) {
+        return true;
+      }
+      return isAutoValueBuilderSetter(element);
+    }
+
+    private boolean isAutoValueBuilderSetter(Element element) {
+      MethodTree methodTree = (MethodTree) declarationFromElement(element);
+      if (methodTree == null) {
+        return false;
+      }
+      ClassTree enclosingClass = TreeUtils.enclosingClass(getPath(methodTree));
+
+      if (enclosingClass == null) {
+        return false;
+      }
+      //      System.out.println(node.getName().toString() + " is visited method in class " +
+      // enclosingClass.getSimpleName());
+
+      boolean inAutoValueBuilder = hasAnnotation(enclosingClass, AutoValue.Builder.class);
+
+      if (inAutoValueBuilder) {
+        Element classElem = TreeUtils.elementFromTree(enclosingClass);
+        Element returnTypeElem = TreeUtils.elementFromTree(methodTree.getReturnType());
+        return classElem.equals(returnTypeElem);
+      }
+      return false;
+    }
+  }
+
+  private static boolean hasAnnotation(
+      ClassTree enclosingClass, Class<? extends Annotation> annotClass) {
+    return enclosingClass.getModifiers().getAnnotations().stream()
+        .map(TreeUtils::annotationFromAnnotationTree)
+        .anyMatch(anm -> AnnotationUtils.areSameByClass(anm, annotClass));
+  }
+
+  private class TypesafeBuilderTypeAnnotator extends TypeAnnotator {
+    public TypesafeBuilderTypeAnnotator(AnnotatedTypeFactory aTypeFactory) {
+      super(aTypeFactory);
+    }
+
+    @Override
+    public Void visitExecutable(AnnotatedTypeMirror.AnnotatedExecutableType t, Void p) {
+      MethodTree tree = (MethodTree) declarationFromElement(t.getElement());
+      if (tree == null) {
+        return super.visitExecutable(t, p);
+      }
+      AnnotatedTypeMirror avBuilderType =
+          getAutoValueBuilderCheckerAnnotatedTypeFactory().getAnnotatedType(tree);
+      AnnotatedTypeMirror.AnnotatedDeclaredType receiverType =
+          ((AnnotatedTypeMirror.AnnotatedExecutableType) avBuilderType).getReceiverType();
+
+      if (receiverType != null) {
+        AnnotationMirror avBuilderAnm = receiverType.getAnnotationInHierarchy(TOP);
+        if (avBuilderAnm != null
+            && !AnnotationUtils.areSame(avBuilderAnm, TOP)
+            && !AnnotationUtils.areSame(avBuilderAnm, BOTTOM)) {
+          AnnotatedTypeMirror.AnnotatedDeclaredType origReceiverType = t.getReceiverType();
+          AnnotationMirror receiverAnno = origReceiverType.getAnnotationInHierarchy(TOP);
+          if (receiverAnno == null) {
+            receiverAnno = TOP;
+          }
+
+          AnnotationMirror newAnno =
+              getQualifierHierarchy().greatestLowerBound(avBuilderAnm, receiverAnno);
+          origReceiverType.replaceAnnotation(newAnno);
+        }
+      }
+
+      return super.visitExecutable(t, p);
     }
   }
 }
