@@ -13,7 +13,7 @@ import org.checkerframework.framework.qual.TypeUseLocation;
 /**
  * The bottom type for the CalledMethods type system, a part of the typesafe builder checker.
  *
- * <p>It should rarely, if ever, be written by a programmer.
+ * <p>It should rarely be written by a programmer.
  */
 @SubtypeOf({CalledMethods.class, CalledMethodsPredicate.class})
 @Retention(RetentionPolicy.RUNTIME)

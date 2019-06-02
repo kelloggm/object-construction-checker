@@ -7,16 +7,15 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * This annotation keeps track of the methods called on an object. It mostly forms its own
- * lattice: @CalledMethods({}) is top, and @CalledMethods(A) is a subtype of @CalledMethod(B) iff B
- * is a subset of a A.
- *
- * <p>There is also a bottom annotation.
+ * If an expression has type {@code @CalledMethods({"m1", "m2"})}, then methods {@code m1} and {@code m2} have definitely been called on its value.  Other methods might or might not have been called.
+
+ * The subtyping relationship is:
+ * <pre>{@code @CalledMethods({"m1", "m2", "m3"}) <: @CalledMethods({"m1", "m2"})}</pre>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({CalledMethodsTop.class})
 public @interface CalledMethods {
-  /** A list of methods that have been called on the annotated object. */
+  /** Methods that have been called on the annotated object. */
   public String[] value() default {};
 }

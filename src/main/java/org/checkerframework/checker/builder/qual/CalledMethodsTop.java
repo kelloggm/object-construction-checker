@@ -8,9 +8,9 @@ import org.checkerframework.framework.qual.DefaultQualifierInHierarchy;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * The default qualifier in the hierarchy. It is equivalent to @CalledMethods({}).
+ * The top qualifier in the Called Methods type hierarchy. It is equivalent to @CalledMethods({}).
  *
- * <p>Needed so that @CalledMethodsPredicate can be a sibling of @CalledMethods.
+ * <p>It is needed so that @CalledMethodsPredicate can be a sibling of @CalledMethods.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
