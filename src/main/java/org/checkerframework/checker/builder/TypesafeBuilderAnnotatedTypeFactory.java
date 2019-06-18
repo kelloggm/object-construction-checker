@@ -8,12 +8,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.builder.qual.CalledMethods;
 import org.checkerframework.checker.builder.qual.CalledMethodsBottom;
 import org.checkerframework.checker.builder.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.builder.qual.CalledMethodsTop;
-import org.checkerframework.checker.builder.qual.ReturnsReceiver;
+import org.checkerframework.checker.returnsrcvr.ReturnsRcvrAnnotatedTypeFactory;
+import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
+import org.checkerframework.checker.returnsrcvr.qual.This;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -69,9 +71,12 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     return new TypesafeBuilderQualifierHierarchy(factory);
   }
 
+  private ReturnsRcvrAnnotatedTypeFactory getReturnsRcvrAnnotatedTypeFactory() {
+    return getTypeFactoryOfSubchecker(ReturnsRcvrChecker.class);
+  }
+
   /**
-   * This tree annotator is needed to create types for fluent builders that have @ReturnsReceiver
-   * annotations.
+   * This tree annotator is needed to create types for fluent builders that have @This annotations.
    */
   private class TypesafeBuilderTreeAnnotator extends TreeAnnotator {
     public TypesafeBuilderTreeAnnotator(final AnnotatedTypeFactory atypeFactory) {
@@ -82,11 +87,16 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     public Void visitMethodInvocation(
         final MethodInvocationTree tree, final AnnotatedTypeMirror type) {
 
-      // Check to see if the @ReturnsReceiver annotation is present
-      Element element = TreeUtils.elementFromUse(tree);
-      AnnotationMirror returnsReceiver = getDeclAnnotation(element, ReturnsReceiver.class);
+      // Check to see if the ReturnsReceiver Checker has a @This annotation
+      // on the return type of the method
 
-      if (returnsReceiver != null) {
+      ReturnsRcvrAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
+      ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
+      AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
+      AnnotatedTypeMirror rrType =
+          ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
+
+      if (rrType != null && rrType.hasAnnotation(This.class)) {
 
         // Fetch the current type of the receiver, or top if none exists
         ExpressionTree receiverTree = TreeUtils.getReceiverTree(tree.getMethodSelect());

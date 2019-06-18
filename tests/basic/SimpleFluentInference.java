@@ -1,17 +1,16 @@
 import org.checkerframework.checker.builder.qual.*;
+import org.checkerframework.checker.returnsrcvr.qual.*;
 
 /* Simple inference of a fluent builder */
 class SimpleFluentInference {
     SimpleFluentInference build(@CalledMethods({"a", "b"}) SimpleFluentInference this) { return this; }
     SimpleFluentInference weakbuild(@CalledMethods({"a"}) SimpleFluentInference this) { return this; }
 
-    @ReturnsReceiver
-    SimpleFluentInference a() { return this; }
+    @This SimpleFluentInference a() { return this; }
 
-    @ReturnsReceiver
-    SimpleFluentInference b() { return this; }
+    @This SimpleFluentInference b() { return this; }
 
-    // intentionally does not have an @ReturnsReceiver annotation
+    // intentionally does not have an @This annotation
     SimpleFluentInference c() { return new SimpleFluentInference(); }
 
     static void doStuffCorrect() {

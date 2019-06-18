@@ -24,8 +24,9 @@ public class AutoValueTest extends CheckerFrameworkPerDirectoryTest {
     super(
         testFiles,
         org.checkerframework.checker.builder.TypesafeBuilderChecker.class,
-        "basic",
+        "autovalue",
         "-Anomsgtext",
+        "-AskipDefs=AutoValue_*",
         "-nowarn");
   }
 
