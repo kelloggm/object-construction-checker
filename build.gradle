@@ -17,6 +17,7 @@ repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
+    mavenLocal()
 }
 
 sourceCompatibility = 1.8
@@ -27,6 +28,9 @@ dependencies {
 
     // For the @CalledMethodsPredicate evaluation
     implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
+    
+    // For returns receiver checking
+    implementation 'org.checkerframework:returnsrcvr-checker:0.1-SNAPSHOT'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'

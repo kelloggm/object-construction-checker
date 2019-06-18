@@ -1,6 +1,7 @@
 package com.amazonaws.services.ec2;
 
 import org.checkerframework.checker.builder.qual.*;
+import org.checkerframework.checker.returnsrcvr.qual.*;
 
 class AmazonEC2 {
     DescribeImagesResult describeImages(
@@ -13,21 +14,15 @@ package com.amazonaws.services.ec2.model;
 
 class DescribeImagesRequest {
 
-    @ReturnsReceiver
-    DescribeImagesRequest withFilters(Filter... f);
+    @This DescribeImagesRequest withFilters(Filter... f);
 
-    @ReturnsReceiver
-    DescribeImagesRequest withOwners(String... o);
+    @This DescribeImagesRequest withOwners(String... o);
 
-    @ReturnsReceiver
-    DescribeImagesRequest withImageIds(String... i);
+    @This DescribeImagesRequest withImageIds(String... i);
 
-    @ReturnsReceiver
-    DescribeImagesRequest withFilters(Collection<Filter> f);
+    @This DescribeImagesRequest withFilters(Collection<Filter> f);
 
-    @ReturnsReceiver
-    DescribeImagesRequest withOwners(Collection<String> o);
+    @This DescribeImagesRequest withOwners(Collection<String> o);
 
-    @ReturnsReceiver
-    DescribeImagesRequest withImageIds(Collection<String> i);
+    @This DescribeImagesRequest withImageIds(Collection<String> i);
 }

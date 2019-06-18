@@ -1,5 +1,6 @@
 import com.google.auto.value.AutoValue;
 import org.checkerframework.checker.builder.qual.*;
+import org.checkerframework.checker.returnsrcvr.qual.*;
 
 /**
  * Adapted from the standard AutoValue example code:
@@ -17,11 +18,9 @@ abstract class Animal {
 
   @AutoValue.Builder
   abstract static class Builder {
-    @ReturnsReceiver
-    abstract Builder setName(String value);
+    abstract @This Builder setName(String value);
 
-    @ReturnsReceiver
-    abstract Builder setNumberOfLegs(int value);
+    abstract @This Builder setNumberOfLegs(int value);
 
     abstract Animal build(@CalledMethods({"setName", "setNumberOfLegs"}) Builder this);
   }
