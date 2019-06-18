@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.builder.qual.CalledMethods;
 import org.checkerframework.checker.builder.qual.CalledMethodsBottom;
 import org.checkerframework.checker.builder.qual.CalledMethodsPredicate;
@@ -90,9 +91,10 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
       // on the return type of the method
 
       ReturnsRcvrAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
-      AnnotatedTypeMirror rrType = rrATF.getAnnotatedType(tree);
-
-      System.out.println("rrType: " + rrType);
+      ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
+      AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
+      AnnotatedTypeMirror rrType =
+          ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
 
       if (rrType != null && rrType.hasAnnotation(This.class)) {
 
