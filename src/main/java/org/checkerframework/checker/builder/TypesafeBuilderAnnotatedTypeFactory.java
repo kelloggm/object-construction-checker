@@ -1,14 +1,13 @@
 package org.checkerframework.checker.builder;
 
-import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.MethodInvocationTree;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import com.google.auto.value.AutoValue;
+import com.sun.source.tree.*;
+import java.lang.annotation.Annotation;
+import java.util.*;
+import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import org.checkerframework.checker.builder.qual.CalledMethods;
 import org.checkerframework.checker.builder.qual.CalledMethodsBottom;
 import org.checkerframework.checker.builder.qual.CalledMethodsPredicate;
@@ -16,6 +15,7 @@ import org.checkerframework.checker.builder.qual.CalledMethodsTop;
 import org.checkerframework.checker.returnsrcvr.ReturnsRcvrAnnotatedTypeFactory;
 import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
 import org.checkerframework.checker.returnsrcvr.qual.This;
+import org.checkerframework.com.google.common.collect.ImmutableSet;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -23,6 +23,8 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
+import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
+import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -63,6 +65,12 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   public TreeAnnotator createTreeAnnotator() {
     return new ListTreeAnnotator(
         super.createTreeAnnotator(), new TypesafeBuilderTreeAnnotator(this));
+  }
+
+  @Override
+  protected TypeAnnotator createTypeAnnotator() {
+    return new ListTypeAnnotator(
+        super.createTypeAnnotator(), new TypesafeBuilderTypeAnnotator(this));
   }
 
   @Override
@@ -119,6 +127,100 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
   }
 
+  /**
+   * adds @CalledMethod annotations for build() methods of AutoValue Builders to ensure required
+   * properties have been set
+   */
+  private class TypesafeBuilderTypeAnnotator extends TypeAnnotator {
+
+    public TypesafeBuilderTypeAnnotator(AnnotatedTypeFactory atypeFactory) {
+      super(atypeFactory);
+    }
+
+    @Override
+    public Void visitExecutable(AnnotatedTypeMirror.AnnotatedExecutableType t, Void p) {
+      MethodTree methodTree = (MethodTree) declarationFromElement(t.getElement());
+      if (methodTree == null) {
+        return super.visitExecutable(t, p);
+      }
+      ClassTree enclosingClass = TreeUtils.enclosingClass(getPath(methodTree));
+
+      if (enclosingClass == null) {
+        return super.visitExecutable(t, p);
+      }
+
+      boolean inAutoValueBuilder = hasAnnotation(enclosingClass, AutoValue.Builder.class);
+
+      if (inAutoValueBuilder) {
+        // get the name of the method
+        String methodName = methodTree.getName().toString();
+
+        ClassTree autoValueClass =
+            TreeUtils.enclosingClass(getPath(enclosingClass).getParentPath());
+
+        assert hasAnnotation(autoValueClass, AutoValue.class)
+            : "class " + autoValueClass.getSimpleName() + " is missing @AutoValue annotation";
+
+        if ("build".equals(methodName)) {
+          // determine the required properties and add a corresponding @CalledMethods annotation
+          List<String> requiredProperties = getRequiredProperties(autoValueClass);
+          AnnotationMirror newCalledMethodsAnno =
+              createCalledMethodsForProperties(requiredProperties);
+          t.getReceiverType().addAnnotation(newCalledMethodsAnno);
+        }
+      }
+
+      return super.visitExecutable(t, p);
+    }
+
+    /**
+     * computes the required properties of an @AutoValue class
+     *
+     * @param autoValueClass
+     * @return
+     */
+    private List<String> getRequiredProperties(ClassTree autoValueClass) {
+      List<String> requiredPropertyNames = new ArrayList<>();
+      for (Tree member : autoValueClass.getMembers()) {
+        if (member.getKind() == Tree.Kind.METHOD) {
+          MethodTree methodTree = (MethodTree) member;
+          // should be an instance method
+          if (!methodTree.getModifiers().getFlags().contains(Modifier.STATIC)) {
+            String name = methodTree.getName().toString();
+            if (!IGNORED_METHOD_NAMES.contains(name)
+                && !methodTree.getReturnType().toString().equals("void")) {
+              // shouldn't have a nullable return
+              List<? extends AnnotationTree> annotations =
+                  methodTree.getModifiers().getAnnotations();
+              boolean hasNullable =
+                  annotations.stream()
+                      .map(TreeUtils::annotationFromAnnotationTree)
+                      .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
+              if (!hasNullable) {
+                requiredPropertyNames.add(name);
+              }
+            }
+          }
+        }
+      }
+      return requiredPropertyNames;
+    }
+
+    /**
+     * creates a @CalledMethods annotation for the given property names, converting the names to the
+     * corresponding setter method name in the Builder
+     *
+     * @param propertyNames the property names
+     * @return the @CalledMethods annotation
+     */
+    public AnnotationMirror createCalledMethodsForProperties(final List<String> propertyNames) {
+      List<String> calledMethodNames =
+          propertyNames.stream()
+              .map((prop) -> "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1))
+              .collect(Collectors.toList());
+      return createCalledMethods(calledMethodNames.toArray(new String[0]));
+    }
+  }
   /**
    * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
    * declaratively defined subtyping relationships, like our @CalledMethods annotation.
@@ -228,4 +330,15 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
     return AnnotationUtils.getElementValueArray(anno, "value", String.class, true);
   }
+
+  private static boolean hasAnnotation(
+      ClassTree enclosingClass, Class<? extends Annotation> annotClass) {
+    return enclosingClass.getModifiers().getAnnotations().stream()
+        .map(TreeUtils::annotationFromAnnotationTree)
+        .anyMatch(anm -> AnnotationUtils.areSameByClass(anm, annotClass));
+  }
+
+  /** ignore java.lang.Object overrides and constructors in AutoValue classes */
+  private static final ImmutableSet<String> IGNORED_METHOD_NAMES =
+      ImmutableSet.of("equals", "hashCode", "toString", "<init>");
 }
