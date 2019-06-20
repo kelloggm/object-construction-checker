@@ -4,7 +4,6 @@ import com.google.auto.value.AutoValue;
 import com.sun.source.tree.*;
 import java.lang.annotation.Annotation;
 import java.util.*;
-import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -214,11 +213,11 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * @return the @CalledMethods annotation
      */
     public AnnotationMirror createCalledMethodsForProperties(final List<String> propertyNames) {
-      List<String> calledMethodNames =
+      String[] calledMethodNames =
           propertyNames.stream()
               .map((prop) -> "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1))
-              .collect(Collectors.toList());
-      return createCalledMethods(calledMethodNames.toArray(new String[0]));
+              .toArray(String[]::new);
+      return createCalledMethods(calledMethodNames);
     }
   }
   /**
