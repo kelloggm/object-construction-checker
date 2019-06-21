@@ -183,8 +183,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
 
     /**
-     * computes the required properties of an @AutoValue class, i.e., those methods returning some non-void,
-     * non-@Nullable type
+     * computes the required properties of an @AutoValue class, i.e., those methods returning some
+     * non-void, non-@Nullable type
      *
      * @param autoValueClass the @AutoValue class
      * @return a list of required property names
