@@ -1,9 +1,19 @@
 package org.checkerframework.checker.builder;
 
 import com.google.auto.value.AutoValue;
-import com.sun.source.tree.*;
+import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -173,10 +183,11 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
 
     /**
-     * computes the required properties of an @AutoValue class
+     * computes the required properties of an @AutoValue class, i.e., those methods returning some non-void,
+     * non-@Nullable type
      *
-     * @param autoValueClass
-     * @return
+     * @param autoValueClass the @AutoValue class
+     * @return a list of required property names
      */
     private List<String> getRequiredProperties(ClassTree autoValueClass) {
       List<String> requiredPropertyNames = new ArrayList<>();
