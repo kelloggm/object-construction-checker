@@ -38,7 +38,6 @@ import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -208,7 +207,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * @param builderKind the framework by which the builder will be generated
      * @return a list of required property names
      */
-    private List<String> getRequiredProperties(final ClassTree builderClass, final BuilderKind builderKind) {
+    private List<String> getRequiredProperties(
+        final ClassTree builderClass, final BuilderKind builderKind) {
       switch (builderKind) {
         case AUTO_VALUE:
           return getAutoValueRequiredProperties(builderClass);
@@ -293,8 +293,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * @param builderKind the kind of builder
      * @return the @CalledMethods annotation
      */
-    public AnnotationMirror createCalledMethodsForProperties(final List<String> propertyNames,
-                                                             final BuilderKind builderKind) {
+    public AnnotationMirror createCalledMethodsForProperties(
+        final List<String> propertyNames, final BuilderKind builderKind) {
       switch (builderKind) {
         case AUTO_VALUE:
           return createCalledMethodsForAutoValueProperties(propertyNames);
@@ -309,14 +309,14 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
       return createCalledMethods(propertyNames.toArray(new String[0]));
     }
 
-    private AnnotationMirror createCalledMethodsForAutoValueProperties(final List<String> propertyNames) {
+    private AnnotationMirror createCalledMethodsForAutoValueProperties(
+        final List<String> propertyNames) {
       String[] calledMethodNames =
-              propertyNames.stream()
-                      .map((prop) -> "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1))
-                      .toArray(String[]::new);
+          propertyNames.stream()
+              .map((prop) -> "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1))
+              .toArray(String[]::new);
       return createCalledMethods(calledMethodNames);
     }
-
   }
   /**
    * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
