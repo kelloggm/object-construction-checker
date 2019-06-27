@@ -30,8 +30,10 @@ dependencies {
     // For the @CalledMethodsPredicate evaluation
     implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
     
-    // For returns receiver checking
+    // For returns receiver checking. The first uses the master branch; the second
+    // uses your local copy.
     implementation 'com.github.msridhar:returnsrecv-checker:master-SNAPSHOT'
+    // implementation 'org.checkerframework:returnsrcvr-checker:0.1-SNAPSHOT'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
@@ -46,6 +48,9 @@ dependencies {
     implementation 'com.google.auto.value:auto-value-annotations:1.6.5'
     testCompile 'com.google.auto.value:auto-value-annotations:1.6.5'
     testCompile 'com.google.auto.value:auto-value:1.6.5'
+
+    // For Lombok Builders
+    implementation 'org.projectlombok:lombok:1.18.8'
 }
 
 dependencyManagement {
