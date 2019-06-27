@@ -7,6 +7,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -136,9 +138,15 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
   }
 
+  private enum BuilderKind {
+    LOMBOK,
+    AUTO_VALUE,
+    NONE
+  }
+
   /**
-   * adds @CalledMethod annotations for build() methods of AutoValue Builders to ensure required
-   * properties have been set
+   * adds @CalledMethod annotations for build() methods of AutoValue and Lombok Builders to ensure
+   * required properties have been set
    */
   private class TypesafeBuilderTypeAnnotator extends TypeAnnotator {
 
@@ -158,28 +166,89 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         return super.visitExecutable(t, p);
       }
 
-      boolean inAutoValueBuilder = hasAnnotation(enclosingClass, AutoValue.Builder.class);
+      ClassTree nextEnclosingClass =
+          TreeUtils.enclosingClass(getPath(enclosingClass).getParentPath());
 
-      if (inAutoValueBuilder) {
+      if (nextEnclosingClass == null) {
+        return super.visitExecutable(t, p);
+      }
+
+      BuilderKind builderKind = BuilderKind.NONE;
+
+      if (hasAnnotation(enclosingClass, AutoValue.Builder.class)) {
+        builderKind = BuilderKind.AUTO_VALUE;
+        assert hasAnnotation(nextEnclosingClass, AutoValue.class)
+            : "class " + nextEnclosingClass.getSimpleName() + " is missing @AutoValue annotation";
+
+      } else if (hasAnnotation(enclosingClass, lombok.Generated.class)
+          && enclosingClass.getSimpleName().toString().endsWith("Builder")) {
+        builderKind = BuilderKind.LOMBOK;
+      }
+
+      if (builderKind != BuilderKind.NONE) {
         // get the name of the method
         String methodName = methodTree.getName().toString();
 
-        ClassTree autoValueClass =
-            TreeUtils.enclosingClass(getPath(enclosingClass).getParentPath());
-
-        assert hasAnnotation(autoValueClass, AutoValue.class)
-            : "class " + autoValueClass.getSimpleName() + " is missing @AutoValue annotation";
-
         if ("build".equals(methodName)) {
           // determine the required properties and add a corresponding @CalledMethods annotation
-          List<String> requiredProperties = getRequiredProperties(autoValueClass);
+          List<String> requiredProperties = getRequiredProperties(nextEnclosingClass, builderKind);
           AnnotationMirror newCalledMethodsAnno =
-              createCalledMethodsForProperties(requiredProperties);
+              createCalledMethodsForProperties(requiredProperties, builderKind);
           t.getReceiverType().addAnnotation(newCalledMethodsAnno);
         }
       }
 
       return super.visitExecutable(t, p);
+    }
+
+    /**
+     * computes the required properties of a builder class
+     *
+     * @param builderClass the class whose builder is to be checked
+     * @param builderKind the framework by which the builder will be generated
+     * @return a list of required property names
+     */
+    private List<String> getRequiredProperties(final ClassTree builderClass, final BuilderKind builderKind) {
+      switch (builderKind) {
+        case AUTO_VALUE:
+          return getAutoValueRequiredProperties(builderClass);
+        case LOMBOK:
+          return getLombokRequiredProperties(builderClass);
+        default:
+          return Collections.emptyList();
+      }
+    }
+
+    /**
+     * computes the required properties of a @lombok.Builder class, i.e., the names of the fields
+     * with @lombok.NonNull annotations
+     *
+     * @param lombokClass the class with the @lombok.Builder annotation
+     * @return a list of required property names
+     */
+    private List<String> getLombokRequiredProperties(final ClassTree lombokClass) {
+      List<String> requiredPropertyNames = new ArrayList<>();
+      List<String> defaultedPropertyNames = new ArrayList<>();
+      for (Tree member : lombokClass.getMembers()) {
+        if (member.getKind() == Tree.Kind.VARIABLE) {
+          VariableTree fieldTree = (VariableTree) member;
+          for (AnnotationTree atree : fieldTree.getModifiers().getAnnotations()) {
+            AnnotationMirror anm = TreeUtils.annotationFromAnnotationTree(atree);
+            if (AnnotationUtils.areSameByClass(anm, lombok.NonNull.class)) {
+              requiredPropertyNames.add(fieldTree.getName().toString());
+            }
+          }
+        } else if (member.getKind() == Tree.Kind.METHOD) {
+          MethodTree methodTree = (MethodTree) member;
+          String methodName = methodTree.getName().toString();
+          if (methodName.startsWith("$default$")) {
+            String propName = methodName.substring(9); // $default$ has 9 characters
+            defaultedPropertyNames.add(propName);
+          }
+        }
+      }
+      requiredPropertyNames.removeAll(defaultedPropertyNames);
+      return requiredPropertyNames;
     }
 
     /**
@@ -189,7 +258,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * @param autoValueClass the @AutoValue class
      * @return a list of required property names
      */
-    private List<String> getRequiredProperties(ClassTree autoValueClass) {
+    private List<String> getAutoValueRequiredProperties(final ClassTree autoValueClass) {
       List<String> requiredPropertyNames = new ArrayList<>();
       for (Tree member : autoValueClass.getMembers()) {
         if (member.getKind() == Tree.Kind.METHOD) {
@@ -221,15 +290,33 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * corresponding setter method name in the Builder
      *
      * @param propertyNames the property names
+     * @param builderKind the kind of builder
      * @return the @CalledMethods annotation
      */
-    public AnnotationMirror createCalledMethodsForProperties(final List<String> propertyNames) {
+    public AnnotationMirror createCalledMethodsForProperties(final List<String> propertyNames,
+                                                             final BuilderKind builderKind) {
+      switch (builderKind) {
+        case AUTO_VALUE:
+          return createCalledMethodsForAutoValueProperties(propertyNames);
+        case LOMBOK:
+          return createCalledMethodsForLombokProperties(propertyNames);
+        default:
+          return TOP;
+      }
+    }
+
+    private AnnotationMirror createCalledMethodsForLombokProperties(List<String> propertyNames) {
+      return createCalledMethods(propertyNames.toArray(new String[0]));
+    }
+
+    private AnnotationMirror createCalledMethodsForAutoValueProperties(final List<String> propertyNames) {
       String[] calledMethodNames =
-          propertyNames.stream()
-              .map((prop) -> "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1))
-              .toArray(String[]::new);
+              propertyNames.stream()
+                      .map((prop) -> "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1))
+                      .toArray(String[]::new);
       return createCalledMethods(calledMethodNames);
     }
+
   }
   /**
    * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
