@@ -52,6 +52,36 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
    */
   final AnnotationMirror TOP, BOTTOM;
 
+  /**
+   * The list of annotations that Lombok treats as non-null. The list is copied from
+   * lombok.core.handlers.HandlerUtil. The list cannot be used from that class directly because
+   * Lombok does not actually provide class files for its own implementation, to prevent itself from
+   * being accidentally added to clients' compile classpaths. This design decision means that it is
+   * impossible to depend directly on Lombok internals.
+   */
+  public static final List<String> NONNULL_ANNOTATIONS;
+
+  static {
+    NONNULL_ANNOTATIONS =
+        Collections.unmodifiableList(
+            Arrays.asList(
+                "android.annotation.NonNull",
+                "android.support.annotation.NonNull",
+                "com.sun.istack.internal.NotNull",
+                "edu.umd.cs.findbugs.annotations.NonNull",
+                "javax.annotation.Nonnull",
+                // "javax.validation.constraints.NotNull", // The field might contain a null value
+                // until it is persisted.
+                "lombok.NonNull",
+                "org.checkerframework.checker.nullness.qual.NonNull",
+                "org.eclipse.jdt.annotation.NonNull",
+                "org.eclipse.jgit.annotations.NonNull",
+                "org.jetbrains.annotations.NotNull",
+                "org.jmlspecs.annotation.NonNull",
+                "org.netbeans.api.annotations.common.NonNull",
+                "org.springframework.lang.NonNull"));
+  }
+
   /** Default constructor matching super. Should be called automatically. */
   public TypesafeBuilderAnnotatedTypeFactory(final BaseTypeChecker checker) {
     super(checker);
@@ -234,7 +264,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
           VariableTree fieldTree = (VariableTree) member;
           for (AnnotationTree atree : fieldTree.getModifiers().getAnnotations()) {
             AnnotationMirror anm = TreeUtils.annotationFromAnnotationTree(atree);
-            if (AnnotationUtils.areSameByClass(anm, lombok.NonNull.class)) {
+            if (NONNULL_ANNOTATIONS.contains(AnnotationUtils.annotationName(anm))) {
               requiredPropertyNames.add(fieldTree.getName().toString());
             }
           }
