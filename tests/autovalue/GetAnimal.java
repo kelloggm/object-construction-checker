@@ -7,19 +7,17 @@ import org.checkerframework.checker.nullness.qual.*;
  * https://github.com/google/auto/blob/master/value/userguide/builders.md
  */
 @AutoValue
-abstract class Animal {
-  abstract String name();
+abstract class GetAnimal {
+  abstract String getName();
 
-  abstract @Nullable String habitat();
+  abstract @Nullable String getHabitat();
 
-  abstract int numberOfLegs();
+  abstract int getNumberOfLegs();
 
-  public String getStr() {
-    return "str";
-  }
+  abstract boolean isHasArms();
 
   static Builder builder() {
-    return new AutoValue_Animal.Builder();
+    return new AutoValue_GetAnimal.Builder();
   }
 
   @AutoValue.Builder
@@ -31,7 +29,9 @@ abstract class Animal {
 
     abstract Builder setHabitat(String value);
 
-    abstract Animal build();
+    abstract Builder setHasArms(boolean b);
+
+    abstract GetAnimal build();
   }
 
   public static void buildSomethingWrong() {
@@ -45,6 +45,7 @@ abstract class Animal {
     Builder b = builder();
     b.setName("Frank");
     b.setNumberOfLegs(4);
+    b.setHasArms(true);
     b.build();
   }
 
@@ -53,6 +54,7 @@ abstract class Animal {
     b.setName("Frank");
     b.setNumberOfLegs(4);
     b.setHabitat("jungle");
+    b.setHasArms(true);
     b.build();
   }
 
@@ -62,6 +64,6 @@ abstract class Animal {
   }
 
   public static void buildSomethingRightFluent() {
-    builder().setName("Jim").setNumberOfLegs(7).build();
+    builder().setName("Jim").setNumberOfLegs(7).setHasArms(false).build();
   }
 }

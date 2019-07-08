@@ -8,6 +8,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
+import java.beans.Introspector;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -220,9 +222,15 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
 
         if ("build".equals(methodName)) {
           // determine the required properties and add a corresponding @CalledMethods annotation
+          Set<String> allBuilderMethodNames =
+              enclosingClass.getMembers().stream()
+                  .filter(tr -> tr.getKind() == Tree.Kind.METHOD)
+                  .map(tr -> ((MethodTree) tr).getName().toString())
+                  .collect(Collectors.toSet());
           List<String> requiredProperties = getRequiredProperties(nextEnclosingClass, builderKind);
           AnnotationMirror newCalledMethodsAnno =
-              createCalledMethodsForProperties(requiredProperties, builderKind);
+              createCalledMethodsForProperties(
+                  requiredProperties, allBuilderMethodNames, builderKind);
           t.getReceiverType().addAnnotation(newCalledMethodsAnno);
         }
       }
@@ -293,8 +301,9 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
       for (Tree member : autoValueClass.getMembers()) {
         if (member.getKind() == Tree.Kind.METHOD) {
           MethodTree methodTree = (MethodTree) member;
-          // should be an instance method
-          if (!methodTree.getModifiers().getFlags().contains(Modifier.STATIC)) {
+          // should be an abstract instance method
+          Set<Modifier> flags = methodTree.getModifiers().getFlags();
+          if (!flags.contains(Modifier.STATIC) && flags.contains(Modifier.ABSTRACT)) {
             String name = methodTree.getName().toString();
             if (!IGNORED_METHOD_NAMES.contains(name)
                 && !methodTree.getReturnType().toString().equals("void")) {
@@ -320,14 +329,17 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * corresponding setter method name in the Builder
      *
      * @param propertyNames the property names
+     * @param allBuilderMethodNames names of all methods in the builder class
      * @param builderKind the kind of builder
      * @return the @CalledMethods annotation
      */
     public AnnotationMirror createCalledMethodsForProperties(
-        final List<String> propertyNames, final BuilderKind builderKind) {
+        final List<String> propertyNames,
+        Set<String> allBuilderMethodNames,
+        final BuilderKind builderKind) {
       switch (builderKind) {
         case AUTO_VALUE:
-          return createCalledMethodsForAutoValueProperties(propertyNames);
+          return createCalledMethodsForAutoValueProperties(propertyNames, allBuilderMethodNames);
         case LOMBOK:
           return createCalledMethodsForLombokProperties(propertyNames);
         default:
@@ -340,10 +352,10 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
 
     private AnnotationMirror createCalledMethodsForAutoValueProperties(
-        final List<String> propertyNames) {
+        final List<String> propertyNames, Set<String> allBuilderMethodNames) {
       String[] calledMethodNames =
           propertyNames.stream()
-              .map((prop) -> "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1))
+              .map(prop -> autoValuePropToBuilderSetterName(prop, allBuilderMethodNames))
               .toArray(String[]::new);
       return createCalledMethods(calledMethodNames);
     }
@@ -463,6 +475,27 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     return enclosingClass.getModifiers().getAnnotations().stream()
         .map(TreeUtils::annotationFromAnnotationTree)
         .anyMatch(anm -> AnnotationUtils.areSameByClass(anm, annotClass));
+  }
+
+  private static String autoValuePropToBuilderSetterName(
+      String prop, Set<String> allBuilderMethodNames) {
+    // property name may be prefixed JavaBean style with 'get' or 'is'; strip that part if present
+    if (prop.startsWith("get") && Character.isUpperCase(prop.charAt(3))) {
+      prop = Introspector.decapitalize(prop.substring(3));
+    } else if (prop.startsWith("is") && Character.isUpperCase(prop.charAt(2))) {
+      prop = Introspector.decapitalize(prop.substring(2));
+    }
+    // setter name may be the property name itself, or prefixed by 'set'
+    if (allBuilderMethodNames.contains(prop)) {
+      return prop;
+    } else {
+      String setterName = "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1);
+      if (allBuilderMethodNames.contains(setterName)) {
+        return setterName;
+      } else {
+        throw new RuntimeException("could not find Builder setter name for property " + prop);
+      }
+    }
   }
 
   /** ignore java.lang.Object overrides and constructors in AutoValue classes */
