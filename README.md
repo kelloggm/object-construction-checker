@@ -32,3 +32,21 @@ Other build systems are unsupported.
 
 The checker includes a manifest file defining an annotation processor, meaning that `javac` will run it
 automatically if it is on your compile classpath (as long as no annotation processors are explicitly specified).
+
+## Supported annotations
+
+There are two annotations that you might want to write to specify a builder API:
+* `@CalledMethods(String[])` specifies that the given object (usually the receiver object) must have had
+methods with the names given in the string arguments called on it
+* `@CalledMethodsPredicate(String)` permits the programmer to specify the permitted method calls using
+Java boolean syntax. 
+
+For example, the annotation `@CalledMethodsPredicate("x and y or z")` means that
+an object must meet one of the following conditions to be assignable to that location:
+* both the `x()` and `y()` methods have been called on the object, or
+* the `z()` method has been called on the object
+
+The typechecker also supports (and depends on) the 
+[Returns Receiver Checker](github.com/msridhar/returnsrcvr-checker), which provides the
+`@This` annotation. `@This` on a method return type means that the method returns its receiver;
+this checker uses that information to persist sets of known method calls in fluent APIs.
