@@ -1,13 +1,8 @@
 package org.checkerframework.checker.builder;
 
 import com.google.auto.value.AutoValue;
-import com.sun.source.tree.AnnotationTree;
-import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.MethodTree;
-import com.sun.source.tree.Tree;
-import com.sun.source.tree.VariableTree;
 import java.beans.Introspector;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -17,7 +12,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import org.checkerframework.checker.builder.qual.CalledMethods;
@@ -188,38 +186,31 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
 
     @Override
     public Void visitExecutable(AnnotatedTypeMirror.AnnotatedExecutableType t, Void p) {
-      MethodTree methodTree = (MethodTree) declarationFromElement(t.getElement());
-      if (methodTree == null) {
+      ExecutableElement element = t.getElement();
+
+      String methodName = element.getSimpleName().toString();
+
+      Element enclosingElement = element.getEnclosingElement();
+
+      if (hasAnnotation(enclosingElement, AutoValue.class) && "toBuilder".equals(methodName)) {
+        handleAutoValueToBuilder(t, enclosingElement);
         return super.visitExecutable(t, p);
       }
 
-      String methodName = methodTree.getName().toString();
-      ClassTree enclosingClass = TreeUtils.enclosingClass(getPath(methodTree));
-
-      if (enclosingClass == null) {
-        return super.visitExecutable(t, p);
-      }
-
-      if (hasAnnotation(enclosingClass, AutoValue.class) && "toBuilder".equals(methodName)) {
-        handleAutoValueToBuilder(t, enclosingClass);
-        return super.visitExecutable(t, p);
-      }
-      ClassTree nextEnclosingClass =
-          TreeUtils.enclosingClass(getPath(enclosingClass).getParentPath());
-
-      if (nextEnclosingClass == null) {
+      Element nextEnclosingElement = enclosingElement.getEnclosingElement();
+      if (!nextEnclosingElement.getKind().isClass()) {
         return super.visitExecutable(t, p);
       }
 
       BuilderKind builderKind = BuilderKind.NONE;
 
-      if (hasAnnotation(enclosingClass, AutoValue.Builder.class)) {
+      if (hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
         builderKind = BuilderKind.AUTO_VALUE;
-        assert hasAnnotation(nextEnclosingClass, AutoValue.class)
-            : "class " + nextEnclosingClass.getSimpleName() + " is missing @AutoValue annotation";
+        assert hasAnnotation(nextEnclosingElement, AutoValue.class)
+            : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
 
-      } else if (hasAnnotation(enclosingClass, lombok.Generated.class)
-          && enclosingClass.getSimpleName().toString().endsWith("Builder")) {
+      } else if (hasAnnotation(enclosingElement, lombok.Generated.class)
+          && enclosingElement.getSimpleName().toString().endsWith("Builder")) {
         builderKind = BuilderKind.LOMBOK;
       }
 
@@ -227,10 +218,11 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
 
         if ("build".equals(methodName)) {
           // determine the required properties and add a corresponding @CalledMethods annotation
-          List<String> requiredProperties = getRequiredProperties(nextEnclosingClass, builderKind);
+          List<String> requiredProperties =
+              getRequiredProperties(nextEnclosingElement, builderKind);
           AnnotationMirror newCalledMethodsAnno =
               createCalledMethodsForProperties(
-                  requiredProperties, getAllMethodNames(enclosingClass), builderKind);
+                  requiredProperties, getAllMethodNames(enclosingElement), builderKind);
           t.getReceiverType().addAnnotation(newCalledMethodsAnno);
         }
       }
@@ -238,10 +230,10 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
       return super.visitExecutable(t, p);
     }
 
-    private Set<String> getAllMethodNames(ClassTree enclosingClass) {
-      return enclosingClass.getMembers().stream()
-          .filter(tr -> tr.getKind() == Tree.Kind.METHOD)
-          .map(tr -> ((MethodTree) tr).getName().toString())
+    private Set<String> getAllMethodNames(Element enclosingElement) {
+      return enclosingElement.getEnclosedElements().stream()
+          .filter(e -> e.getKind().equals(ElementKind.METHOD))
+          .map(e -> e.getSimpleName().toString())
           .collect(Collectors.toSet());
     }
 
@@ -250,36 +242,34 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * the required setters invoked. Add a CalledMethods annotation capturing this fact.
      *
      * @param t type of toBuilder method
-     * @param enclosingClass enclosing AutoValue class
+     * @param autoValueClassElement enclosing AutoValue class
      */
     private void handleAutoValueToBuilder(
-        AnnotatedTypeMirror.AnnotatedExecutableType t, ClassTree enclosingClass) {
+        AnnotatedTypeMirror.AnnotatedExecutableType t, Element autoValueClassElement) {
       AnnotatedTypeMirror returnType = t.getReturnType();
-      ClassTree builderClass =
-          (ClassTree)
-              declarationFromElement(TypesUtils.getTypeElement(returnType.getUnderlyingType()));
+      Element builderElement = TypesUtils.getTypeElement(returnType.getUnderlyingType());
       List<String> requiredProperties =
-          getRequiredProperties(enclosingClass, BuilderKind.AUTO_VALUE);
+          getRequiredProperties(autoValueClassElement, BuilderKind.AUTO_VALUE);
       AnnotationMirror calledMethodsAnno =
           createCalledMethodsForAutoValueProperties(
-              requiredProperties, getAllMethodNames(builderClass));
+              requiredProperties, getAllMethodNames(builderElement));
       returnType.addAnnotation(calledMethodsAnno);
     }
 
     /**
      * computes the required properties of a builder class
      *
-     * @param builderClass the class whose builder is to be checked
+     * @param builderElement the class whose builder is to be checked
      * @param builderKind the framework by which the builder will be generated
      * @return a list of required property names
      */
     private List<String> getRequiredProperties(
-        final ClassTree builderClass, final BuilderKind builderKind) {
+        final Element builderElement, final BuilderKind builderKind) {
       switch (builderKind) {
         case AUTO_VALUE:
-          return getAutoValueRequiredProperties(builderClass);
+          return getAutoValueRequiredProperties(builderElement);
         case LOMBOK:
-          return getLombokRequiredProperties(builderClass);
+          return getLombokRequiredProperties(builderElement);
         default:
           return Collections.emptyList();
       }
@@ -289,24 +279,22 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * computes the required properties of a @lombok.Builder class, i.e., the names of the fields
      * with @lombok.NonNull annotations
      *
-     * @param lombokClass the class with the @lombok.Builder annotation
+     * @param lombokClassElement the class with the @lombok.Builder annotation
      * @return a list of required property names
      */
-    private List<String> getLombokRequiredProperties(final ClassTree lombokClass) {
+    private List<String> getLombokRequiredProperties(final Element lombokClassElement) {
       List<String> requiredPropertyNames = new ArrayList<>();
       List<String> defaultedPropertyNames = new ArrayList<>();
-      for (Tree member : lombokClass.getMembers()) {
-        if (member.getKind() == Tree.Kind.VARIABLE) {
-          VariableTree fieldTree = (VariableTree) member;
-          for (AnnotationTree atree : fieldTree.getModifiers().getAnnotations()) {
-            AnnotationMirror anm = TreeUtils.annotationFromAnnotationTree(atree);
+      for (Element member : lombokClassElement.getEnclosedElements()) {
+        if (member.getKind().equals(ElementKind.FIELD)) {
+          // VariableTree fieldTree = (VariableTree) member;
+          for (AnnotationMirror anm : elements.getAllAnnotationMirrors(member)) {
             if (NONNULL_ANNOTATIONS.contains(AnnotationUtils.annotationName(anm))) {
-              requiredPropertyNames.add(fieldTree.getName().toString());
+              requiredPropertyNames.add(member.getSimpleName().toString());
             }
           }
-        } else if (member.getKind() == Tree.Kind.METHOD) {
-          MethodTree methodTree = (MethodTree) member;
-          String methodName = methodTree.getName().toString();
+        } else if (member.getKind().equals(ElementKind.METHOD)) {
+          String methodName = member.getSimpleName().toString();
           if (methodName.startsWith("$default$")) {
             String propName = methodName.substring(9); // $default$ has 9 characters
             defaultedPropertyNames.add(propName);
@@ -321,26 +309,25 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
      * computes the required properties of an @AutoValue class, i.e., those methods returning some
      * non-void, non-@Nullable type
      *
-     * @param autoValueClass the @AutoValue class
+     * @param autoValueClassElement the @AutoValue class
      * @return a list of required property names
      */
-    private List<String> getAutoValueRequiredProperties(final ClassTree autoValueClass) {
+    private List<String> getAutoValueRequiredProperties(final Element autoValueClassElement) {
       List<String> requiredPropertyNames = new ArrayList<>();
-      for (Tree member : autoValueClass.getMembers()) {
-        if (member.getKind() == Tree.Kind.METHOD) {
-          MethodTree methodTree = (MethodTree) member;
+      for (Element member : autoValueClassElement.getEnclosedElements()) {
+        if (member.getKind().equals(ElementKind.METHOD)) {
           // should be an abstract instance method
-          Set<Modifier> flags = methodTree.getModifiers().getFlags();
-          if (!flags.contains(Modifier.STATIC) && flags.contains(Modifier.ABSTRACT)) {
-            String name = methodTree.getName().toString();
+          Set<Modifier> modifiers = member.getModifiers();
+          if (!modifiers.contains(Modifier.STATIC) && modifiers.contains(Modifier.ABSTRACT)) {
+            String name = member.getSimpleName().toString();
             if (!IGNORED_METHOD_NAMES.contains(name)
-                && !methodTree.getReturnType().toString().equals("void")) {
+                && !((ExecutableElement) member).getReturnType().toString().equals("void")) {
               // shouldn't have a nullable return
-              List<? extends AnnotationTree> annotations =
-                  methodTree.getModifiers().getAnnotations();
               boolean hasNullable =
-                  annotations.stream()
-                      .map(TreeUtils::annotationFromAnnotationTree)
+                  Stream.concat(
+                          elements.getAllAnnotationMirrors(member).stream(),
+                          ((ExecutableElement) member)
+                              .getReturnType().getAnnotationMirrors().stream())
                       .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
               if (!hasNullable) {
                 requiredPropertyNames.add(name);
@@ -498,10 +485,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     return AnnotationUtils.getElementValueArray(anno, "value", String.class, true);
   }
 
-  private static boolean hasAnnotation(
-      ClassTree enclosingClass, Class<? extends Annotation> annotClass) {
-    return enclosingClass.getModifiers().getAnnotations().stream()
-        .map(TreeUtils::annotationFromAnnotationTree)
+  private boolean hasAnnotation(Element element, Class<? extends Annotation> annotClass) {
+    return elements.getAllAnnotationMirrors(element).stream()
         .anyMatch(anm -> AnnotationUtils.areSameByClass(anm, annotClass));
   }
 
