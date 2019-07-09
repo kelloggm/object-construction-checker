@@ -41,6 +41,7 @@ import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * The annotated type factory for the typesafe builder checker. Primarily responsible for the
@@ -191,12 +192,18 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
       if (methodTree == null) {
         return super.visitExecutable(t, p);
       }
+
+      String methodName = methodTree.getName().toString();
       ClassTree enclosingClass = TreeUtils.enclosingClass(getPath(methodTree));
 
       if (enclosingClass == null) {
         return super.visitExecutable(t, p);
       }
 
+      if (hasAnnotation(enclosingClass, AutoValue.class) && "toBuilder".equals(methodName)) {
+        handleAutoValueToBuilder(t, enclosingClass);
+        return super.visitExecutable(t, p);
+      }
       ClassTree nextEnclosingClass =
           TreeUtils.enclosingClass(getPath(enclosingClass).getParentPath());
 
@@ -217,25 +224,46 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
       }
 
       if (builderKind != BuilderKind.NONE) {
-        // get the name of the method
-        String methodName = methodTree.getName().toString();
 
         if ("build".equals(methodName)) {
           // determine the required properties and add a corresponding @CalledMethods annotation
-          Set<String> allBuilderMethodNames =
-              enclosingClass.getMembers().stream()
-                  .filter(tr -> tr.getKind() == Tree.Kind.METHOD)
-                  .map(tr -> ((MethodTree) tr).getName().toString())
-                  .collect(Collectors.toSet());
           List<String> requiredProperties = getRequiredProperties(nextEnclosingClass, builderKind);
           AnnotationMirror newCalledMethodsAnno =
               createCalledMethodsForProperties(
-                  requiredProperties, allBuilderMethodNames, builderKind);
+                  requiredProperties, getAllMethodNames(enclosingClass), builderKind);
           t.getReceiverType().addAnnotation(newCalledMethodsAnno);
         }
       }
 
       return super.visitExecutable(t, p);
+    }
+
+    private Set<String> getAllMethodNames(ClassTree enclosingClass) {
+      return enclosingClass.getMembers().stream()
+          .filter(tr -> tr.getKind() == Tree.Kind.METHOD)
+          .map(tr -> ((MethodTree) tr).getName().toString())
+          .collect(Collectors.toSet());
+    }
+
+    /**
+     * For an AutoValue toBuilder routine, we know that the returned Builder effectively has had all
+     * the required setters invoked. Add a CalledMethods annotation capturing this fact.
+     *
+     * @param t type of toBuilder method
+     * @param enclosingClass enclosing AutoValue class
+     */
+    private void handleAutoValueToBuilder(
+        AnnotatedTypeMirror.AnnotatedExecutableType t, ClassTree enclosingClass) {
+      AnnotatedTypeMirror returnType = t.getReturnType();
+      ClassTree builderClass =
+          (ClassTree)
+              declarationFromElement(TypesUtils.getTypeElement(returnType.getUnderlyingType()));
+      List<String> requiredProperties =
+          getRequiredProperties(enclosingClass, BuilderKind.AUTO_VALUE);
+      AnnotationMirror calledMethodsAnno =
+          createCalledMethodsForAutoValueProperties(
+              requiredProperties, getAllMethodNames(builderClass));
+      returnType.addAnnotation(calledMethodsAnno);
     }
 
     /**
@@ -500,7 +528,12 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
     }
   }
 
-  /** ignore java.lang.Object overrides and constructors in AutoValue classes */
+  /**
+   * Ignore java.lang.Object overrides, constructors, and toBuilder method in AutoValue classes.
+   *
+   * <p>Strictly speaking we should probably be checking return types, etc. here to handle strange
+   * overloads and other corner cases. They seem unlikely enough that we are skipping for now.
+   */
   private static final ImmutableSet<String> IGNORED_METHOD_NAMES =
-      ImmutableSet.of("equals", "hashCode", "toString", "<init>");
+      ImmutableSet.of("equals", "hashCode", "toString", "<init>", "toBuilder");
 }
