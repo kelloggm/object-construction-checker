@@ -32,8 +32,8 @@ dependencies {
     
     // For returns receiver checking. The first uses the master branch; the second
     // uses your local copy.
-    implementation 'com.github.msridhar:returnsrecv-checker:master-SNAPSHOT'
-    // implementation 'org.checkerframework:returnsrcvr-checker:0.1-SNAPSHOT'
+    // implementation 'com.github.msridhar:returnsrecv-checker:master-SNAPSHOT'
+    implementation 'org.checkerframework:returnsrcvr-checker:0.1-SNAPSHOT'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
