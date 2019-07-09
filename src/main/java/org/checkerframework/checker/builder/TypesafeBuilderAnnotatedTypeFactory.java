@@ -480,9 +480,11 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   private static String autoValuePropToBuilderSetterName(
       String prop, Set<String> allBuilderMethodNames) {
     // property name may be prefixed JavaBean style with 'get' or 'is'; strip that part if present
-    if (prop.startsWith("get") && Character.isUpperCase(prop.charAt(3))) {
+    if (prop.startsWith("get") && prop.length() > 3 && Character.isUpperCase(prop.charAt(3))) {
       prop = Introspector.decapitalize(prop.substring(3));
-    } else if (prop.startsWith("is") && Character.isUpperCase(prop.charAt(2))) {
+    } else if (prop.startsWith("is")
+        && prop.length() > 2
+        && Character.isUpperCase(prop.charAt(2))) {
       prop = Introspector.decapitalize(prop.substring(2));
     }
     // setter name may be the property name itself, or prefixed by 'set'
