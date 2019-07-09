@@ -515,17 +515,20 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         && Character.isUpperCase(prop.charAt(2))) {
       prop = Introspector.decapitalize(prop.substring(2));
     }
-    // setter name may be the property name itself, or prefixed by 'set'
-    if (allBuilderMethodNames.contains(prop)) {
-      return prop;
-    } else {
-      String setterName = "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1);
+    // setter name may be the property name itself, or prefixed by 'set' or 'is' or even 'get'
+    ImmutableSet<String> setterNamesToTry =
+        ImmutableSet.of(
+            prop, "set" + capitalize(prop), "is" + capitalize(prop), "get" + capitalize(prop));
+    for (String setterName : setterNamesToTry) {
       if (allBuilderMethodNames.contains(setterName)) {
         return setterName;
-      } else {
-        throw new RuntimeException("could not find Builder setter name for property " + prop);
       }
     }
+    throw new RuntimeException("could not find Builder setter name for property " + prop);
+  }
+
+  private static String capitalize(String prop) {
+    return prop.substring(0, 1).toUpperCase() + prop.substring(1);
   }
 
   /**
