@@ -492,25 +492,35 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
 
   private static String autoValuePropToBuilderSetterName(
       String prop, Set<String> allBuilderMethodNames) {
-    // property name may be prefixed JavaBean style with 'get' or 'is'; strip that part if present
+    // we have two cases, depending on whether AutoValue strips JavaBean-style prefixes 'get' and
+    // 'is'
+    Set<String> possiblePropNames = new LinkedHashSet<>();
+    possiblePropNames.add(prop);
     if (prop.startsWith("get") && prop.length() > 3 && Character.isUpperCase(prop.charAt(3))) {
-      prop = Introspector.decapitalize(prop.substring(3));
+      possiblePropNames.add(Introspector.decapitalize(prop.substring(3)));
     } else if (prop.startsWith("is")
         && prop.length() > 2
         && Character.isUpperCase(prop.charAt(2))) {
-      prop = Introspector.decapitalize(prop.substring(2));
+      possiblePropNames.add(Introspector.decapitalize(prop.substring(2)));
     }
-    // setter name may be the property name itself, or prefixed by 'set'
-    if (allBuilderMethodNames.contains(prop)) {
-      return prop;
-    } else {
-      String setterName = "set" + prop.substring(0, 1).toUpperCase() + prop.substring(1);
-      if (allBuilderMethodNames.contains(setterName)) {
-        return setterName;
-      } else {
-        throw new RuntimeException("could not find Builder setter name for property " + prop);
+
+    for (String propName : possiblePropNames) {
+      // in each case, the setter may be the property name itself, or prefixed by 'set'
+      ImmutableSet<String> setterNamesToTry =
+          ImmutableSet.of(propName, "set" + capitalize(propName));
+      for (String setterName : setterNamesToTry) {
+        if (allBuilderMethodNames.contains(setterName)) {
+          return setterName;
+        }
       }
     }
+
+    // nothing worked
+    throw new RuntimeException("could not find Builder setter name for property " + prop);
+  }
+
+  private static String capitalize(String prop) {
+    return prop.substring(0, 1).toUpperCase() + prop.substring(1);
   }
 
   /**
