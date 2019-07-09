@@ -7,7 +7,7 @@ import org.checkerframework.checker.nullness.qual.*;
  * https://github.com/google/auto/blob/master/value/userguide/builders.md
  */
 @AutoValue
-abstract class Animal {
+abstract class AnimalNoSet {
   abstract String name();
 
   abstract @Nullable String habitat();
@@ -19,49 +19,49 @@ abstract class Animal {
   }
 
   static Builder builder() {
-    return new AutoValue_Animal.Builder();
+    return new AutoValue_AnimalNoSet.Builder();
   }
 
   @AutoValue.Builder
   abstract static class Builder {
 
-    abstract Builder setName(String value);
+    abstract Builder name(String value);
 
-    abstract Builder setNumberOfLegs(int value);
+    abstract Builder numberOfLegs(int value);
 
-    abstract Builder setHabitat(String value);
+    abstract Builder habitat(String value);
 
-    abstract Animal build();
+    abstract AnimalNoSet build();
   }
 
   public static void buildSomethingWrong() {
     Builder b = builder();
-    b.setName("Frank");
+    b.name("Frank");
     // :: error: method.invocation.invalid
     b.build();
   }
 
   public static void buildSomethingRight() {
     Builder b = builder();
-    b.setName("Frank");
-    b.setNumberOfLegs(4);
+    b.name("Frank");
+    b.numberOfLegs(4);
     b.build();
   }
 
   public static void buildSomethingRightIncludeOptional() {
     Builder b = builder();
-    b.setName("Frank");
-    b.setNumberOfLegs(4);
-    b.setHabitat("jungle");
+    b.name("Frank");
+    b.numberOfLegs(4);
+    b.habitat("jungle");
     b.build();
   }
 
   public static void buildSomethingWrongFluent() {
     // :: error: method.invocation.invalid
-    builder().setName("Frank").build();
+    builder().name("Frank").build();
   }
 
   public static void buildSomethingRightFluent() {
-    builder().setName("Jim").setNumberOfLegs(7).build();
+    builder().name("Jim").numberOfLegs(7).build();
   }
 }
