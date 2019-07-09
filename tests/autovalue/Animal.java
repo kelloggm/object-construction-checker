@@ -18,6 +18,8 @@ abstract class Animal {
     return "str";
   }
 
+  public abstract Builder toBuilder();
+
   static Builder builder() {
     return new AutoValue_Animal.Builder();
   }
@@ -63,5 +65,10 @@ abstract class Animal {
 
   public static void buildSomethingRightFluent() {
     builder().setName("Jim").setNumberOfLegs(7).build();
+  }
+
+  public static void buildWithToBuilder() {
+    Animal a1 = builder().setName("Jim").setNumberOfLegs(7).build();
+    a1.toBuilder().build();
   }
 }
