@@ -18,8 +18,7 @@ abstract class Animal {
     return "str";
   }
 
-  // TEMPORARY will fix in follow-up PR
-  //public abstract Builder toBuilder();
+  public abstract Builder toBuilder();
 
   static Builder builder() {
     return new AutoValue_Animal.Builder();
@@ -68,9 +67,8 @@ abstract class Animal {
     builder().setName("Jim").setNumberOfLegs(7).build();
   }
 
-  // TEMPORARY will fix in follow-up PR
-//  public static void buildWithToBuilder() {
-//    Animal a1 = builder().setName("Jim").setNumberOfLegs(7).build();
-//    a1.toBuilder().build();
-//  }
+  public static void buildWithToBuilder() {
+    Animal a1 = builder().setName("Jim").setNumberOfLegs(7).build();
+    a1.toBuilder().build();
+  }
 }
