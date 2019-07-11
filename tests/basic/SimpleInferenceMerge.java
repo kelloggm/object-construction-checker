@@ -2,7 +2,7 @@ import org.checkerframework.checker.builder.qual.*;
 
 /* The simplest inference test case Martin could think of */
 class SimpleInferenceMerge {
-    void build(@CalledMethods({"a, b"}) SimpleInferenceMerge this) { }
+    void build(@CalledMethods({"a", "b"}) SimpleInferenceMerge this) { }
 
     void a() { }
 
