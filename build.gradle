@@ -63,14 +63,36 @@ tasks.withType(JavaCompile).all {
     options.compilerArgs.add("-Xlint:all")
 }
 
+def tsbcVersion = '0.1-SNAPSHOT'
+
+task qualJar(type: Jar) {
+    baseName 'typesafe-builder-qual'
+    from (sourceSets.main.output) {
+        include "**/qual/**"
+    }
+}
+
 publishing {
     publications {
-        maven(MavenPublication) {
+        checker(MavenPublication) {
             groupId = 'org.checkerframework'
             artifactId = 'typesafe-builder'
-            version = '0.1-SNAPSHOT'
+            version = "${tsbcVersion}"
 
             from components.java
+        }
+
+        qual(MavenPublication) {
+            groupId = 'org.checkerframework'
+            artifactId = 'typesafe-builder-qual'
+            version = "${tsbcVersion}"
+            artifact qualJar
+            pom.withXml {
+                def depNode = asNode().appendNode("dependencies").appendNode("dependency")
+                depNode.appendNode("groupId", "org.checkerframework")
+                depNode.appendNode("artifactId", "returnsrcvr-qual")
+                depNode.appendNode("version", "0.1-SNAPSHOT")
+            }
         }
     }
 }
