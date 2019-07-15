@@ -16,6 +16,7 @@ This repository contains a typechecker that extends the Java type system to catc
 compile-time, even when they are constructed via the builder pattern. The checker has built-in support
 for Lombok- and AutoValue-generated builders, and programmers can write specifications on their own
 builders to indicate which arguments are legal.
+For more detailed instructions on using the checker with Lombok builders, see `README-LOMBOK.md`.
 
 ## Using the checker
 
