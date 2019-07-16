@@ -217,7 +217,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
       TypeMirror superclass = enclosingElement.getSuperclass();
 
       if ("toBuilder".equals(methodName)) {
-        if (hasAnnotation(enclosingElement, AutoValue.class)) {
+        if (hasAnnotation(enclosingElement, AutoValue.class)
+            && element.getModifiers().contains(Modifier.ABSTRACT)) {
           handleAutoValueToBuilder(t, enclosingElement);
           return super.visitExecutable(t, p);
         }
