@@ -252,11 +252,12 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
 
         if ("build".equals(methodName)) {
           // determine the required properties and add a corresponding @CalledMethods annotation
+          Set<String> allBuilderMethodNames = getAllMethodNames(enclosingElement);
           List<String> requiredProperties =
-              getRequiredProperties(nextEnclosingElement, builderKind);
+              getRequiredProperties(nextEnclosingElement, allBuilderMethodNames, builderKind);
           AnnotationMirror newCalledMethodsAnno =
               createCalledMethodsForProperties(
-                  requiredProperties, getAllMethodNames(enclosingElement), builderKind);
+                  requiredProperties, allBuilderMethodNames, builderKind);
           t.getReceiverType().addAnnotation(newCalledMethodsAnno);
         }
       }
@@ -296,11 +297,11 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   private void handleAutoValueToBuilderType(
       AnnotatedTypeMirror type, Element autoValueClassElement) {
     Element builderElement = TypesUtils.getTypeElement(type.getUnderlyingType());
+    Set<String> allBuilderMethodNames = getAllMethodNames(builderElement);
     List<String> requiredProperties =
-        getRequiredProperties(autoValueClassElement, BuilderKind.AUTO_VALUE);
+        getRequiredProperties(autoValueClassElement, allBuilderMethodNames, BuilderKind.AUTO_VALUE);
     AnnotationMirror calledMethodsAnno =
-        createCalledMethodsForAutoValueProperties(
-            requiredProperties, getAllMethodNames(builderElement));
+        createCalledMethodsForAutoValueProperties(requiredProperties, allBuilderMethodNames);
     type.replaceAnnotation(calledMethodsAnno);
   }
 
@@ -308,14 +309,17 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
    * computes the required properties of a builder class
    *
    * @param builderElement the class whose builder is to be checked
+   * @param allBuilderMethodNames
    * @param builderKind the framework by which the builder will be generated
    * @return a list of required property names
    */
   private List<String> getRequiredProperties(
-      final Element builderElement, final BuilderKind builderKind) {
+      final Element builderElement,
+      Set<String> allBuilderMethodNames,
+      final BuilderKind builderKind) {
     switch (builderKind) {
       case AUTO_VALUE:
-        return getAutoValueRequiredProperties(builderElement);
+        return getAutoValueRequiredProperties(builderElement, allBuilderMethodNames);
       case LOMBOK:
         return getLombokRequiredProperties(builderElement);
       default:
@@ -358,9 +362,11 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
    * non-void, non-@Nullable type
    *
    * @param autoValueClassElement the @AutoValue class
+   * @param allBuilderMethodNames
    * @return a list of required property names
    */
-  private List<String> getAutoValueRequiredProperties(final Element autoValueClassElement) {
+  private List<String> getAutoValueRequiredProperties(
+      final Element autoValueClassElement, Set<String> allBuilderMethodNames) {
     List<String> requiredPropertyNames = new ArrayList<>();
     for (Element member : autoValueClassElement.getEnclosedElements()) {
       if (member.getKind().equals(ElementKind.METHOD)) {
@@ -368,8 +374,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         Set<Modifier> modifiers = member.getModifiers();
         if (!modifiers.contains(Modifier.STATIC) && modifiers.contains(Modifier.ABSTRACT)) {
           String name = member.getSimpleName().toString();
-          if (!IGNORED_METHOD_NAMES.contains(name)
-              && !((ExecutableElement) member).getReturnType().toString().equals("void")) {
+          String returnType = ((ExecutableElement) member).getReturnType().toString();
+          if (!IGNORED_METHOD_NAMES.contains(name) && !returnType.equals("void")) {
             // shouldn't have a nullable return
             boolean hasNullable =
                 Stream.concat(
@@ -377,9 +383,16 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
                         ((ExecutableElement) member)
                             .getReturnType().getAnnotationMirrors().stream())
                     .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
-            if (!hasNullable) {
-              requiredPropertyNames.add(name);
+            if (hasNullable) {
+              continue;
             }
+            // if return type of foo() is a Guava Immutable type, not required if there is a builder
+            // method fooBuilder()
+            if (returnType.startsWith("com.google.common.collect.Immutable")
+                && allBuilderMethodNames.contains(name + "Builder")) {
+              continue;
+            }
+            requiredPropertyNames.add(name);
           }
         }
       }
