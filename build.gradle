@@ -48,6 +48,7 @@ dependencies {
     implementation 'com.google.auto.value:auto-value-annotations:1.6.5'
     testCompile 'com.google.auto.value:auto-value-annotations:1.6.5'
     testCompile 'com.google.auto.value:auto-value:1.6.5'
+    testCompile 'com.google.guava:guava:28.0-jre'
 
     // For Lombok Builders
     implementation 'org.projectlombok:lombok:1.18.8'
