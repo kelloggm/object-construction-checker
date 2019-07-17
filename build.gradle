@@ -52,6 +52,7 @@ dependencies {
 
     // For Lombok Builders
     implementation 'org.projectlombok:lombok:1.18.8'
+    testCompile files('tests/lombok-bytecode-test/foo.jar')
 }
 
 dependencyManagement {
