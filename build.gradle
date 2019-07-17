@@ -23,6 +23,10 @@ repositories {
 
 sourceCompatibility = 1.8
 
+configurations {
+    lombok
+}
+
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation 'org.checkerframework:checker:2.9.0'
@@ -51,7 +55,8 @@ dependencies {
     testCompile 'com.google.guava:guava:28.0-jre'
 
     // For Lombok Builders
-    implementation 'org.projectlombok:lombok:1.18.8'
+    lombok 'org.projectlombok:lombok:1.18.8'
+    implementation configurations.lombok.dependencies
     testCompile files('tests/lombok-bytecode-test/foo.jar')
 }
 
@@ -99,6 +104,16 @@ publishing {
     }
 }
 
+task buildFooJar(type: Exec) {
+    workingDir 'tests/lombok-bytecode-test'
+
+    commandLine './build-jar.sh', "${configurations.lombok.asPath}"
+}
+
+test {
+    dependsOn buildFooJar
+}
+
 // run google java format
 spotless {
     // uncomment this line to temporarily disable spotless (i.e. when debugging)
@@ -106,4 +121,9 @@ spotless {
     java {
         googleJavaFormat()
     }
+}
+
+clean.doFirst {
+    delete "${rootDir}/tests/build/"
+    delete "${rootDir}/tests/lombok-bytecode-test/foo.jar"
 }
