@@ -153,9 +153,12 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
 
         // Fetch the current type of the receiver, or top if none exists
         ExpressionTree receiverTree = TreeUtils.getReceiverTree(tree.getMethodSelect());
-        AnnotatedTypeMirror receiverType = getAnnotatedType(receiverTree);
-        AnnotationMirror receiverAnno = receiverType.getAnnotationInHierarchy(TOP);
-        if (receiverAnno == null) {
+        AnnotatedTypeMirror receiverType;
+        AnnotationMirror receiverAnno;
+
+        if (receiverTree != null && (receiverType = getAnnotatedType(receiverTree)) != null) {
+          receiverAnno = receiverType.getAnnotationInHierarchy(TOP);
+        } else {
           receiverAnno = TOP;
         }
 
