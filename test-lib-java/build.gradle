@@ -1,0 +1,10 @@
+plugins {
+    id "java"
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.8'
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
+}
+
+sourceCompatibility = 1.8
