@@ -247,7 +247,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         assert hasAnnotation(nextEnclosingElement, AutoValue.class)
             : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
 
-      } else if (hasAnnotation(enclosingElement, "@lombok.Generated")
+      } else if (hasAnnotation(enclosingElement, "lombok.Generated")
           && enclosingElement.getSimpleName().toString().endsWith("Builder")) {
         builderKind = BuilderKind.LOMBOK;
       }
@@ -556,11 +556,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
 
   private boolean hasAnnotation(Element element, String annotName) {
     return element.getAnnotationMirrors().stream()
-            .map(anm -> anm.toString())
-            .filter(aName -> aName.equals(annotName))
-            .collect(Collectors.toList())
-            .size()
-        != 0;
+        .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
   }
 
   private static String autoValuePropToBuilderSetterName(
