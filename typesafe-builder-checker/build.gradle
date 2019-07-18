@@ -43,7 +43,7 @@ dependencies {
     testCompile 'com.google.guava:guava:28.0-jre'
 
     // For Lombok Builders
-    implementation 'org.projectlombok:lombok:1.18.8'
+    testCompile 'org.projectlombok:lombok:1.18.8'
     testCompile project(':test-lib-java')
 }
 
