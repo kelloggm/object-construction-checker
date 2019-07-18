@@ -1,108 +1,17 @@
-plugins {
-    // Apply the java plugin to add support for Java
-    id 'java'
 
-    // For bringing in AWS dependencies. We're using the "legacy" version
-    // listed here: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-project-gradle.html,
-    // because the build fails when we use the Gradle 5+ way, saying that it can't find ec2.
-    // I believe that this is because we need the AWS SDK during testing, but not during the build.
-    id 'io.spring.dependency-management' version '1.0.7.RELEASE'
-
-    id 'maven-publish'
-
-    id "com.diffplug.gradle.spotless" version "3.23.0"
-}
-
-repositories {
-    // Use jcenter for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
-    mavenLocal()
-    maven { url 'https://jitpack.io' }
-}
-
-sourceCompatibility = 1.8
-
-dependencies {
-    // This dependency is found on compile classpath of this component and consumers.
-    implementation 'org.checkerframework:checker:2.9.0'
-
-    // For the @CalledMethodsPredicate evaluation
-    implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
-    
-    // For returns receiver checking. The first uses the master branch; the second
-    // uses your local copy.
-    implementation 'com.github.msridhar:returnsrecv-checker:master-SNAPSHOT'
-    // implementation 'org.checkerframework:returnsrcvr-checker:0.1-SNAPSHOT'
-
-    // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
-
-    // CF testing infrastructure
-    testCompile 'org.checkerframework:testlib:2.5.4'
-
-    // For CVE tests
-    testCompile 'com.amazonaws:aws-java-sdk-ec2'
-
-    // For AutoValue Builders
-    implementation 'com.google.auto.value:auto-value-annotations:1.6.5'
-    testCompile 'com.google.auto.value:auto-value-annotations:1.6.5'
-    testCompile 'com.google.auto.value:auto-value:1.6.5'
-    testCompile 'com.google.guava:guava:28.0-jre'
-
-    // For Lombok Builders
-    implementation 'org.projectlombok:lombok:1.18.8'
-}
-
-dependencyManagement {
-    imports {
-        mavenBom 'com.amazonaws:aws-java-sdk-bom:1.11.228'
+buildscript {
+    repositories {
+        // for spotless to load its dependencies
+        jcenter()
     }
 }
 
-tasks.withType(JavaCompile).all {
-    options.compilerArgs.add("-Xlint:all")
-}
-
-def tsbcVersion = '0.1-SNAPSHOT'
-
-task qualJar(type: Jar) {
-    baseName 'typesafe-builder-qual'
-    from (sourceSets.main.output) {
-        include "**/qual/**"
-    }
-}
-
-publishing {
-    publications {
-        checker(MavenPublication) {
-            groupId = 'org.checkerframework'
-            artifactId = 'typesafe-builder'
-            version = "${tsbcVersion}"
-
-            from components.java
-        }
-
-        qual(MavenPublication) {
-            groupId = 'org.checkerframework'
-            artifactId = 'typesafe-builder-qual'
-            version = "${tsbcVersion}"
-            artifact qualJar
-            pom.withXml {
-                def depNode = asNode().appendNode("dependencies").appendNode("dependency")
-                depNode.appendNode("groupId", "org.checkerframework")
-                depNode.appendNode("artifactId", "returnsrcvr-qual")
-                depNode.appendNode("version", "0.1-SNAPSHOT")
-            }
-        }
-    }
-}
-
-// run google java format
-spotless {
-    // uncomment this line to temporarily disable spotless (i.e. when debugging)
-    // enforceCheck = false
-    java {
-        googleJavaFormat()
+subprojects { project ->
+    repositories {
+        // Use jcenter for resolving your dependencies.
+        // You can declare any Maven/Ivy/file repository here.
+        jcenter()
+        mavenLocal()
+        maven { url 'https://jitpack.io' }
     }
 }
