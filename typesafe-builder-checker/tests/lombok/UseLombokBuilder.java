@@ -1,7 +1,7 @@
 // tests that using a lombok builder from an external jar incorrectly
 // still produces an error
 
-import testlib.Foo;
+import testlib.lombok.Foo;
 
 class UseLombokBuilder {
     void test() {

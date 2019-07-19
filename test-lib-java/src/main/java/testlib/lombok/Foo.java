@@ -1,4 +1,4 @@
-package testlib;
+package testlib.lombok;
 
 import lombok.Builder;
 import lombok.NonNull;
