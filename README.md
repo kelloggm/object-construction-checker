@@ -61,7 +61,7 @@ Then the receiver for any call to build() must have had `setX` and `setY` called
 </dd>permits the
 programmer to specify the permitted method calls using Java boolean syntax. 
 
-For example, the annotation `@CalledMethodsPredicate("x and y or z")` on a type represents
+For example, the annotation `@CalledMethodsPredicate("x && y || z")` on a type represents
 objects such that:
 * both the `x()` and `y()` methods have been called on the object, **or**
 * the `z()` method has been called on the object.
