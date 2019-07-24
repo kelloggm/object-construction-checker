@@ -18,9 +18,7 @@ git clone https://github.com/mernst/returnsrecv-checker.git
 (cd returnsrecv-checker && ./gradlew build && ./gradlew publishToMavenLocal)
 ```
 
-The remaining steps concern edits to your `build.gradle` file:
-
-2. Add the [org.checkerframework](https://plugins.gradle.org/plugin/org.checkerframework) Gradle plugin to your `plugins` block:
+2. Add the [org.checkerframework](https://plugins.gradle.org/plugin/org.checkerframework) Gradle plugin to the `plugins` block of your `build.gradle` file:
 
 ```groovy
 plugins {
@@ -29,30 +27,24 @@ plugins {
 }
 ```
 
-3. Add a `checkerFramework` block to run the Typesafe Builder Checker:
+3. Add the following to your `build.gradle` file:
 
-```groovy
+```
+repositories {
+    mavenLocal()
+}
 checkerFramework {
- 	checkers = ['org.checkerframework.checker.builder.TypesafeBuilderChecker']
+    checkers = ['org.checkerframework.checker.builder.TypesafeBuilderChecker']
+extraJavacArgs = [
+    '-AsuppressWarnings=type.anno.before',
+  ]
 }
-```
-
-4. Add a compile-time-only `checkerFramework` dependency to your `dependencies` block:
-
-```groovy
 dependencies {
-        checkerFramework 'org.checkerframework:typesafe-builder:0.1-SNAPSHOT'
+    checkerFramework 'org.checkerframework:typesafe-builder:0.1-SNAPSHOT'
+    implementation 'org.checkerframework:typesafe-builder-qual:0.1-SNAPSHOT'
 }
 ```
 
-5. Add an `implementation` dependency on the annotations, such as `@CalledMethods`.
-(The checker places annotations in your code during compilation, so the annotations must be on the compile classpath.)
 
-```groovy
-dependencies {
-	implementation 'org.checkerframework:typesafe-builder-qual:0.1-SNAPSHOT'
-}
-```
-
-Once this is done, building your program will run the checker and alert you at compile time if any required properties might not be set.
+After these three steps, building your program will run the checker and alert you at compile time if any required properties might not be set.
 
