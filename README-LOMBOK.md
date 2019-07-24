@@ -13,9 +13,9 @@ What to do:
 Build the Object Construction Checker:
 ```
 git clone https://github.com/kelloggm/typesafe-builder-checker.git
-./gradlew -p typesafe-builder-checker build publishToMavenLocal
+(cd typesafe-builder-checker && ./gradlew build && ./gradlew publishToMavenLocal)
 git clone https://github.com/mernst/returnsrecv-checker.git
-./gradlew -p returnsrecv-checker build publishToMavenLocal
+(cd returnsrecv-checker && ./gradlew build && ./gradlew publishToMavenLocal)
 ```
 
 The remaining steps concern edits to your `build.gradle` file:
