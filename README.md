@@ -1,9 +1,17 @@
 # Object Construction Checker
 
-The builder pattern is a flexible and readable, but error-prone, way to construct objects.
-For example, failing to provide a required argument is a run-time error that manifests during testing or in the field, instead of at compile-time as for regular Java constructors.
+The builder pattern is a flexible and readable, but error-prone, way to
+construct objects.  For example, failing to provide a required argument is
+a run-time error that manifests during testing or in the field, instead of
+at compile-time as for regular Java constructors.
 
-The Object Construction Checker verifies at compile time that your code correctly uses the builder pattern, never omitting a required argument.  The checker has built-in support for [Lombok](https://projectlombok.org/) and [AutoValue](https://github.com/google/auto/blob/master/value/userguide/index.md).  Programmers can extend it to other builders by writing method specifications.
+The Object Construction Checker verifies at compile time that your code
+correctly uses the builder pattern, never omitting a required argument.
+The checker has built-in support for [Lombok](https://projectlombok.org/)
+and
+[AutoValue](https://github.com/google/auto/blob/master/value/userguide/index.md).
+Programmers can extend it to other builders by writing method
+specifications.
 
 
 ## Using the checker with Lombok
@@ -58,6 +66,7 @@ objects such that:
 * both the `x()` and `y()` methods have been called on the object, **or**
 * the `z()` method has been called on the object.
 </dd>
+</dl>
 
 The typechecker also supports (and depends on) the 
 [Returns Receiver Checker](https://github.com/msridhar/returnsrecv-checker), which provides the
