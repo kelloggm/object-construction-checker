@@ -129,6 +129,21 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   }
 
   /**
+   * Returns whether the return type of the given method invocation tree has an @This annotation
+   * from the Returns Receiver Checker.
+   *
+   * <p>Package-private to permit calls from TypesafeBuilderTransfer.
+   */
+  boolean returnsThis(final MethodInvocationTree tree) {
+    ReturnsRcvrAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
+    ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
+    AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
+    AnnotatedTypeMirror rrType =
+        ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
+    return rrType != null && rrType.hasAnnotation(This.class);
+  }
+
+  /**
    * This tree annotator is needed to create types for fluent builders that have @This annotations.
    */
   private class TypesafeBuilderTreeAnnotator extends TreeAnnotator {
@@ -142,14 +157,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
 
       // Check to see if the ReturnsReceiver Checker has a @This annotation
       // on the return type of the method
-
-      ReturnsRcvrAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
-      ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
-      AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
-      AnnotatedTypeMirror rrType =
-          ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
-
-      if (rrType != null && rrType.hasAnnotation(This.class)) {
+      if (returnsThis(tree)) {
 
         // Fetch the current type of the receiver, or top if none exists
         ExpressionTree receiverTree = TreeUtils.getReceiverTree(tree.getMethodSelect());
