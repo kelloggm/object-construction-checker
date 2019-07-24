@@ -48,7 +48,7 @@ The two most relevant annotations are:
 <dd>specifies that a value must have had all the given methods called on it.
 (Other methods might also have been called.)
 
-Suppose you have a method `build` annotated as
+Suppose that method `build` is annotated as
 ```
 class MyBuilder {
   MyObject build(@CalledMethods({"setX", "setY"}) MyBuilder this) { ... }
