@@ -11,7 +11,8 @@ import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.springframework.expression.spel.SpelParseException;
 
-public class ObjectConstructionVisitor extends BaseTypeVisitor<ObjectConstructionAnnotatedTypeFactory> {
+public class ObjectConstructionVisitor
+    extends BaseTypeVisitor<ObjectConstructionAnnotatedTypeFactory> {
   /** @param checker the type-checker associated with this visitor */
   public ObjectConstructionVisitor(final BaseTypeChecker checker) {
     super(checker);
