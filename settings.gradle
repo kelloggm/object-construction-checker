@@ -8,3 +8,6 @@
  */
 
 rootProject.name = 'typesafe-builder-checker'
+
+include ':typesafe-builder-checker'
+include ':test-lib-java'
