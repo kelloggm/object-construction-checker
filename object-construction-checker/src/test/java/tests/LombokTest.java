@@ -24,18 +24,19 @@ import org.junit.runners.Parameterized.Parameters;
  * <p>This test runner depends on the Checker Framework's testing library, which is found in the
  * Maven artifact org.checkerframework:testlib.
  */
-public class BasicTest extends CheckerFrameworkPerDirectoryTest {
-  public BasicTest(List<File> testFiles) {
+public class LombokTest extends CheckerFrameworkPerDirectoryTest {
+  public LombokTest(List<File> testFiles) {
     super(
         testFiles,
-        org.checkerframework.checker.builder.TypesafeBuilderChecker.class,
-        "basic",
+        org.checkerframework.checker.builder.ObjectConstructionChecker.class,
+        "lombok",
         "-Anomsgtext",
-        "-nowarn");
+        "-nowarn",
+        "-AsuppressWarnings=type.anno.before.modifier");
   }
 
   @Parameters
   public static String[] getTestDirs() {
-    return new String[] {"basic"};
+    return new String[] {"lombok"};
   }
 }

@@ -18,12 +18,12 @@ public class AutoValueTest extends CheckerFrameworkPerDirectoryTest {
           "com.google.auto.value.processor.AutoOneOfProcessor",
           "com.google.auto.value.processor.AutoValueBuilderProcessor",
           "com.google.auto.value.processor.AutoValueProcessor",
-          org.checkerframework.checker.builder.TypesafeBuilderChecker.class.getName());
+          org.checkerframework.checker.builder.ObjectConstructionChecker.class.getName());
 
   public AutoValueTest(List<File> testFiles) {
     super(
         testFiles,
-        org.checkerframework.checker.builder.TypesafeBuilderChecker.class,
+        org.checkerframework.checker.builder.ObjectConstructionChecker.class,
         "autovalue",
         "-Anomsgtext",
         "-nowarn");

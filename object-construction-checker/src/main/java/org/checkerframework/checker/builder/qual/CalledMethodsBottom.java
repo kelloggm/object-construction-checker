@@ -9,7 +9,7 @@ import org.checkerframework.framework.qual.TargetLocations;
 import org.checkerframework.framework.qual.TypeUseLocation;
 
 /**
- * The bottom type for the CalledMethods type system, a part of the typesafe builder checker.
+ * The bottom type for the CalledMethods type system, a part of the object construction checker.
  *
  * <p>It should rarely be written by a programmer.
  */

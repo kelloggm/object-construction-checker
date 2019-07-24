@@ -6,12 +6,12 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.source.SuppressWarningsKeys;
 
 /**
- * The primary typechecker for the typesafe builder checker, which allows programmers to specify
+ * The primary typechecker for the object construction checker, which allows programmers to specify
  * unsafe combinations of options to builder or builder-like interfaces and prevent dangerous
  * objects from being instantiated.
  */
-@SuppressWarningsKeys({"builder", "typesafe.builder"})
-public class TypesafeBuilderChecker extends BaseTypeChecker {
+@SuppressWarningsKeys({"builder", "object.construction", "objectconstruction"})
+public class ObjectConstructionChecker extends BaseTypeChecker {
 
   @Override
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {

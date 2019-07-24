@@ -46,10 +46,10 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
- * The annotated type factory for the typesafe builder checker. Primarily responsible for the
+ * The annotated type factory for the object construction checker. Primarily responsible for the
  * subtyping rules between @CalledMethod annotations.
  */
-public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
+public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /**
    * Canonical copies of the top and bottom annotations. Package private to permit access from the
@@ -88,7 +88,7 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   }
 
   /** Default constructor matching super. Should be called automatically. */
-  public TypesafeBuilderAnnotatedTypeFactory(final BaseTypeChecker checker) {
+  public ObjectConstructionAnnotatedTypeFactory(final BaseTypeChecker checker) {
     super(checker);
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
@@ -109,19 +109,19 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   @Override
   public TreeAnnotator createTreeAnnotator() {
     return new ListTreeAnnotator(
-        super.createTreeAnnotator(), new TypesafeBuilderTreeAnnotator(this));
+        super.createTreeAnnotator(), new ObjectConstructionTreeAnnotator(this));
   }
 
   @Override
   protected TypeAnnotator createTypeAnnotator() {
     return new ListTypeAnnotator(
-        super.createTypeAnnotator(), new TypesafeBuilderTypeAnnotator(this));
+        super.createTypeAnnotator(), new ObjectConstructionTypeAnnotator(this));
   }
 
   @Override
   public QualifierHierarchy createQualifierHierarchy(
       final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
-    return new TypesafeBuilderQualifierHierarchy(factory);
+    return new ObjectConstructionQualifierHierarchy(factory);
   }
 
   private ReturnsRcvrAnnotatedTypeFactory getReturnsRcvrAnnotatedTypeFactory() {
@@ -131,8 +131,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
   /**
    * This tree annotator is needed to create types for fluent builders that have @This annotations.
    */
-  private class TypesafeBuilderTreeAnnotator extends TreeAnnotator {
-    public TypesafeBuilderTreeAnnotator(final AnnotatedTypeFactory atypeFactory) {
+  private class ObjectConstructionTreeAnnotator extends TreeAnnotator {
+    public ObjectConstructionTreeAnnotator(final AnnotatedTypeFactory atypeFactory) {
       super(atypeFactory);
     }
 
@@ -204,9 +204,9 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
    * adds @CalledMethod annotations for build() methods of AutoValue and Lombok Builders to ensure
    * required properties have been set
    */
-  private class TypesafeBuilderTypeAnnotator extends TypeAnnotator {
+  private class ObjectConstructionTypeAnnotator extends TypeAnnotator {
 
-    public TypesafeBuilderTypeAnnotator(AnnotatedTypeFactory atypeFactory) {
+    public ObjectConstructionTypeAnnotator(AnnotatedTypeFactory atypeFactory) {
       super(atypeFactory);
     }
 
@@ -444,8 +444,8 @@ public class TypesafeBuilderAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
    * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
    * declaratively defined subtyping relationships, like our @CalledMethods annotation.
    */
-  private class TypesafeBuilderQualifierHierarchy extends MultiGraphQualifierHierarchy {
-    public TypesafeBuilderQualifierHierarchy(
+  private class ObjectConstructionQualifierHierarchy extends MultiGraphQualifierHierarchy {
+    public ObjectConstructionQualifierHierarchy(
         final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
       super(factory);
     }

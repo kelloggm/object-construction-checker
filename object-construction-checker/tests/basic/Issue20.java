@@ -1,4 +1,4 @@
-// test case for issue 20: https://github.com/kelloggm/typesafe-builder-checker/issues/20
+// test case for issue 20: https://github.com/kelloggm/object-construction-checker/issues/20
 
 import java.util.Map;
 

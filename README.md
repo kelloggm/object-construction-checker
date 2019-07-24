@@ -27,7 +27,7 @@ from your shell:
 ./gradlew publishToMavenLocal
 ```
 
-Then, add a Maven/Gradle dependency to your project on `org.checkerframework:typesafe-builder:0.1-SNAPSHOT`.
+Then, add a Maven/Gradle dependency to your project on `org.checkerframework:object-construction:0.1-SNAPSHOT`.
 Other build systems are unsupported.
 
 The checker includes a manifest file defining an annotation processor, meaning that `javac` will run it
