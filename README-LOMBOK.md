@@ -47,4 +47,3 @@ dependencies {
 
 
 After these three steps, building your program will run the checker and alert you at compile time if any required properties might not be set.
-
