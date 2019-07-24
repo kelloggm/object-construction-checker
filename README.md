@@ -40,18 +40,24 @@ The two most relevant annotations are:
 <dd>specifies that a value must have had all the given methods called on it.
 (Other methods might also have been called.)
 
-Suppose you have a method annotated as
-```MyObject build(@CalledMethods({"setX", "setY"}) MyBuilder this) { ... }```
+Suppose you have a method `build` annotated as
+```
+class MyBuilder {
+  MyObject build(@CalledMethods({"setX", "setY"}) MyBuilder this) { ... }
+}
+```
 Then the receiver for any call to build() must have had `setX` and `setY` called on it.
 </dd>
 
-<dt>`@CalledMethodsPredicate(<em>logical-expression</em>)` permits the
+<dt>`@CalledMethodsPredicate(<em>logical-expression</em>)`</dt>
+</dd>permits the
 programmer to specify the permitted method calls using Java boolean syntax. 
 
 For example, the annotation `@CalledMethodsPredicate("x and y or z")` on a type represents
 objects such that:
 * both the `x()` and `y()` methods have been called on the object, **or**
 * the `z()` method has been called on the object.
+</dd>
 
 The typechecker also supports (and depends on) the 
 [Returns Receiver Checker](https://github.com/msridhar/returnsrecv-checker), which provides the
