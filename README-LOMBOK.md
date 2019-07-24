@@ -31,7 +31,7 @@ plugins {
 
 3. Add the following to your `build.gradle` file:
 
-```
+```groovy
 repositories {
     mavenLocal()
 }
