@@ -1,5 +1,7 @@
 package org.checkerframework.checker.builder;
 
+import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.Tree;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,15 +66,42 @@ public class TypesafeBuilderTransfer extends CFTransfer {
 
     AnnotationMirror newType = atypefactory.createCalledMethods(newList.toArray(new String[0]));
 
-    Receiver receiverReceiver = FlowExpressions.internalReprOf(atypefactory, receiver);
-
     // For some reason, visitMethodInvocation returns a conditional store. I think this is to
     // support conditional post-condition annotations, based on the comments in CFAbstractTransfer.
     CFStore thenStore = result.getThenStore();
     CFStore elseStore = result.getElseStore();
 
-    thenStore.insertValue(receiverReceiver, newType);
-    elseStore.insertValue(receiverReceiver, newType);
+    while (receiver != null) {
+      // Insert the new type computed previously as the type of the receiver.
+      Receiver receiverReceiver = FlowExpressions.internalReprOf(atypefactory, receiver);
+      thenStore.insertValue(receiverReceiver, newType);
+      elseStore.insertValue(receiverReceiver, newType);
+
+      Tree receiverTree = receiver.getTree();
+
+      // Possibly recurse: if the receiver is itself a method call,
+      // then we need to also propagate this new information to its receiver
+      // if the method being called has an @This return type.
+      //
+      // Note that we must check for null, because the tree could be
+      // implicit (when calling an instance method on the class itself).
+      // In that case, do not attempt to refine either - the receiver is
+      // not a method invocation, anyway.
+      if (receiverTree == null || receiverTree.getKind() != Tree.Kind.METHOD_INVOCATION) {
+        // Do not continue, because the receiver isn't a method invocation itself. The
+        // end of the chain of calls has been reached.
+        break;
+      }
+
+      MethodInvocationTree receiverAsMethodInvocation = (MethodInvocationTree) receiver.getTree();
+
+      if (atypefactory.returnsThis(receiverAsMethodInvocation)) {
+        receiver = ((MethodInvocationNode) receiver).getTarget().getReceiver();
+      } else {
+        // Do not continue, because the method does not return @This.
+        break;
+      }
+    }
 
     return result;
   }

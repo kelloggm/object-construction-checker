@@ -71,4 +71,10 @@ abstract class Animal {
     Animal a1 = builder().setName("Jim").setNumberOfLegs(7).build();
     a1.toBuilder().build();
   }
+
+  public static void buildSomethingRightFluentWithLocal() {
+    Builder b = builder();
+    b.setName("Jim").setNumberOfLegs(7);
+    b.build();
+  }
 }
