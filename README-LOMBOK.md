@@ -18,8 +18,9 @@ git clone https://github.com/mernst/returnsrecv-checker.git
 ./gradlew -p returnsrecv-checker build publishToMavenLocal
 ```
 
+The remaining steps concern edits to your `build.gradle` file:
 
-2. Add the [org.checkerframework](https://plugins.gradle.org/plugin/org.checkerframework) Gradle plugin to your `plugins` block in your `build.gradle` script:
+2. Add the [org.checkerframework](https://plugins.gradle.org/plugin/org.checkerframework) Gradle plugin to your `plugins` block:
 
 ```groovy
 plugins {
@@ -28,7 +29,7 @@ plugins {
 }
 ```
 
-3. Add a `checkerFramework` block that tells the plugin to run the Typesafe Builder Checker to your `build.gradle` script:
+3. Add a `checkerFramework` block to run the Typesafe Builder Checker:
 
 ```groovy
 checkerFramework {
@@ -36,7 +37,7 @@ checkerFramework {
 }
 ```
 
-4. Add a `checkerFramework` dependency on the Typesafe Builder Checker to your `dependencies` block (this is a compile-time only dependency):
+4. Add a compile-time-only `checkerFramework` dependency to your `dependencies` block:
 
 ```groovy
 dependencies {
@@ -44,7 +45,8 @@ dependencies {
 }
 ```
 
-5. Add an `implementation` dependency on the annotations used by the Typesafe Builder Checker (the checker needs to be able to place annotations in your code as it compiles, so the annotations must be on the compile classpath):
+5. Add an `implementation` dependency on the annotations, such as `@CalledMethods`.
+(The checker places annotations in your code during compilation, so the annotations must be on the compile classpath.)
 
 ```groovy
 dependencies {
