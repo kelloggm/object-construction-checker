@@ -16,8 +16,8 @@ Build the Object Construction Checker:
 ```
 git clone https://github.com/msridhar/returnsrecv-checker.git
 (cd returnsrecv-checker && ./gradlew build && ./gradlew publishToMavenLocal)
-git clone https://github.com/kelloggm/typesafe-builder-checker.git
-(cd typesafe-builder-checker && ./gradlew build && ./gradlew publishToMavenLocal)
+git clone https://github.com/kelloggm/object-construction-checker.git
+(cd object-construction-checker && ./gradlew build && ./gradlew publishToMavenLocal)
 ```
 
 2. Add the [org.checkerframework](https://plugins.gradle.org/plugin/org.checkerframework) Gradle plugin to the `plugins` block of your `build.gradle` file:
@@ -36,12 +36,12 @@ repositories {
     mavenLocal()
 }
 checkerFramework {
-    checkers = ['org.checkerframework.checker.builder.TypesafeBuilderChecker']
+    checkers = ['org.checkerframework.checker.builder.ObjectConstructionChecker']
     extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
 }
 dependencies {
-    checkerFramework 'org.checkerframework:typesafe-builder:0.1-SNAPSHOT'
-    implementation 'org.checkerframework:typesafe-builder-qual:0.1-SNAPSHOT'
+    checkerFramework 'org.checkerframework:object-construction:0.1-SNAPSHOT'
+    implementation 'org.checkerframework:object-construction-qual:0.1-SNAPSHOT'
 }
 ```
 
