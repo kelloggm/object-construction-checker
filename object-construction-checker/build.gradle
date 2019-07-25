@@ -60,7 +60,7 @@ tasks.withType(JavaCompile).all {
 def tsbcVersion = '0.1-SNAPSHOT'
 
 task qualJar(type: Jar) {
-    baseName 'typesafe-builder-qual'
+    baseName 'object-construction-qual'
     from (sourceSets.main.output) {
         include "**/qual/**"
     }
@@ -70,7 +70,7 @@ publishing {
     publications {
         checker(MavenPublication) {
             groupId = 'org.checkerframework'
-            artifactId = 'typesafe-builder'
+            artifactId = 'object-construction'
             version = "${tsbcVersion}"
 
             from components.java
@@ -78,7 +78,7 @@ publishing {
 
         qual(MavenPublication) {
             groupId = 'org.checkerframework'
-            artifactId = 'typesafe-builder-qual'
+            artifactId = 'object-construction-qual'
             version = "${tsbcVersion}"
             artifact qualJar
             pom.withXml {
@@ -101,5 +101,5 @@ spotless {
 }
 
 clean.doFirst {
-    delete "${rootDir}/typesafe-builder-checker/tests/build/"
+    delete "${rootDir}/object-construction-checker/tests/build/"
 }

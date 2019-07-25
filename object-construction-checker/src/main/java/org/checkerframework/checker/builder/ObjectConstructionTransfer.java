@@ -20,19 +20,19 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 
 /**
- * The transfer function for the typesafe builder type system. Its primary job is to refine the
+ * The transfer function for the object construction type system. Its primary job is to refine the
  * types of objects when methods are called on them, so that e.g. after this method sequence:
  *
  * <p>obj.a(); obj.b();
  *
  * <p>the type of obj is @CalledMethods({"a","b"}) (assuming obj had no type beforehand).
  */
-public class TypesafeBuilderTransfer extends CFTransfer {
-  private final TypesafeBuilderAnnotatedTypeFactory atypefactory;
+public class ObjectConstructionTransfer extends CFTransfer {
+  private final ObjectConstructionAnnotatedTypeFactory atypefactory;
 
-  public TypesafeBuilderTransfer(final CFAnalysis analysis) {
+  public ObjectConstructionTransfer(final CFAnalysis analysis) {
     super(analysis);
-    this.atypefactory = (TypesafeBuilderAnnotatedTypeFactory) analysis.getTypeFactory();
+    this.atypefactory = (ObjectConstructionAnnotatedTypeFactory) analysis.getTypeFactory();
   }
 
   @Override
@@ -60,7 +60,7 @@ public class TypesafeBuilderTransfer extends CFTransfer {
 
     String methodName = node.getTarget().getMethod().getSimpleName().toString();
     List<String> currentMethods =
-        TypesafeBuilderAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(type);
+        ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(type);
     List<String> newList =
         Stream.concat(Stream.of(methodName), currentMethods.stream()).collect(Collectors.toList());
 

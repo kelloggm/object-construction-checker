@@ -14,7 +14,7 @@ What to do:
 1. [Todo: remove this requirement]
 Build the Object Construction Checker:
 ```
-git clone https://github.com/mernst/returnsrecv-checker.git
+git clone https://github.com/msridhar/returnsrecv-checker.git
 (cd returnsrecv-checker && ./gradlew build && ./gradlew publishToMavenLocal)
 git clone https://github.com/kelloggm/typesafe-builder-checker.git
 (cd typesafe-builder-checker && ./gradlew build && ./gradlew publishToMavenLocal)

@@ -24,13 +24,13 @@ There are separate instructions for [using the Object Construction Checker with 
 1. Build the checker by running the following commands from your shell:
 
 ```bash
-git clone https://github.com/mernst/returnsrecv-checker.git
+git clone https://github.com/msridhar/returnsrecv-checker.git
 ./gradlew -p returnsrecv-checker build publishToMavenLocal
 git clone https://github.com/kelloggm/typesafe-builder-checker.git
 ./gradlew -p typesafe-builder-checker build publishToMavenLocal
 ```
 
-2. Make your Maven/Gradle project depend on `org.checkerframework:typesafe-builder:0.1-SNAPSHOT`.
+2. Make your Maven/Gradle project depend on `org.checkerframework:object-construction:0.1-SNAPSHOT`.
 Build systems other than Maven and Gradle are not yet supported.
 
 3. Run `javac` normally.
