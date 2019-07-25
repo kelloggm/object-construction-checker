@@ -18,7 +18,8 @@ public class AutoValueTest extends CheckerFrameworkPerDirectoryTest {
           "com.google.auto.value.processor.AutoOneOfProcessor",
           "com.google.auto.value.processor.AutoValueBuilderProcessor",
           "com.google.auto.value.processor.AutoValueProcessor",
-          org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class.getName());
+          org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class
+              .getName());
 
   public AutoValueTest(List<File> testFiles) {
     super(
