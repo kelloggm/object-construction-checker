@@ -1,9 +1,9 @@
-package org.checkerframework.checker.builder;
+package org.checkerframework.checker.objectconstruction;
 
 import com.sun.source.tree.AnnotationTree;
 import java.util.Collections;
 import javax.lang.model.element.AnnotationMirror;
-import org.checkerframework.checker.builder.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.source.Result;

@@ -1,4 +1,4 @@
-import org.checkerframework.checker.builder.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.returnsrcvr.qual.*;
 
 /* Simple inference of a fluent builder */

@@ -9,7 +9,7 @@ public class EC2Test extends CheckerFrameworkPerDirectoryTest {
   public EC2Test(List<File> testFiles) {
     super(
         testFiles,
-        org.checkerframework.checker.builder.ObjectConstructionChecker.class,
+        org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
         "cve",
         "-Anomsgtext",
         "-Astubs=stubs",

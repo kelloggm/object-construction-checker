@@ -28,7 +28,7 @@ public class BasicTest extends CheckerFrameworkPerDirectoryTest {
   public BasicTest(List<File> testFiles) {
     super(
         testFiles,
-        org.checkerframework.checker.builder.ObjectConstructionChecker.class,
+        org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
         "basic",
         "-Anomsgtext",
         "-nowarn");

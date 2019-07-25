@@ -1,4 +1,4 @@
-package org.checkerframework.checker.builder;
+package org.checkerframework.checker.objectconstruction;
 
 import java.util.Set;
 import org.springframework.expression.Expression;

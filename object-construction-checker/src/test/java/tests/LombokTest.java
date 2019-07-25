@@ -28,7 +28,7 @@ public class LombokTest extends CheckerFrameworkPerDirectoryTest {
   public LombokTest(List<File> testFiles) {
     super(
         testFiles,
-        org.checkerframework.checker.builder.ObjectConstructionChecker.class,
+        org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
         "lombok",
         "-Anomsgtext",
         "-nowarn",

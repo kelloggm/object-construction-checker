@@ -36,7 +36,7 @@ repositories {
     mavenLocal()
 }
 checkerFramework {
-    checkers = ['org.checkerframework.checker.builder.ObjectConstructionChecker']
+    checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
     extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
 }
 dependencies {
