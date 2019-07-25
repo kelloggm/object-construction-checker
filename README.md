@@ -26,8 +26,8 @@ There are separate instructions for [using the Object Construction Checker with 
 ```bash
 git clone https://github.com/msridhar/returnsrecv-checker.git
 ./gradlew -p returnsrecv-checker build publishToMavenLocal
-git clone https://github.com/kelloggm/typesafe-builder-checker.git
-./gradlew -p typesafe-builder-checker build publishToMavenLocal
+git clone https://github.com/kelloggm/object-construction-checker.git
+./gradlew -p object-construction-checker build publishToMavenLocal
 ```
 
 2. Make your Maven/Gradle project depend on `org.checkerframework:object-construction:0.1-SNAPSHOT`.

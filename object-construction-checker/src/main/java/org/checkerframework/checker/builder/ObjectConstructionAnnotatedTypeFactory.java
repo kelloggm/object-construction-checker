@@ -132,7 +132,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * Returns whether the return type of the given method invocation tree has an @This annotation
    * from the Returns Receiver Checker.
    *
-   * <p>Package-private to permit calls from TypesafeBuilderTransfer.
+   * <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
    */
   boolean returnsThis(final MethodInvocationTree tree) {
     ReturnsRcvrAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
