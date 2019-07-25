@@ -1,52 +1,82 @@
-# Object construction checker
+# Object Construction Checker
 
-Constructors allow the designers of a class file to exactly specify the legal ways to construct
-an object. However, constructors are also inflexible and make reading code difficult:
-* it is difficult to express optional arguments to constructors in Java, due to the lack of named arguments a la python
-* constructor arguments are positional, so reading a constructor invocation requires the programmer to remember
-the order in which arguments are meant to be supplied to the constructor
+The builder pattern is a flexible and readable, but error-prone, way to
+construct objects.  For example, failing to provide a required argument is
+a run-time error that manifests during testing or in the field, instead of
+at compile-time as for regular Java constructors.
 
-For these reasons, many programmers turn to alternative ways of constructing objects, such as the builder pattern
-or dependency injection. These alternatives improve flexibility and readability, 
-but they lack the precision and runtime safety of hand-written constructors. For example, when using the
-builder pattern, failing to provide a required argument becomes a run-time rather than compile-time error -
-making development more difficult and dangerous.
+The Object Construction Checker verifies at compile time that your code
+correctly uses the builder pattern, never omitting a required argument.
+The checker has built-in support for [Lombok](https://projectlombok.org/)
+and
+[AutoValue](https://github.com/google/auto/blob/master/value/userguide/index.md).
+Programmers can extend it to other builders by writing method
+specifications.
 
-This repository contains a typechecker that extends the Java type system to catch malformed objects at
-compile-time, even when they are constructed via the builder pattern. The checker has built-in support
-for Lombok- and AutoValue-generated builders, and programmers can write specifications on their own
-builders to indicate which arguments are legal.
+
+## Using the checker with Lombok
+
+There are separate instructions for [using the Object Construction Checker with Lombok](README-LOMBOK.md).
+
 
 ## Using the checker
 
-The checker is currently in development, so you'll have to build it locally. Run the following commands
-from your shell:
+1. Build the checker by running the following commands from your shell:
 
 ```bash
-./gradlew build
-./gradlew publishToMavenLocal
+git clone https://github.com/msridhar/returnsrecv-checker.git
+./gradlew -p returnsrecv-checker build publishToMavenLocal
+git clone https://github.com/kelloggm/typesafe-builder-checker.git
+./gradlew -p typesafe-builder-checker build publishToMavenLocal
 ```
 
-Then, add a Maven/Gradle dependency to your project on `org.checkerframework:object-construction:0.1-SNAPSHOT`.
-Other build systems are unsupported.
+2. Make your Maven/Gradle project depend on `org.checkerframework:object-construction:0.1-SNAPSHOT`.
+Build systems other than Maven and Gradle are not yet supported.
 
+3. Run `javac` normally.
 The checker includes a manifest file defining an annotation processor, meaning that `javac` will run it
 automatically if it is on your compile classpath (as long as no annotation processors are explicitly specified).
 
-## Supported annotations
+## Specifying your code
 
-There are two annotations that you might want to write to specify a builder API:
-* `@CalledMethods(String[])` specifies that the given object (usually the receiver object) must have had
-methods with the names given in the string arguments called on it
-* `@CalledMethodsPredicate(String)` permits the programmer to specify the permitted method calls using
-Java boolean syntax. 
+You can specify your code's contracts (what it expects from clients) by writing type annotations.
+A type annotation is written before a type.  For example, in `@NonEmpty List<@Regex String>`, `@NonEmpty` is a type annotation on `List`, and `@Regex` is a type annotation on `String`.
 
-For example, the annotation `@CalledMethodsPredicate("x and y or z")` means that
-an object must meet one of the following conditions to be assignable to that location:
-* both the `x()` and `y()` methods have been called on the object, or
-* the `z()` method has been called on the object
+The two most relevant annotations are:
+<dl>
+<dt>`@CalledMethods(<em>methodname</em>...)`</dt>
+<dd>specifies that a value must have had all the given methods called on it.
+(Other methods might also have been called.)
+
+Suppose that method `build` is annotated as
+```
+class MyBuilder {
+  MyObject build(@CalledMethods({"setX", "setY"}) MyBuilder this) { ... }
+}
+```
+Then the receiver for any call to build() must have had `setX` and `setY` called on it.
+</dd>
+
+<dt>`@CalledMethodsPredicate(<em>logical-expression</em>)`</dt>
+</dd>permits the
+programmer to specify the permitted method calls using Java boolean syntax. 
+
+For example, the annotation `@CalledMethodsPredicate("x && y || z")` on a type represents
+objects such that:
+* both the `x()` and `y()` methods have been called on the object, **or**
+* the `z()` method has been called on the object.
+</dd>
+</dl>
 
 The typechecker also supports (and depends on) the 
-[Returns Receiver Checker](github.com/msridhar/returnsrcvr-checker), which provides the
+[Returns Receiver Checker](https://github.com/msridhar/returnsrecv-checker), which provides the
 `@This` annotation. `@This` on a method return type means that the method returns its receiver;
 this checker uses that information to persist sets of known method calls in fluent APIs.
+
+
+## More information
+
+The Object Construction Checker is built upon the [Checker
+Framework](https://checkerframework.org/).  The [Checker Framework
+Manual](https://checkerframework.org/manual/) gives more information about
+using pluggable type-checkers.
