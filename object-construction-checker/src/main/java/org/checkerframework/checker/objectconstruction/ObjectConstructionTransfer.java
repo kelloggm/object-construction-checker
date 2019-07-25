@@ -1,4 +1,4 @@
-package org.checkerframework.checker.builder;
+package org.checkerframework.checker.objectconstruction;
 
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;

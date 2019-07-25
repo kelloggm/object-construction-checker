@@ -1,4 +1,4 @@
-import org.checkerframework.checker.builder.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 
 class CmPredicate {
 

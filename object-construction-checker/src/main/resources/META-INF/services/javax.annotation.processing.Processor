@@ -1,1 +1,1 @@
-org.checkerframework.checker.builder.ObjectConstructionChecker
+org.checkerframework.checker.objectconstruction.ObjectConstructionChecker

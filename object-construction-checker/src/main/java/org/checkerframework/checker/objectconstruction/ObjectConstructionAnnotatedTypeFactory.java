@@ -1,4 +1,4 @@
-package org.checkerframework.checker.builder;
+package org.checkerframework.checker.objectconstruction;
 
 import com.google.auto.value.AutoValue;
 import com.sun.source.tree.ExpressionTree;
@@ -22,10 +22,10 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.builder.qual.CalledMethods;
-import org.checkerframework.checker.builder.qual.CalledMethodsBottom;
-import org.checkerframework.checker.builder.qual.CalledMethodsPredicate;
-import org.checkerframework.checker.builder.qual.CalledMethodsTop;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop;
 import org.checkerframework.checker.returnsrcvr.ReturnsRcvrAnnotatedTypeFactory;
 import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
 import org.checkerframework.checker.returnsrcvr.qual.This;
