@@ -192,7 +192,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       // "copy" constructor in generated Builder class
       if (!superclass.getKind().equals(TypeKind.NONE)
-          && hasAnnotation(TypesUtils.getTypeElement(superclass), AutoValue.objectconstruction.class)
+          && hasAnnotation(TypesUtils.getTypeElement(superclass), AutoValue.Builder.class)
           && element.getParameters().size() > 0) {
         handleAutoValueToBuilderType(
             type, TypesUtils.getTypeElement(superclass).getEnclosingElement());
@@ -250,7 +250,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       BuilderKind builderKind = BuilderKind.NONE;
 
-      if (hasAnnotation(enclosingElement, AutoValue.objectconstruction.class)) {
+      if (hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
         builderKind = BuilderKind.AUTO_VALUE;
         assert hasAnnotation(nextEnclosingElement, AutoValue.class)
             : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
