@@ -71,7 +71,8 @@ public class ObjectConstructionTransfer extends CFTransfer {
     CFStore thenStore = result.getThenStore();
     CFStore elseStore = result.getElseStore();
 
-    while (receiver != null) {
+    while (receiver != null && !receiver.toString().startsWith("(this).")) {
+
       // Insert the new type computed previously as the type of the receiver.
       Receiver receiverReceiver = FlowExpressions.internalReprOf(atypefactory, receiver);
       thenStore.insertValue(receiverReceiver, newType);
