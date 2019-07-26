@@ -6,5 +6,5 @@ jdk:
 
 script:
   - git clone https://github.com/msridhar/returnsrecv-checker.git
-  - (cd returnsrecv-checker && ./gradlew build && ./gradlew publishToMavenLocal)
+  - (cd returnsrecv-checker && ./gradlew build && ./gradlew install)
   - ./gradlew build --stacktrace
