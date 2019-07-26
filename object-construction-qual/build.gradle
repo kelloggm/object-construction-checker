@@ -1,0 +1,40 @@
+plugins {
+    // Apply the java plugin to add support for Java
+    id 'java'
+
+    // For bringing in AWS dependencies. We're using the "legacy" version
+    // listed here: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-project-gradle.html,
+    // because the build fails when we use the Gradle 5+ way, saying that it can't find ec2.
+    // I believe that this is because we need the AWS SDK during testing, but not during the build.
+    id 'io.spring.dependency-management' version '1.0.7.RELEASE'
+
+    id "com.diffplug.gradle.spotless" version "3.23.0"
+}
+
+sourceCompatibility = 1.8
+
+dependencies {
+    // This dependency is found on compile classpath of this component and consumers.
+    implementation 'org.checkerframework:checker:2.9.0'
+
+}
+
+dependencyManagement {
+    imports {
+        mavenBom 'com.amazonaws:aws-java-sdk-bom:1.11.228'
+    }
+}
+
+tasks.withType(JavaCompile).all {
+    options.compilerArgs.add("-Xlint:all")
+}
+
+// run google java format
+spotless {
+    // uncomment this line to temporarily disable spotless (i.e. when debugging)
+    // enforceCheck = false
+    java {
+        googleJavaFormat()
+    }
+}
+

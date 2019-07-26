@@ -8,8 +8,6 @@ plugins {
     // I believe that this is because we need the AWS SDK during testing, but not during the build.
     id 'io.spring.dependency-management' version '1.0.7.RELEASE'
 
-    id 'maven-publish'
-
     id "com.diffplug.gradle.spotless" version "3.23.0"
 }
 
@@ -18,6 +16,7 @@ sourceCompatibility = 1.8
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation 'org.checkerframework:checker:2.9.0'
+    implementation project(':object-construction-qual')
 
     // For the @CalledMethodsPredicate evaluation
     implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
@@ -55,40 +54,6 @@ dependencyManagement {
 
 tasks.withType(JavaCompile).all {
     options.compilerArgs.add("-Xlint:all")
-}
-
-def tsbcVersion = '0.1-SNAPSHOT'
-
-task qualJar(type: Jar) {
-    baseName 'object-construction-qual'
-    from (sourceSets.main.output) {
-        include "**/qual/**"
-    }
-}
-
-publishing {
-    publications {
-        checker(MavenPublication) {
-            groupId = 'org.checkerframework'
-            artifactId = 'object-construction'
-            version = "${tsbcVersion}"
-
-            from components.java
-        }
-
-        qual(MavenPublication) {
-            groupId = 'org.checkerframework'
-            artifactId = 'object-construction-qual'
-            version = "${tsbcVersion}"
-            artifact qualJar
-            pom.withXml {
-                def depNode = asNode().appendNode("dependencies").appendNode("dependency")
-                depNode.appendNode("groupId", "org.checkerframework")
-                depNode.appendNode("artifactId", "returnsrcvr-qual")
-                depNode.appendNode("version", "0.1-SNAPSHOT")
-            }
-        }
-    }
 }
 
 // run google java format
