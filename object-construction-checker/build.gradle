@@ -21,10 +21,9 @@ dependencies {
     // For the @CalledMethodsPredicate evaluation
     implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
     
-    // For returns receiver checking. The first uses the master branch; the second
-    // uses your local copy.
+    // For returns receiver checking. Currently using SNAPSHOT dependency
+    implementation 'net.sridharan.objectconstruction:returnsrcvr-checker:0.1-SNAPSHOT'
     // implementation 'com.github.msridhar:returnsrecv-checker:master-SNAPSHOT'
-    implementation 'org.checkerframework:returnsrcvr-checker:0.1-SNAPSHOT'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
@@ -68,3 +67,5 @@ spotless {
 clean.doFirst {
     delete "${rootDir}/object-construction-checker/tests/build/"
 }
+
+apply from: rootProject.file("gradle-mvn-push.gradle")

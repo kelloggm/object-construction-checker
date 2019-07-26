@@ -15,10 +15,11 @@ import org.checkerframework.framework.qual.SubtypeOf;
  *
  * <p>The argument is a string. The string must be constructed from the following grammar:
  *
- * <p>S → method name | (S) | S && S | S || S
+ * <p>S → method name | (S) | S &amp;&amp; S | S || S
  *
- * <p>That is, the permitted elements are method names, parentheses, and the strings "&&" and "||".
- * "&&" has higher precedence than "||", following standard Java operator semantics.
+ * <p>That is, the permitted elements are method names, parentheses, and the strings "&amp;&amp;"
+ * and "||". "&amp;&amp;" has higher precedence than "||", following standard Java operator
+ * semantics.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})

@@ -38,3 +38,4 @@ spotless {
     }
 }
 
+apply from: rootProject.file("gradle-mvn-push.gradle")
