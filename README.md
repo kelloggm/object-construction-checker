@@ -30,7 +30,7 @@ git clone https://github.com/kelloggm/object-construction-checker.git
 ./gradlew -p object-construction-checker build install
 ```
 
-2. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:objectconstruction-checker:0.1-SNAPSHOT`.
+2. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1-SNAPSHOT`.
 Build systems other than Maven and Gradle are not yet supported.
 
 3. Run `javac` normally.

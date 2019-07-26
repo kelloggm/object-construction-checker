@@ -40,8 +40,8 @@ checkerFramework {
     extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
 }
 dependencies {
-    checkerFramework 'net.sridharan.objectconstruction:objectconstruction-checker:0.1-SNAPSHOT'
-    implementation 'net.sridharan.objectconstruction:objectconstruction-qual:0.1-SNAPSHOT'
+    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1-SNAPSHOT'
+    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1-SNAPSHOT'
 }
 ```
 
