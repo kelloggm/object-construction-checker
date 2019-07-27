@@ -20,6 +20,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
@@ -386,22 +387,25 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         Set<Modifier> modifiers = member.getModifiers();
         if (!modifiers.contains(Modifier.STATIC) && modifiers.contains(Modifier.ABSTRACT)) {
           String name = member.getSimpleName().toString();
-          String returnType = ((ExecutableElement) member).getReturnType().toString();
-          if (!IGNORED_METHOD_NAMES.contains(name) && !returnType.equals("void")) {
+          TypeMirror returnType = ((ExecutableElement) member).getReturnType();
+          if (!IGNORED_METHOD_NAMES.contains(name) && !returnType.getKind().equals(TypeKind.VOID)) {
             // shouldn't have a nullable return
             boolean hasNullable =
                 Stream.concat(
                         elements.getAllAnnotationMirrors(member).stream(),
-                        ((ExecutableElement) member)
-                            .getReturnType().getAnnotationMirrors().stream())
+                        returnType.getAnnotationMirrors().stream())
                     .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
             if (hasNullable) {
               continue;
             }
             // if return type of foo() is a Guava Immutable type, not required if there is a builder
             // method fooBuilder()
-            if (returnType.startsWith("com.google.common.collect.Immutable")
+            if (returnType.toString().startsWith("com.google.common.collect.Immutable")
                 && allBuilderMethodNames.contains(name + "Builder")) {
+              continue;
+            }
+            // if it's an Optional, the Builder will automatically initialize it
+            if (isOptional(returnType)) {
               continue;
             }
             requiredPropertyNames.add(name);
@@ -608,4 +612,29 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    */
   private static final ImmutableSet<String> IGNORED_METHOD_NAMES =
       ImmutableSet.of("equals", "hashCode", "toString", "<init>", "toBuilder");
+
+  /** Taken from AutoValue source code */
+  private static final ImmutableSet<String> OPTIONAL_CLASS_NAMES =
+      ImmutableSet.of(
+          "com.".concat("google.common.base.Optional"), // subterfuge to foil shading
+          "java.util.Optional",
+          "java.util.OptionalDouble",
+          "java.util.OptionalInt",
+          "java.util.OptionalLong");
+
+  /**
+   * adapted from AutoValue source code
+   *
+   * @param type some type
+   * @return true if type is an Optional type
+   */
+  static boolean isOptional(TypeMirror type) {
+    if (type.getKind() != TypeKind.DECLARED) {
+      return false;
+    }
+    DeclaredType declaredType = (DeclaredType) type;
+    TypeElement typeElement = (TypeElement) declaredType.asElement();
+    return OPTIONAL_CLASS_NAMES.contains(typeElement.getQualifiedName().toString())
+        && typeElement.getTypeParameters().size() == declaredType.getTypeArguments().size();
+  }
 }

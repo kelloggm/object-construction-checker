@@ -1,4 +1,5 @@
 import com.google.auto.value.AutoValue;
+import java.util.Optional;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.nullness.qual.*;
 
@@ -13,6 +14,9 @@ abstract class Animal {
   abstract @Nullable String habitat();
 
   abstract int numberOfLegs();
+
+  // does not need to be explicitly set
+  abstract Optional<String> extra();
 
   public String getStr() {
     return "str";
@@ -32,6 +36,8 @@ abstract class Animal {
     abstract Builder setNumberOfLegs(int value);
 
     abstract Builder setHabitat(String value);
+
+    abstract Builder setExtra(String value);
 
     abstract Animal build();
   }
