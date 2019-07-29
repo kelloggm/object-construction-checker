@@ -1,14 +1,12 @@
 plugins {
     // Apply the java plugin to add support for Java
-    id 'java'
+    id 'java-library'
 
     // For bringing in AWS dependencies. We're using the "legacy" version
     // listed here: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-project-gradle.html,
     // because the build fails when we use the Gradle 5+ way, saying that it can't find ec2.
     // I believe that this is because we need the AWS SDK during testing, but not during the build.
     id 'io.spring.dependency-management' version '1.0.7.RELEASE'
-
-    id 'maven-publish'
 
     id "com.diffplug.gradle.spotless" version "3.23.0"
 }
@@ -18,14 +16,18 @@ sourceCompatibility = 1.8
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation 'org.checkerframework:checker:2.9.0'
+    // If / when other code depends on this checker, we will likely want to make this
+    // an api dependence
+    implementation project(':object-construction-qual')
 
     // For the @CalledMethodsPredicate evaluation
     implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
     
-    // For returns receiver checking. The first uses the master branch; the second
-    // uses your local copy.
-    // implementation 'com.github.msridhar:returnsrecv-checker:master-SNAPSHOT'
-    implementation 'org.checkerframework:returnsrcvr-checker:0.1-SNAPSHOT'
+    // For returns receiver checking. Currently using SNAPSHOT dependency, preferring
+    // the version in the local Maven repo if present
+    // If / when other code depends on this checker, we will likely want to make this
+    // an api dependence
+    implementation 'net.sridharan.objectconstruction:returnsrcvr-checker:0.1-SNAPSHOT'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
@@ -57,40 +59,6 @@ tasks.withType(JavaCompile).all {
     options.compilerArgs.add("-Xlint:all")
 }
 
-def tsbcVersion = '0.1-SNAPSHOT'
-
-task qualJar(type: Jar) {
-    baseName 'object-construction-qual'
-    from (sourceSets.main.output) {
-        include "**/qual/**"
-    }
-}
-
-publishing {
-    publications {
-        checker(MavenPublication) {
-            groupId = 'org.checkerframework'
-            artifactId = 'object-construction'
-            version = "${tsbcVersion}"
-
-            from components.java
-        }
-
-        qual(MavenPublication) {
-            groupId = 'org.checkerframework'
-            artifactId = 'object-construction-qual'
-            version = "${tsbcVersion}"
-            artifact qualJar
-            pom.withXml {
-                def depNode = asNode().appendNode("dependencies").appendNode("dependency")
-                depNode.appendNode("groupId", "org.checkerframework")
-                depNode.appendNode("artifactId", "returnsrcvr-qual")
-                depNode.appendNode("version", "0.1-SNAPSHOT")
-            }
-        }
-    }
-}
-
 // run google java format
 spotless {
     // uncomment this line to temporarily disable spotless (i.e. when debugging)
@@ -103,3 +71,5 @@ spotless {
 clean.doFirst {
     delete "${rootDir}/object-construction-checker/tests/build/"
 }
+
+apply from: rootProject.file("gradle-mvn-push.gradle")

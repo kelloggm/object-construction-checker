@@ -15,9 +15,9 @@ What to do:
 Build the Object Construction Checker:
 ```
 git clone https://github.com/msridhar/returnsrecv-checker.git
-(cd returnsrecv-checker && ./gradlew build && ./gradlew publishToMavenLocal)
+(cd returnsrecv-checker && ./gradlew build && ./gradlew install)
 git clone https://github.com/kelloggm/object-construction-checker.git
-(cd object-construction-checker && ./gradlew build && ./gradlew publishToMavenLocal)
+(cd object-construction-checker && ./gradlew build && ./gradlew install)
 ```
 
 2. Add the [org.checkerframework](https://plugins.gradle.org/plugin/org.checkerframework) Gradle plugin to the `plugins` block of your `build.gradle` file:
@@ -40,8 +40,8 @@ checkerFramework {
     extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
 }
 dependencies {
-    checkerFramework 'org.checkerframework:object-construction:0.1-SNAPSHOT'
-    implementation 'org.checkerframework:object-construction-qual:0.1-SNAPSHOT'
+    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1-SNAPSHOT'
+    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1-SNAPSHOT'
 }
 ```
 

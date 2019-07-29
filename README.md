@@ -25,12 +25,12 @@ There are separate instructions for [using the Object Construction Checker with 
 
 ```bash
 git clone https://github.com/msridhar/returnsrecv-checker.git
-./gradlew -p returnsrecv-checker build publishToMavenLocal
+./gradlew -p returnsrecv-checker build install
 git clone https://github.com/kelloggm/object-construction-checker.git
-./gradlew -p object-construction-checker build publishToMavenLocal
+./gradlew -p object-construction-checker build install
 ```
 
-2. Make your Maven/Gradle project depend on `org.checkerframework:object-construction:0.1-SNAPSHOT`.
+2. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1-SNAPSHOT`.
 Build systems other than Maven and Gradle are not yet supported.
 
 3. Run `javac` normally.
