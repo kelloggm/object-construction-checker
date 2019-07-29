@@ -1,6 +1,6 @@
 plugins {
     // Apply the java plugin to add support for Java
-    id 'java'
+    id 'java-library'
 
     // For bringing in AWS dependencies. We're using the "legacy" version
     // listed here: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-project-gradle.html,
@@ -16,6 +16,8 @@ sourceCompatibility = 1.8
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation 'org.checkerframework:checker:2.9.0'
+    // If / when other code depends on this checker, we will likely want to make this
+    // an api dependence
     implementation project(':object-construction-qual')
 
     // For the @CalledMethodsPredicate evaluation
@@ -23,6 +25,8 @@ dependencies {
     
     // For returns receiver checking. Currently using SNAPSHOT dependency, preferring
     // the version in the local Maven repo if present
+    // If / when other code depends on this checker, we will likely want to make this
+    // an api dependence
     implementation 'net.sridharan.objectconstruction:returnsrcvr-checker:0.1-SNAPSHOT'
 
     // Use JUnit test framework
