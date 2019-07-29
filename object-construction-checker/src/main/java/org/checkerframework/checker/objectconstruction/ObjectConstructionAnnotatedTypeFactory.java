@@ -616,7 +616,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   /** Taken from AutoValue source code */
   private static final ImmutableSet<String> OPTIONAL_CLASS_NAMES =
       ImmutableSet.of(
-          "com.".concat("google.common.base.Optional"), // subterfuge to foil shading
+          "com.google.common.base.Optional",
           "java.util.Optional",
           "java.util.OptionalDouble",
           "java.util.OptionalInt",
