@@ -30,7 +30,7 @@ public class BasicTest extends CheckerFrameworkPerDirectoryTest {
         testFiles,
         org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
         "basic",
-        "-Anomsgtext",
+        //"-Anomsgtext",
         "-nowarn");
   }
 

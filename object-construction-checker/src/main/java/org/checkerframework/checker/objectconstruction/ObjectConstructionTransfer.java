@@ -10,6 +10,7 @@ import org.checkerframework.dataflow.analysis.FlowExpressions;
 import org.checkerframework.dataflow.analysis.FlowExpressions.Receiver;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
+import org.checkerframework.dataflow.cfg.node.ImplicitThisLiteralNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.flow.CFAnalysis;
@@ -71,7 +72,7 @@ public class ObjectConstructionTransfer extends CFTransfer {
     CFStore thenStore = result.getThenStore();
     CFStore elseStore = result.getElseStore();
 
-    while (receiver != null && !receiver.toString().startsWith("(this).")) {
+    while (receiver != null) {
 
       // Insert the new type computed previously as the type of the receiver.
       Receiver receiverReceiver = FlowExpressions.internalReprOf(atypefactory, receiver);
@@ -79,6 +80,15 @@ public class ObjectConstructionTransfer extends CFTransfer {
       elseStore.insertValue(receiverReceiver, newType);
 
       Tree receiverTree = receiver.getTree();
+
+//
+//      if (ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(newType).contains("compareTo")) {
+//        System.out.println(receiverTree == null ? "null" : receiverTree.getKind());
+//        System.out.println(receiverTree);
+//        System.out.println(receiver.getBlock() == null);
+//        System.out.println(receiverReceiver);
+//        System.out.println(receiverReceiver.getClass());
+//      }
 
       // Possibly recurse: if the receiver is itself a method call,
       // then we need to also propagate this new information to its receiver
@@ -97,6 +107,7 @@ public class ObjectConstructionTransfer extends CFTransfer {
       MethodInvocationTree receiverAsMethodInvocation = (MethodInvocationTree) receiver.getTree();
 
       if (atypefactory.returnsThis(receiverAsMethodInvocation)) {
+        //System.out.println(receiver + "'s receiver is " + ((MethodInvocationNode) receiver).getTarget().getReceiver());
         receiver = ((MethodInvocationNode) receiver).getTarget().getReceiver();
       } else {
         // Do not continue, because the method does not return @This.
