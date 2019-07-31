@@ -68,8 +68,36 @@ objects such that:
 </dd>
 </dl>
 
-It is possible to use the `@CalledMethodsPredicate` for unsound bug-finding, rather than
-verification, by using the `!` (NOT) operator.
+To determine if a given `@CalledMethods` annotation is a subtype of an `@CalledMethodsPredicate`
+annotation, use the following procedure:
+1. Let *A* be the set of methods in the `@CalledMethods` annotation.
+2. Let *P* be the predicate of the `@CalledMethodsPredicate` annotation.
+3. For each *x* in *A*, replace all instances of *x* in *P* with *true*.
+4. For every other literal *y* in *P*, replace *y* with *false*.
+5. Evaluate *P*. If *P* is true, then `@CalledMethods(`*A*`)` is a subtype of
+`@CalledMethodsPredicate(`*P*`)`. Otherwise, it is not.
+
+No `@CalledMethodsPredicate` annotation is ever a subtype of another, or of
+any `@CalledMethods` annotation. For this reason,
+users should only write `@CalledMethodsPredicate` annotations on the parameters of
+methods (usually in stub files).
+
+The boolean syntax accepted by `@CalledMethodsPredicate` includes a NOT operator (`!`).
+The annotation `@CalledMethodsPredicate("!x")` means: "it isn't the case that x was
+definitely called" or "x was not called on every possible path" rather than
+"x is not called" or "x was not called on any path." This means that the `!` operator
+is primarily useful for unsound bug-finding rather than verification: it can be used
+to prove that a method was definitely called when it should not have been.
+Similarly, the `!` operator can be used to prove that two methods that ought to be
+mutually exclusive were definitely called together by writing
+`@CalledMethodsPredicate("!(a && b)")`. However, it cannot be used to prove the
+absence of paths on which two mutually-exclusive methods were called.
+
+For more details
+on the syntax accepted by `@CalledMethodsPredicate`, see the documentation for
+the
+[Spring Expression Language (SPEL)](https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html),
+whose parser it uses.
 
 The typechecker also supports (and depends on) the 
 [Returns Receiver Checker](https://github.com/msridhar/returnsrecv-checker), which provides the
