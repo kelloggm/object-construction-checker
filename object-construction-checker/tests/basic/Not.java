@@ -58,4 +58,14 @@ class Not {
         // :: error: method.invocation.invalid
         f.notA();
     }
+
+    void test8(Foo f, boolean test) {
+        if (test) {
+            f.a();
+        } else {
+            f.b();
+        }
+        // DEMONSTRATION OF UNSOUNDNESS
+        f.notA();
+    }
 }
