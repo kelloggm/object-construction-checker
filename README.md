@@ -1,9 +1,9 @@
 # Object Construction Checker
 
-The builder pattern is a flexible and readable, but error-prone, way to
-construct objects.  For example, failing to provide a required argument is
+The builder pattern is a flexible and readable way to construct objects, but
+it is error-prone.  For example, failing to provide a required argument causes
 a run-time error that manifests during testing or in the field, instead of
-at compile-time as for regular Java constructors.
+at compile time as for regular Java constructors.
 
 The Object Construction Checker verifies at compile time that your code
 correctly uses the builder pattern, never omitting a required argument.
@@ -14,12 +14,9 @@ Programmers can extend it to other builders by writing method
 specifications.
 
 
-## Using the checker with Lombok
-
-There are separate instructions for [using the Object Construction Checker with Lombok](README-LOMBOK.md).
-
-
 ## Using the checker
+
+There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
 
 1. Build the checker by running the following commands from your shell:
 
