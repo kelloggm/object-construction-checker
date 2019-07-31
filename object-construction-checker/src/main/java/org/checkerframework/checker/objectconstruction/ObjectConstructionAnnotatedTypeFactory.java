@@ -256,7 +256,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         assert hasAnnotation(nextEnclosingElement, AutoValue.class)
             : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
 
-      } else if (hasAnnotation(enclosingElement, "lombok.Generated")
+      } else if ((hasAnnotation(enclosingElement, "lombok.Generated")
+              || hasAnnotation(element, "lombok.Generated"))
           && enclosingElement.getSimpleName().toString().endsWith("Builder")) {
         builderKind = BuilderKind.LOMBOK;
       }
