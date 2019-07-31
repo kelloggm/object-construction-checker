@@ -19,7 +19,7 @@ specifications.
 There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
 
 1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1.1-SNAPSHOT`.
-Build systems other than Maven and Gradle are not yet supported.
+  Build systems other than Maven and Gradle are not yet supported.
 
   For example, for Gradle, add the following to the `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
 
