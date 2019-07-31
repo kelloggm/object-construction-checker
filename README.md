@@ -22,6 +22,7 @@ There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
 Build systems other than Maven and Gradle are not yet supported.
 
   For example, for Gradle, add the following to the `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
+
   ```
   repositories {
       maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
