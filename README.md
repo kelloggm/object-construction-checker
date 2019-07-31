@@ -24,8 +24,11 @@ There are separate instructions for [using the Object Construction Checker with 
 1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1.1-SNAPSHOT`.
 Build systems other than Maven and Gradle are not yet supported.
 
-For example, for Gradle, add the following to the `build.gradle` file:
+For example, for Gradle, add the following to the `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
 ```
+repositories {
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+}
 dependencies {
     annotationProcessor 'net.sridharan.objectconstruction:object-construction-checker:0.1.1-SNAPSHOT'
     implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1-SNAPSHOT'
