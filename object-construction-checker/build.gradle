@@ -27,7 +27,7 @@ dependencies {
     // the version in the local Maven repo if present
     // If / when other code depends on this checker, we will likely want to make this
     // an api dependence
-    implementation 'net.sridharan.objectconstruction:returnsrcvr-checker:0.1-SNAPSHOT'
+    implementation 'net.sridharan.objectconstruction:returnsrcvr-checker:0.1.1-SNAPSHOT'
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
