@@ -13,32 +13,32 @@ What to do:
 
 1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file:
 
-```groovy
-plugins {
-    ...
-    id "io.freefair.lombok" version "3.6.6"
-    id "org.checkerframework" version "0.3.16"
-}
-```
+  ```groovy
+  plugins {
+      ...
+      id "io.freefair.lombok" version "3.6.6"
+      id "org.checkerframework" version "0.3.16"
+  }
+  ```
 
 2. Add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
 
-```groovy
-repositories {
-    mavenLocal()
-    maven { url "http://repo.maven.apache.org/maven2" }
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-}
-checkerFramework {
-    skipVersionCheck = true
-    checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
-    extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
-}
-dependencies {
-    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.1-SNAPSHOT'
-    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1-SNAPSHOT'
-}
-```
+  ```groovy
+  repositories {
+      mavenLocal()
+      maven { url "http://repo.maven.apache.org/maven2" }
+      maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+  }
+  checkerFramework {
+      skipVersionCheck = true
+      checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
+      extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
+  }
+  dependencies {
+      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.1-SNAPSHOT'
+      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1-SNAPSHOT'
+  }
+  ```
 
 
 After these two steps, building your program will run the checker and alert you at compile time if any required properties might not be set.
