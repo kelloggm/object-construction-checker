@@ -20,12 +20,12 @@ There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
 
 1. Build the checker by running the following commands from your shell:
 
-```bash
-git clone https://github.com/msridhar/returnsrecv-checker.git
-./gradlew -p returnsrecv-checker build install
-git clone https://github.com/kelloggm/object-construction-checker.git
-./gradlew -p object-construction-checker build install
-```
+  ```bash
+  git clone https://github.com/msridhar/returnsrecv-checker.git
+  ./gradlew -p returnsrecv-checker build install
+  git clone https://github.com/kelloggm/object-construction-checker.git
+  ./gradlew -p object-construction-checker build install
+  ```
 
 2. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1-SNAPSHOT`.
 Build systems other than Maven and Gradle are not yet supported.
