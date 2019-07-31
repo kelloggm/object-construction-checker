@@ -11,7 +11,7 @@ What you’ll need:
 
 What to do:
 
-1. Add the [org.checkerframework](https://plugins.gradle.org/plugin/org.checkerframework) Gradle plugin to the `plugins` block of your `build.gradle` file:
+1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file:
 
 ```groovy
 plugins {
