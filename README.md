@@ -68,6 +68,9 @@ objects such that:
 </dd>
 </dl>
 
+It is possible to use the `@CalledMethodsPredicate` for unsound bug-finding, rather than
+verification, by using the `!` (NOT) operator.
+
 The typechecker also supports (and depends on) the 
 [Returns Receiver Checker](https://github.com/msridhar/returnsrecv-checker), which provides the
 `@This` annotation. `@This` on a method return type means that the method returns its receiver;

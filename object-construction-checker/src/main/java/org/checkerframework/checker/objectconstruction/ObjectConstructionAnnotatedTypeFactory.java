@@ -530,15 +530,16 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       if (AnnotationUtils.areSame(superAnno, TOP)) {
         return true;
-      } else if (AnnotationUtils.areSame(subAnno, TOP)) {
-        return false;
       }
 
       if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
         return false;
       }
 
-      Set<String> subVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(subAnno));
+      Set<String> subVal =
+          AnnotationUtils.areSame(subAnno, TOP)
+              ? Collections.emptySet()
+              : new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(subAnno));
 
       if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
         // superAnno is a CMP annotation, so we need to evaluate the predicate
