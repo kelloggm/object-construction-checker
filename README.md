@@ -21,19 +21,18 @@ There are separate instructions for [using the Object Construction Checker with 
 
 ## Using the checker
 
-1. Build the checker by running the following commands from your shell:
-
-```bash
-git clone https://github.com/msridhar/returnsrecv-checker.git
-./gradlew -p returnsrecv-checker build install
-git clone https://github.com/kelloggm/object-construction-checker.git
-./gradlew -p object-construction-checker build install
-```
-
-2. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1-SNAPSHOT`.
+1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1`.
 Build systems other than Maven and Gradle are not yet supported.
 
-3. Run `javac` normally.
+For example, for Gradle, add the following to the `build.gradle` file:
+```
+dependencies {
+    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1'
+    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1'
+}
+```
+
+2. Run `javac` normally.
 The checker includes a manifest file defining an annotation processor, meaning that `javac` will run it
 automatically if it is on your compile classpath (as long as no annotation processors are explicitly specified).
 

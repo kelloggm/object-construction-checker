@@ -11,39 +11,28 @@ What you’ll need:
 
 What to do:
 
-1. [Todo: remove this requirement]
-Build the Object Construction Checker:
-```
-git clone https://github.com/msridhar/returnsrecv-checker.git
-(cd returnsrecv-checker && ./gradlew build && ./gradlew install)
-git clone https://github.com/kelloggm/object-construction-checker.git
-(cd object-construction-checker && ./gradlew build && ./gradlew install)
-```
-
-2. Add the [org.checkerframework](https://plugins.gradle.org/plugin/org.checkerframework) Gradle plugin to the `plugins` block of your `build.gradle` file:
+1. Add the [org.checkerframework](https://plugins.gradle.org/plugin/org.checkerframework) Gradle plugin to the `plugins` block of your `build.gradle` file:
 
 ```groovy
 plugins {
+    ...
     id "io.freefair.lombok" version "3.6.6"
-    id "org.checkerframework" version "0.3.9"
+    id "org.checkerframework" version "0.3.16"
 }
 ```
 
-3. Add the following to your `build.gradle` file:
+2. Add the following to your `build.gradle` file:
 
 ```groovy
-repositories {
-    mavenLocal()
-}
 checkerFramework {
     checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
     extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
 }
 dependencies {
-    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1-SNAPSHOT'
-    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1-SNAPSHOT'
+    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1'
+    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1'
 }
 ```
 
 
-After these three steps, building your program will run the checker and alert you at compile time if any required properties might not be set.
+After these two steps, building your program will run the checker and alert you at compile time if any required properties might not be set.
