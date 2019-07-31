@@ -25,9 +25,12 @@ plugins {
 
 ```groovy
 repositories {
+    mavenLocal()
+    maven { url "http://repo.maven.apache.org/maven2" }
     maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
 }
 checkerFramework {
+    skipVersionCheck = true
     checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
     extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
 }
