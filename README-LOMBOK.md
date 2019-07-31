@@ -21,16 +21,19 @@ plugins {
 }
 ```
 
-2. Add the following to your `build.gradle` file:
+2. Add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
 
 ```groovy
+repositories {
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+}
 checkerFramework {
     checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
     extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
 }
 dependencies {
-    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1'
-    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1'
+    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.1-SNAPSHOT'
+    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1-SNAPSHOT'
 }
 ```
 

@@ -21,14 +21,14 @@ There are separate instructions for [using the Object Construction Checker with 
 
 ## Using the checker
 
-1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1`.
+1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1.1-SNAPSHOT`.
 Build systems other than Maven and Gradle are not yet supported.
 
 For example, for Gradle, add the following to the `build.gradle` file:
 ```
 dependencies {
-    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1'
-    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1'
+    annotationProcessor 'net.sridharan.objectconstruction:object-construction-checker:0.1.1-SNAPSHOT'
+    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1-SNAPSHOT'
 }
 ```
 
