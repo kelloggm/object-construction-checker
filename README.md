@@ -51,7 +51,7 @@ The Object Construction Checker works as follows:
 
 If you use AutoValue or Lombok, most specifications are automatically
 inferred by the Object Construction Checker, from field annotations such as
-`@Nullable` and field types such as `Optional'.
+`@Nullable` and field types such as `Optional`.
 
 In some cases, you may need to specify your code.  You do so by writing
 type annotations.  A type annotation is written before a type.  For
