@@ -26,19 +26,22 @@ the builder.
 
 There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
 
-1. Build the checker by running the following commands from your shell:
+1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1.1`.
+  Build systems other than Maven and Gradle are not yet supported.
 
-  ```bash
-  git clone https://github.com/msridhar/returnsrecv-checker.git
-  ./gradlew -p returnsrecv-checker build install
-  git clone https://github.com/kelloggm/object-construction-checker.git
-  ./gradlew -p object-construction-checker build install
+  For example, for Gradle, add the following to the `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
+
+  ```
+  repositories {
+      mavenCentral()
+  }
+  dependencies {
+      annotationProcessor 'net.sridharan.objectconstruction:object-construction-checker:0.1.1'
+      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1'
+  }
   ```
 
-2. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1-SNAPSHOT`.
-Build systems other than Maven and Gradle are not yet supported.
-
-3. Run `javac` normally.
+2. Run `javac` normally.
 The checker includes a manifest file defining an annotation processor, meaning that `javac` will run it
 automatically if it is on your compile classpath (as long as no annotation processors are explicitly specified).
 
