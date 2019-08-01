@@ -27,9 +27,7 @@ If your project has subprojects or you need other customizations, see the docume
 
   ```groovy
   repositories {
-      mavenLocal()
-      maven { url "http://repo.maven.apache.org/maven2" }
-      maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+      mavenCentral()
   }
   checkerFramework {
       skipVersionCheck = true
@@ -37,8 +35,8 @@ If your project has subprojects or you need other customizations, see the docume
       extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
   }
   dependencies {
-      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.1-SNAPSHOT'
-      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1-SNAPSHOT'
+      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.1'
+      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1'
   }
   ```
 
