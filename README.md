@@ -137,9 +137,9 @@ if (somePredicate) {
 }
 
 @CalledMethodsPredicate("! methodA") Object x;
-x = never;        // no warning
-x = oneBranch;    // no warning
-x = bothBranches; // warning
+x = never;        // no warning (methodA was never called)
+x = oneBranch;    // no warning (even though methodA might have been called)
+x = bothBranches; // warning (methodA was definitely called)
 ```
 
 Suppose that exactly one (but not both) of two methods should be called.
