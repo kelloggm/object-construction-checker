@@ -89,8 +89,8 @@ The syntax of boolean expressions is that of the [Spring Expression Language (SP
 
 The typechecker also supports (and depends on) the
 [Returns Receiver Checker](https://github.com/msridhar/returnsrecv-checker), which provides the
-`@This` annotation. `@This` on a method return type means that the method returns its receiver;
-this checker uses that information to persist sets of known method calls in fluent APIs.
+`@This` annotation. `@This` on a method return type means that the method returns its receiver.
+The Object Construction Checker uses that information when type-checking fluent APIs.
 
 ### Type hierarchy (subtyping)
 
