@@ -17,11 +17,13 @@ What to do:
   plugins {
       ...
       id "io.freefair.lombok" version "3.6.6"
-      id "org.checkerframework" version "0.3.16"
+      id "org.checkerframework" version "0.3.18"
   }
   ```
 
-2. Add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
+2. For a vanilla Gradle project, add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present).
+If your project has subprojects or you need other customizations, see the documentation for the
+[org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) plugin.
 
   ```groovy
   repositories {
