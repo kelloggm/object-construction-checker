@@ -52,41 +52,35 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
-  /**
-   * Canonical copies of the top and bottom annotations. Package private to permit access from the
-   * Transfer class.
-   */
-  final AnnotationMirror TOP, BOTTOM;
+  /** The top annotation. Package private to permit access from the Transfer class. */
+  final AnnotationMirror TOP;
 
-  /**
-   * The list of annotations that Lombok treats as non-null. The list is copied from
-   * lombok.core.handlers.HandlerUtil. The list cannot be used from that class directly because
-   * Lombok does not actually provide class files for its own implementation, to prevent itself from
-   * being accidentally added to clients' compile classpaths. This design decision means that it is
-   * impossible to depend directly on Lombok internals.
-   */
-  public static final List<String> NONNULL_ANNOTATIONS;
+  /** The bottom annotation. Package private to permit access from the Transfer class. */
+  final AnnotationMirror BOTTOM;
 
-  static {
-    NONNULL_ANNOTATIONS =
-        Collections.unmodifiableList(
-            Arrays.asList(
-                "android.annotation.NonNull",
-                "android.support.annotation.NonNull",
-                "com.sun.istack.internal.NotNull",
-                "edu.umd.cs.findbugs.annotations.NonNull",
-                "javax.annotation.Nonnull",
-                // "javax.validation.constraints.NotNull", // The field might contain a null value
-                // until it is persisted.
-                "lombok.NonNull",
-                "org.checkerframework.checker.nullness.qual.NonNull",
-                "org.eclipse.jdt.annotation.NonNull",
-                "org.eclipse.jgit.annotations.NonNull",
-                "org.jetbrains.annotations.NotNull",
-                "org.jmlspecs.annotation.NonNull",
-                "org.netbeans.api.annotations.common.NonNull",
-                "org.springframework.lang.NonNull"));
-  }
+  // The list is copied from lombok.core.handlers.HandlerUtil. The list cannot be used from that
+  // class directly because Lombok does not provide class files for its own implementation, to
+  // prevent itself from being accidentally added to clients' compile classpaths. This design
+  // decision means that it is impossible to depend directly on Lombok internals.
+  /** The list of annotations that Lombok treats as non-null. */
+  public static final List<String> NONNULL_ANNOTATIONS =
+      Collections.unmodifiableList(
+          Arrays.asList(
+              "android.annotation.NonNull",
+              "android.support.annotation.NonNull",
+              "com.sun.istack.internal.NotNull",
+              "edu.umd.cs.findbugs.annotations.NonNull",
+              "javax.annotation.Nonnull",
+              // "javax.validation.constraints.NotNull", // The field might contain a null value
+              // until it is persisted.
+              "lombok.NonNull",
+              "org.checkerframework.checker.nullness.qual.NonNull",
+              "org.eclipse.jdt.annotation.NonNull",
+              "org.eclipse.jgit.annotations.NonNull",
+              "org.jetbrains.annotations.NotNull",
+              "org.jmlspecs.annotation.NonNull",
+              "org.netbeans.api.annotations.common.NonNull",
+              "org.springframework.lang.NonNull"));
 
   /** Default constructor matching super. Should be called automatically. */
   public ObjectConstructionAnnotatedTypeFactory(final BaseTypeChecker checker) {
