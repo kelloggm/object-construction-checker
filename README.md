@@ -63,8 +63,7 @@ Then the receiver for any call to build() must have had `setX` and `setY` called
 </dd>
 
 <dt>`@CalledMethodsPredicate(<em>logical-expression</em>)`</dt>
-</dd>permits the
-programmer to specify the permitted method calls using Java boolean syntax. 
+</dd>specifies the required method calls using Java boolean syntax.
 
 For example, the annotation `@CalledMethodsPredicate("x && y || z")` on a type represents
 objects such that:
