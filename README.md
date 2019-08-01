@@ -58,6 +58,8 @@ writing type annotations.  A type annotation is written before a type.  For
 example, in `@NonEmpty List<@Regex String>`, `@NonEmpty` is a type
 annotation on `List`, and `@Regex` is a type annotation on `String`.
 
+## Type annotations
+
 The two most important type annotations are:
 <dl>
 <dt>`@CalledMethods(<em>methodname</em>...)`</dt>
@@ -83,19 +85,30 @@ objects such that:
 </dd>
 </dl>
 
-To determine if a given `@CalledMethods` annotation is a subtype of an `@CalledMethodsPredicate`
-annotation, use the following procedure:
-1. Let *A* be the set of methods in the `@CalledMethods` annotation.
-2. Let *P* be the predicate of the `@CalledMethodsPredicate` annotation.
-3. For each *x* in *A*, replace all instances of *x* in *P* with *true*.
-4. For every other literal *y* in *P*, replace *y* with *false*.
-5. Evaluate *P*. If *P* is true, then `@CalledMethods(`*A*`)` is a subtype of
-`@CalledMethodsPredicate(`*P*`)`. Otherwise, it is not.
+The typechecker also supports (and depends on) the
+[Returns Receiver Checker](https://github.com/msridhar/returnsrecv-checker), which provides the
+`@This` annotation. `@This` on a method return type means that the method returns its receiver;
+this checker uses that information to persist sets of known method calls in fluent APIs.
+
+## Type hierarchy (subtyping)
+
+In `@CalledMethods`, larger sets induce types that are lower in the type hierarchy.
+More formally, let &#8849; represent subtyping.  Then
+`@CalledMethods(`*set1*`) T1` &#8849; `@CalledMethods(`*set2*`) T2` if  *set1 &supe; set2* and T1 $#8849; T2.
 
 No `@CalledMethodsPredicate` annotation is ever a subtype of another, or of
 any `@CalledMethods` annotation. For this reason,
 users should only write `@CalledMethodsPredicate` annotations on the parameters of
 methods (usually in stub files).
+
+To determine whether `@CalledMethods(`*M*`)` &&#8849; `@CalledMethodsPredicate(`*P*`)`,
+use the following procedure:
+
+1. For each *x* in *M*, replace all instances of *x* in *P* with *true*.
+2. For every other literal *y* in *P*, replace *y* with *false*.
+3. Evaluate *P* and use its result.
+
+## The `@CalledMethodsPredicate` NOT operator (`!`)
 
 The boolean syntax accepted by `@CalledMethodsPredicate` includes a NOT operator (`!`).
 The annotation `@CalledMethodsPredicate("!x")` means: "it isn't the case that x was
@@ -113,11 +126,6 @@ on the syntax accepted by `@CalledMethodsPredicate`, see the documentation for
 the
 [Spring Expression Language (SPEL)](https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html),
 whose parser it uses.
-
-The typechecker also supports (and depends on) the 
-[Returns Receiver Checker](https://github.com/msridhar/returnsrecv-checker), which provides the
-`@This` annotation. `@This` on a method return type means that the method returns its receiver;
-this checker uses that information to persist sets of known method calls in fluent APIs.
 
 
 ## More information
