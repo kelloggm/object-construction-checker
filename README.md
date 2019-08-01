@@ -13,6 +13,14 @@ and
 Programmers can extend it to other builders by writing method
 specifications.
 
+The checker performs *verification* rather than *bug-finding*.  The checker
+might yield a false positive warning when your code is too tricky for it to
+verify (please submit an
+[issue](https://github.com/kelloggm/object-construction-checker/issues) if
+you discover this).  However, if the checker issues no warnings, then you
+have a guarantee that your code supplies all the required information to
+the builder.
+
 
 ## Using the checker
 
