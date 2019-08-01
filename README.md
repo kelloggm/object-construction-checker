@@ -53,12 +53,12 @@ Most specifications are automatically inferred by the Object Construction
 Checker.  For example, it determines the specification of `build()` from
 `@Nullable` annotations, among other sources.
 
-You can specify your code's contracts (what it expects from clients) by
+In some cases, you may need to specify your code.  You do so by
 writing type annotations.  A type annotation is written before a type.  For
 example, in `@NonEmpty List<@Regex String>`, `@NonEmpty` is a type
 annotation on `List`, and `@Regex` is a type annotation on `String`.
 
-The two most relevant annotations are:
+The two most important type annotations are:
 <dl>
 <dt>`@CalledMethods(<em>methodname</em>...)`</dt>
 <dd>specifies that a value must have had all the given methods called on it.
@@ -74,7 +74,7 @@ Then the receiver for any call to build() must have had `setX` and `setY` called
 </dd>
 
 <dt>`@CalledMethodsPredicate(<em>logical-expression</em>)`</dt>
-</dd>specifies the required method calls using Java boolean syntax.
+<dd>specifies the required method calls using Java boolean syntax.
 
 For example, the annotation `@CalledMethodsPredicate("x && y || z")` on a type represents
 objects such that:
