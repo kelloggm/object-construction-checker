@@ -11,4 +11,6 @@ rootProject.name = 'object-construction-checker'
 
 include ':object-construction-checker'
 include ':object-construction-qual'
+include ':returnsrcvr-checker'
+include ':returnsrcvr-qual'
 include ':test-lib-java'
