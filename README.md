@@ -44,8 +44,19 @@ automatically if it is on your compile classpath (as long as no annotation proce
 
 ## Specifying your code
 
-You can specify your code's contracts (what it expects from clients) by writing type annotations.
-A type annotation is written before a type.  For example, in `@NonEmpty List<@Regex String>`, `@NonEmpty` is a type annotation on `List`, and `@Regex` is a type annotation on `String`.
+The Object Construction Checker works as follows:
+ * It reads method specifications or contracts:  what they require when they are called.
+ * It keeps track of which methods have been called on each object.
+ * It warns if method arguments do not satisfy the method's specification.
+
+Most specifications are automatically inferred by the Object Construction
+Checker.  For example, it determines the specification of `build()` from
+`@Nullable` annotations, among other sources.
+
+You can specify your code's contracts (what it expects from clients) by
+writing type annotations.  A type annotation is written before a type.  For
+example, in `@NonEmpty List<@Regex String>`, `@NonEmpty` is a type
+annotation on `List`, and `@Regex` is a type annotation on `String`.
 
 The two most relevant annotations are:
 <dl>
