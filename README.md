@@ -149,7 +149,7 @@ You can specify that via the type annotation
 The Object Construction Checker will find some errors.
 It will soundly verify that at least one method is called.
 It will warn if both methods are definitely called.
-However, if will not warn if there are some paths on which both methods are called, and some methods on which only one method is called.
+However, if will not warn if there are some paths on which both methods are called, and some paths on which only one method is called.
 
 
 ## More information
