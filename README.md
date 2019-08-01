@@ -58,12 +58,12 @@ writing type annotations.  A type annotation is written before a type.  For
 example, in `@NonEmpty List<@Regex String>`, `@NonEmpty` is a type
 annotation on `List`, and `@Regex` is a type annotation on `String`.
 
-## Type annotations
+### Type annotations
 
 The two most important type annotations are:
 <dl>
 <dt>`@CalledMethods(<em>methodname</em>...)`</dt>
-<dd>specifies that a value must have had all the given methods called on it.
+<dd>specifies a value, on which all the given methods were definitely called.
 (Other methods might also have been called.)
 
 Suppose that method `build` is annotated as
@@ -82,6 +82,8 @@ For example, the annotation `@CalledMethodsPredicate("x && y || z")` on a type r
 objects such that:
 * both the `x()` and `y()` methods have been called on the object, **or**
 * the `z()` method has been called on the object.
+
+The syntax of boolean expressions is that of the [Spring Expression Language (SPEL)](https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html).
 </dd>
 </dl>
 
@@ -90,42 +92,63 @@ The typechecker also supports (and depends on) the
 `@This` annotation. `@This` on a method return type means that the method returns its receiver;
 this checker uses that information to persist sets of known method calls in fluent APIs.
 
-## Type hierarchy (subtyping)
+### Type hierarchy (subtyping)
 
 In `@CalledMethods`, larger sets induce types that are lower in the type hierarchy.
 More formally, let &#8849; represent subtyping.  Then
-`@CalledMethods(`*set1*`) T1` &#8849; `@CalledMethods(`*set2*`) T2` if  *set1 &supe; set2* and T1 $#8849; T2.
+`@CalledMethods(`*set1*`) T1` &#8849; `@CalledMethods(`*set2*`) T2` iff  *set1 &supe; set2* and T1 &#8849; T2.
 
 No `@CalledMethodsPredicate` annotation is ever a subtype of another, or of
-any `@CalledMethods` annotation. For this reason,
-users should only write `@CalledMethodsPredicate` annotations on the parameters of
-methods (usually in stub files).
+any `@CalledMethods` annotation.  (This imprecise behavior is a limitation
+of the Object Construction Checker.)  For this reason, Programmers usually only
+write `@CalledMethodsPredicate` annotations on formal parameters
+(often in [stub files](https://checkerframework.org/manual/#annotating-libraries)).
 
-To determine whether `@CalledMethods(`*M*`)` &&#8849; `@CalledMethodsPredicate(`*P*`)`,
+To determine whether `@CalledMethods(`*M*`)` &#8849; `@CalledMethodsPredicate(`*P*`)`,
 use the following procedure:
 
 1. For each *x* in *M*, replace all instances of *x* in *P* with *true*.
 2. For every other literal *y* in *P*, replace *y* with *false*.
 3. Evaluate *P* and use its result.
 
-## The `@CalledMethodsPredicate` NOT operator (`!`)
+### The NOT operator (`!`) in `@CalledMethodsPredicate`
 
 The boolean syntax accepted by `@CalledMethodsPredicate` includes a NOT operator (`!`).
-The annotation `@CalledMethodsPredicate("!x")` means: "it isn't the case that x was
-definitely called" or "x was not called on every possible path" rather than
-"x is not called" or "x was not called on any path." This means that the `!` operator
-is primarily useful for unsound bug-finding rather than verification: it can be used
-to prove that a method was definitely called when it should not have been.
-Similarly, the `!` operator can be used to prove that two methods that ought to be
-mutually exclusive were definitely called together by writing
-`@CalledMethodsPredicate("!(a && b)")`. However, it cannot be used to prove the
-absence of paths on which two mutually-exclusive methods were called.
+The annotation `@CalledMethodsPredicate("!x")` means: "it is not true x was
+definitely called", equivalently "there is some path on which x was not called".
+The annotation `@CalledMethodsPredicate("!x")` does *not* mean "x was not called".
 
-For more details
-on the syntax accepted by `@CalledMethodsPredicate`, see the documentation for
-the
-[Spring Expression Language (SPEL)](https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html),
-whose parser it uses.
+The Object Construction Checker does not have a way of expressing that a
+method must not be called.  You can do unsound bug-finding for such a
+property by using the `!` operator.  The Object Construction Checker will
+detect if the method was always called, but will silently approve the code
+if the method is called on some but not all paths.
+
+For example:
+
+```
+Object never, oneBranch, bothBranches;
+
+if (somePredicate) {
+  oneBranch.methodA();
+  bothBranches.methodA();
+} else {
+  bothBranches.methodA();
+}
+
+@CalledMethodsPredicate("! methodA") Object x;
+x = never;        // no warning
+x = oneBranch;    // no warning
+x = bothBranches; // warning
+```
+
+Suppose that exactly one (but not both) of two methods should be called.
+You can specify that via the type annotation
+```@CalledMethodsPredicate("(a && !b) || (!a && b)")```
+The Object Construction Checker will find some errors.
+It will soundly verify that at least one method is called.
+It will warn if both methods are definitely called.
+However, if will not warn if there are some paths on which both methods are called, and some methods on which only one method is called.
 
 
 ## More information
