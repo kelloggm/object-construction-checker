@@ -93,6 +93,7 @@ This is helpful when type-checking fluent APIs.
 
 ### Type hierarchy (subtyping)
 
+The top element in the hierarchy is `@CalledMethods({})`.
 In `@CalledMethods` annotations, larger arguments induce types that are
 lower in the type hierarchy.  More formally, let &#8849; represent
 subtyping.  Then
