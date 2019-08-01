@@ -1,0 +1,47 @@
+plugins {
+    id 'java-library'
+
+    id "com.diffplug.gradle.spotless" version "3.23.0"
+}
+
+repositories {
+    // Use jcenter for resolving your dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+}
+
+sourceCompatibility = 1.8
+
+dependencies {
+    // This dependency is found on compile classpath of this component and consumers.
+    implementation 'org.checkerframework:checker:2.9.0'
+    // Export qualifiers to upstream dependencies, for convenience
+    api project(':returnsrcvr-qual')
+
+    // Testing
+    testImplementation 'junit:junit:4.12'
+    testCompile 'org.checkerframework:testlib:2.5.4'
+
+    // AutoValue support
+    implementation 'com.google.auto.value:auto-value-annotations:1.6.5'
+    testCompile 'com.google.auto.value:auto-value-annotations:1.6.5'
+    testCompile 'com.google.auto.value:auto-value:1.6.5'
+
+    // Lombok support
+    testCompile 'org.projectlombok:lombok:1.18.8'
+}
+
+tasks.withType(JavaCompile).all {
+    options.compilerArgs.add("-Xlint:all")
+}
+
+// run google java format
+spotless {
+    // uncomment this line to temporarily disable spotless (i.e. when debugging)
+    // enforceCheck = false
+    java {
+        googleJavaFormat()
+    }
+}
+
+apply from: rootProject.file("gradle-mvn-push.gradle")
