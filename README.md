@@ -22,12 +22,20 @@ have a guarantee that your code supplies all the required information to
 the builder.
 
 
+## Requirements
+
+You must use either Maven or Gradle as your build system.
+
+For Gradle, you must use version 4.6 or later.
+Using 4.5 or later will result in an error `Could not find method
+annotationProcessor() ...`.
+
+
 ## Using the checker
 
 There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
 
 1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1.1`.
-  Build systems other than Maven and Gradle are not yet supported.
 
   For example, for Gradle, add the following to the `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
 
@@ -41,7 +49,7 @@ There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
   }
   ```
 
-2. Run `javac` normally.
+2. Build your project normally, such as by running `./gradlew build`.
 The checker includes a manifest file defining an annotation processor, meaning that `javac` will run it
 automatically if it is on your compile classpath (as long as no annotation processors are explicitly specified).
 

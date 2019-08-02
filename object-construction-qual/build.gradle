@@ -9,7 +9,7 @@ sourceCompatibility = 1.8
 
 dependencies {
     // re-export these dependencies so clients don't need to explicitly import them
-    api 'org.checkerframework:checker-qual:2.9.0'
+    api "org.checkerframework:checker-qual:${versions.checkerFramework}"
     api project(':returnsrcvr-qual')
 }
 
