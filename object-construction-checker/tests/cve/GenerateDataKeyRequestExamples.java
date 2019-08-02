@@ -3,6 +3,8 @@
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.model.GenerateDataKeyRequest;
 import com.amazonaws.services.kms.model.DataKeySpec;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 
 class GenerateDataKeyRequestExamples {
 
@@ -103,6 +105,44 @@ class GenerateDataKeyRequestExamples {
         request.withNumberOfBytes(32);
         // :: error: argument.type.incompatible
         client.generateDataKey(request);
+    }
+
+    /// Interprocedural
+
+    void correctCaller1(AWSKMS client) {
+        GenerateDataKeyRequest request = new GenerateDataKeyRequest();
+        request.withKeySpec(DataKeySpec.AES_256);
+        callee1(client, request);
+    }
+
+    void callee1(AWSKMS client, @CalledMethods({"withKeySpec"}) GenerateDataKeyRequest request) {
+        client.generateDataKey(request);
+    }
+
+    void incorrectCaller1(AWSKMS client) {
+        GenerateDataKeyRequest request = new GenerateDataKeyRequest();
+        request.withKeySpec(DataKeySpec.AES_256);
+        request.withNumberOfBytes(32);
+        // :: error: argument.type.incompatible
+        callee1(client, request);
+    }
+
+    void correctCaller2(AWSKMS client) {
+        GenerateDataKeyRequest request = new GenerateDataKeyRequest();
+        callee2(client, request);
+    }
+
+    void callee2(AWSKMS client, @CalledMethodsPredicate("(!withNumberOfBytes) && (!setNumberOfBytes)") GenerateDataKeyRequest request) {
+        request.withKeySpec(DataKeySpec.AES_256);
+        client.generateDataKey(request);
+    }
+
+    void incorrectCaller2(AWSKMS client) {
+        GenerateDataKeyRequest request = new GenerateDataKeyRequest();
+        request.setKeySpec(DataKeySpec.AES_256);
+        request.setNumberOfBytes(32);
+        // :: error: argument.type.incompatible
+        callee2(client, request);
     }
 
 }
