@@ -9,7 +9,7 @@ buildscript {
 ext.versions = [
     checkerFramework: "2.10.0",
     autoValue       : "1.6.5",
-    lombok       : "1.18.8",
+    lombok          : "1.18.8",
 ]
 
 subprojects { project ->
