@@ -82,7 +82,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               "org.netbeans.api.annotations.common.NonNull",
               "org.springframework.lang.NonNull"));
 
-  /** Default constructor matching super. Should be called automatically. */
+  /**
+   * Default constructor matching super. Should be called automatically.
+   *
+   * @param checker the checker associated with this type factory
+   */
   public ObjectConstructionAnnotatedTypeFactory(final BaseTypeChecker checker) {
     super(checker);
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
@@ -90,7 +94,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     this.postInit();
   }
 
-  /** Creates a @CalledMethods annotation whose values are the given strings. */
+  /**
+   * Creates a @CalledMethods annotation whose values are the given strings.
+   *
+   * @param val the methods that have been called
+   * @return an annotation indicating that the given methods have been called
+   */
   public AnnotationMirror createCalledMethods(final String... val) {
     if (val.length == 0) {
       return TOP;
@@ -557,8 +566,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Gets the value field of an annotation with a list of strings in its value field. The empty list
-   * is returned if no value field is defined.
+   * Gets the value field of an annotation with a list of strings in its value element (field).
+   *
+   * @param anno the annotation whose value element to read
+   * @return the strings in the annotation's value element, or null if the annotation has no value
+   *     field.
    */
   public static List<String> getValueOfAnnotationWithStringArgument(final AnnotationMirror anno) {
     if (!AnnotationUtils.hasElementValue(anno, "value")) {
