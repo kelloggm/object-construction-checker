@@ -1,6 +1,7 @@
 package org.checkerframework.checker.objectconstruction;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
@@ -30,7 +31,6 @@ import org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop;
 import org.checkerframework.checker.returnsrcvr.ReturnsRcvrAnnotatedTypeFactory;
 import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
 import org.checkerframework.checker.returnsrcvr.qual.This;
-import org.checkerframework.com.google.common.collect.ImmutableSet;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;

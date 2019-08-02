@@ -22,6 +22,8 @@ dependencies {
 
     // For the @CalledMethodsPredicate evaluation
     implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
+
+    implementation 'com.google.guava:guava:28.0-jre'
     
     // If / when other code depends on this checker, we will likely want to make this
     // an api dependence
