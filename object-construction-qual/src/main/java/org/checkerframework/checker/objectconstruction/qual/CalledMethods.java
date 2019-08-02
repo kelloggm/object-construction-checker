@@ -19,6 +19,10 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({CalledMethodsTop.class})
 public @interface CalledMethods {
-  /** Methods that have been called on the annotated object. */
+  /**
+   * Methods that have been called, on any expression whose type is annotated.
+   *
+   * @return methods that have been called
+   */
   public String[] value() default {};
 }
