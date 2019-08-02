@@ -23,11 +23,9 @@ dependencies {
     // For the @CalledMethodsPredicate evaluation
     implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
     
-    // For returns receiver checking. Currently using SNAPSHOT dependency, preferring
-    // the version in the local Maven repo if present
     // If / when other code depends on this checker, we will likely want to make this
     // an api dependence
-    implementation 'net.sridharan.objectconstruction:returnsrcvr-checker:0.1.2-SNAPSHOT'
+    implementation project(':returnsrcvr-checker')
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'

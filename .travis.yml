@@ -5,6 +5,4 @@ jdk:
   - openjdk8
 
 script:
-  - git clone https://github.com/msridhar/returnsrecv-checker.git
-  - (cd returnsrecv-checker && ./gradlew build && ./gradlew install)
   - ./gradlew build --stacktrace

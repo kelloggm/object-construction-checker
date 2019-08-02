@@ -10,7 +10,7 @@ sourceCompatibility = 1.8
 dependencies {
     // re-export these dependencies so clients don't need to explicitly import them
     api 'org.checkerframework:checker-qual:2.9.0'
-    api 'net.sridharan.objectconstruction:returnsrcvr-qual:0.1.2-SNAPSHOT'
+    api project(':returnsrcvr-qual')
 }
 
 tasks.withType(JavaCompile).all {

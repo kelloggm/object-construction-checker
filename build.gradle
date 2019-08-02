@@ -12,6 +12,5 @@ subprojects { project ->
         // You can declare any Maven/Ivy/file repository here.
         jcenter()
         mavenLocal()
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
 }
