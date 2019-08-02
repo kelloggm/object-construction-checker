@@ -15,13 +15,15 @@ sourceCompatibility = 1.8
 
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
-    implementation 'org.checkerframework:checker:2.9.0'
+    implementation 'org.checkerframework:checker:2.10.0'
     // If / when other code depends on this checker, we will likely want to make this
     // an api dependence
     implementation project(':object-construction-qual')
 
     // For the @CalledMethodsPredicate evaluation
     implementation 'org.springframework:spring-expression:5.1.7.RELEASE'
+
+    implementation 'com.google.guava:guava:28.0-jre'
     
     // If / when other code depends on this checker, we will likely want to make this
     // an api dependence
