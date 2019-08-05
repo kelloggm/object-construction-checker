@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.lang.model.element.AnnotationMirror;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.dataflow.analysis.FlowExpressions;
 import org.checkerframework.dataflow.analysis.FlowExpressions.Receiver;
 import org.checkerframework.dataflow.analysis.TransferInput;
@@ -52,6 +53,12 @@ public class ObjectConstructionTransfer extends CFTransfer {
       type = atypefactory.TOP;
     } else {
       type = currentType.getAnnotationInHierarchy(atypefactory.TOP);
+    }
+
+    // Don't attempt to strengthen @CalledMethodsPredicate annotations, because that would
+    // require reasoning about the predicate itself. Instead, start over from top.
+    if (AnnotationUtils.areSameByClass(type, CalledMethodsPredicate.class)) {
+      type = atypefactory.TOP;
     }
 
     if (AnnotationUtils.areSame(type, atypefactory.BOTTOM)) {
