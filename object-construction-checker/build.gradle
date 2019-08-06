@@ -64,6 +64,10 @@ spotless {
     }
 }
 
+test {
+    inputs.files("tests/basic", "tests/cve", "tests/lombok", "tests/autovalue")
+}
+
 clean.doFirst {
     delete "${rootDir}/object-construction-checker/tests/build/"
 }

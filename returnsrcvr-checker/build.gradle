@@ -44,4 +44,8 @@ spotless {
     }
 }
 
+test {
+    inputs.files("tests/all-systems", "tests/autovalue", "tests/lombok", "tests/returnsrcvr")
+}
+
 apply from: rootProject.file("gradle-mvn-push.gradle")
