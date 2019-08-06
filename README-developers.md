@@ -1,17 +1,16 @@
 To build a version of the Object Construction Checker, and install it locally:
 
 ```
-git clone https://github.com/msridhar/returnsrecv-checker.git
-(cd returnsrecv-checker && ./gradlew build && ./gradlew install)
 git clone https://github.com/kelloggm/object-construction-checker.git
-(cd object-construction-checker && ./gradlew build && ./gradlew install)
+(cd object-construction-checker && ./gradlew install)
 ```
 
-To make Gradle use it, add to your `build.gradle` file (in addition to the
-instructions elsewhere):
+To make Gradle use it, add to your `build.gradle` file:
 
 ```
 repositories {
     mavenLocal()
 }
 ```
+
+Then, follow the instructions in the other READMEs, using version `0.1.2-SNAPSHOT` of the Object Construction Checker artifacts.
