@@ -24,6 +24,8 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+
+import com.sun.source.tree.VariableTree;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
@@ -389,6 +391,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             if (methodName.startsWith("clear")) {
               String propName =
                   Introspector.decapitalize(methodName.substring(5)); // clear has 5 characters
+              defaultedPropertyNames.add(propName);
+            }
+          } else if (builderMember.getKind() == ElementKind.FIELD) {
+            VariableTree variableTree = (VariableTree) declarationFromElement(builderMember);
+            if (variableTree != null && variableTree.getInitializer() != null) {
+              String propName = variableTree.getName().toString();
               defaultedPropertyNames.add(propName);
             }
           }
