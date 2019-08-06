@@ -58,7 +58,7 @@ tasks.withType(JavaCompile).all {
 // run google java format
 spotless {
     // uncomment this line to temporarily disable spotless (i.e. when debugging)
-     enforceCheck = false
+    // enforceCheck = false
     java {
         googleJavaFormat()
     }
