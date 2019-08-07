@@ -371,11 +371,30 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             requiredPropertyNames.add(member.getSimpleName().toString());
           }
         }
-      } else if (member.getKind().equals(ElementKind.METHOD)) {
+      } else if (member.getKind().equals(ElementKind.METHOD)
+          && hasAnnotation(member, "lombok.Generated")) {
         String methodName = member.getSimpleName().toString();
+        // Handle fields with @Builder.Default annotations.
+        // If a field foo has an @Builder.Default annotation, Lombok always generates a method
+        // called $default$foo.
         if (methodName.startsWith("$default$")) {
           String propName = methodName.substring(9); // $default$ has 9 characters
           defaultedPropertyNames.add(propName);
+        }
+      } else if (member.getKind().isClass() && member.toString().endsWith("Builder")) {
+        // If a field bar has an @Singular annotation, Lombok always generates a method called
+        // clearBar in the builder class itself. Therefore, search the builder for such a method,
+        // and extract the appropriate property name to treat as defaulted.
+        for (Element builderMember : member.getEnclosedElements()) {
+          if (builderMember.getKind() == ElementKind.METHOD
+              && hasAnnotation(builderMember, "lombok.Generated")) {
+            String methodName = builderMember.getSimpleName().toString();
+            if (methodName.startsWith("clear")) {
+              String propName =
+                  Introspector.decapitalize(methodName.substring(5)); // clear has 5 characters
+              defaultedPropertyNames.add(propName);
+            }
+          }
         }
       }
     }
