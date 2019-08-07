@@ -71,7 +71,7 @@ annotation on `List`, and `@Regex` is a type annotation on `String`.
 
 ### Type annotations
 
-The two most important type annotations are:
+The most important type annotations are:
 <dl>
 <dt><code>@CalledMethods(<em>methodName1, methodName2...</em>)</code></dt>
 <dd>the annotated type represents values, on which all the given methods were definitely called.
@@ -100,6 +100,11 @@ objects such that:
 This is helpful when type-checking fluent APIs.
 </dd>
 </dl>
+
+The fully-qualified names of the annotations are:\
+`org.checkerframework.checker.objectconstruction.qual.CalledMethods`\
+`org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate`\
+`org.checkerframework.checker.returnsrcvr.qual.This`
 
 
 ### Type hierarchy (subtyping)
