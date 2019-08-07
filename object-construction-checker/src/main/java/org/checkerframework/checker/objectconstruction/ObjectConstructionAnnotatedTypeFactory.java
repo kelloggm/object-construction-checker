@@ -325,7 +325,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     Set<String> allBuilderMethodNames = getAllMethodNames(builderElement);
     List<String> requiredProperties = getRequiredProperties(classElement, allBuilderMethodNames, b);
     AnnotationMirror calledMethodsAnno =
-        createCalledMethodsForAutoValueProperties(requiredProperties, allBuilderMethodNames);
+        createCalledMethodsForProperties(requiredProperties, allBuilderMethodNames, b);
     type.replaceAnnotation(calledMethodsAnno);
   }
 
