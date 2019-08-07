@@ -73,3 +73,9 @@ clean.doFirst {
 }
 
 apply from: rootProject.file("gradle-mvn-push.gradle")
+
+task printClasspath {
+    doLast {
+        println sourceSets.main.runtimeClasspath.asPath
+    }
+}
