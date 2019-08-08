@@ -10,6 +10,10 @@ class CalleeInference {
 
     void c() {}
 
+    /**
+     * we want to annotate this method in a way that indicates it calls the b() method on its parameter x
+     * @param x
+     */
     static void callB(CalleeInference x) {
         x.b();
     }
@@ -27,6 +31,7 @@ class CalleeInference {
         y.a();
         callB(y);
         y.c();
+        // checker reports an error here though it's safe
         y.build();
     }
 
@@ -35,6 +40,7 @@ class CalleeInference {
         y.a();
         y.c();
         callB(y);
+        // checker reports an error here though it's safe
         y.build();
     }
 }
