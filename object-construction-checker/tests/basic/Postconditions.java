@@ -17,6 +17,11 @@ class Postconditions {
         x.b();
     }
 
+    @EnsuresCalledMethods(value = "#1", methods = "b")
+    // :: error: contracts.postcondition.not.satisfied
+    static void doesNotCallB(Postconditions x) {
+    }
+
     @EnsuresCalledMethods(value = "#1", methods = {"b","c"})
     static void callBAndC(Postconditions x) {
         x.b();
