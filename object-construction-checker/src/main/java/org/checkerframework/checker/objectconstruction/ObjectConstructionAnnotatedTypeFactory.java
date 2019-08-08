@@ -507,11 +507,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         return BOTTOM;
       }
 
-      if (!AnnotationUtils.hasElementValue(a1, "value")) {
+      if (!AnnotationUtils.hasElementValue(a1, "value") || isCalledMethodsPredicate(a1)) {
         return a2;
       }
 
-      if (!AnnotationUtils.hasElementValue(a2, "value")) {
+      if (!AnnotationUtils.hasElementValue(a2, "value") || isCalledMethodsPredicate(a2)) {
         return a1;
       }
 
@@ -519,6 +519,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
       a1Val.addAll(a2Val);
       return createCalledMethods(a1Val.toArray(new String[0]));
+    }
+
+    private boolean isCalledMethodsPredicate(AnnotationMirror a1) {
+      return AnnotationUtils.areSameByClass(a1, CalledMethodsPredicate.class);
     }
 
     /**
@@ -539,6 +543,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       if (!AnnotationUtils.hasElementValue(a2, "value")) {
         return a2;
+      }
+
+      if (isCalledMethodsPredicate(a1) || isCalledMethodsPredicate(a2)) {
+        return TOP;
       }
 
       Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));

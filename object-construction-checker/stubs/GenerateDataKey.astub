@@ -1,0 +1,21 @@
+package com.amazonaws.services.kms;
+
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.returnsrcvr.qual.*;
+
+interface AWSKMS {
+     // The predicate implements a modified one-hot detector that permits e.g. setNumberOfBytes and withNumberOfBytes to be called together, but not setNumberOfBytes and withKeySpec. Basically, this predicate enforces that only one of the two categories are represented.
+     GenerateDataKeyResult generateDataKey(@CalledMethodsPredicate("(setNumberOfBytes || withNumberOfBytes || setKeySpec || withKeySpec) && !(setNumberOfBytes && setKeySpec) && !(setNumberOfBytes && withKeySpec) && !(withNumberOfBytes && setKeySpec) && !(withNumberOfBytes && withKeySpec)") GenerateDataKeyRequest request);
+}
+
+package com.amazonaws.services.kms.model;
+
+class GenerateDataKeyRequest {
+    @This GenerateDataKeyRequest withEncryptionContext(Map<String,String> encryptionContext);
+    @This GenerateDataKeyRequest withGrantTokens(Collection<String> grantTokens);
+    @This GenerateDataKeyRequest withGrantTokens(String... grantTokens);
+    @This GenerateDataKeyRequest withKeyId(String keyId);
+    @This GenerateDataKeyRequest withKeySpec(DataKeySpec keySpec);
+    @This GenerateDataKeyRequest withKeySpec(String keySpec);
+    @This GenerateDataKeyRequest withNumberOfBytes(Integer numberOfBytes);
+}
