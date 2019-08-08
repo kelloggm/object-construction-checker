@@ -52,6 +52,12 @@ class Postconditions {
         y.a();
         callBAndC(y);
         y.build();
+    }
 
+    static void invokeCallBAndCWrong() {
+        Postconditions y = new Postconditions();
+        callBAndC(y);
+        // :: error: method.invocation.invalid
+        y.build();
     }
 }
