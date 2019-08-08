@@ -95,6 +95,15 @@ objects such that:
 * the `z()` method has been called on the object.
 </dd>
 
+<dt><code>@EnsureCalledMethods(<em>expression, method-list</em>)</code></dt>
+<dd>specifies a post-condition on a method, indicating the methods it guarantees to be called on some
+input expression.  The expression is specified [as documented in the Checker Framework manual](https://checkerframework.org/manual/#java-expressions-as-arguments).
+
+
+For example, the annotation `@EnsuresCalledMethods(value = "#1", methods = {"x","y"})` on a method
+`void m(Param p)` guarantees that `p.x()` and `p.y()` will always be called before `m` returns.
+</dd>
+
 <dt><code>@This</code></dt>
 <dd>may only be written on a method return type, and means that the method returns its receiver.
 This is helpful when type-checking fluent APIs.
@@ -104,6 +113,7 @@ This is helpful when type-checking fluent APIs.
 The fully-qualified names of the annotations are:\
 `org.checkerframework.checker.objectconstruction.qual.CalledMethods`\
 `org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate`\
+`org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethods`\
 `org.checkerframework.checker.returnsrcvr.qual.This`
 
 
