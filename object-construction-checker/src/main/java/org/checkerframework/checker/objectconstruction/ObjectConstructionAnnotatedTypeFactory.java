@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -406,7 +405,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               String propName = variableTree.getName().toString();
               defaultedPropertyNames.add(propName);
               defaultedElements.put(builderMember, propName);
-            } else if (defaultedElements.containsKey(builderMember)){
+            } else if (defaultedElements.containsKey(builderMember)) {
               defaultedPropertyNames.add(defaultedElements.get(builderMember));
             }
           }
