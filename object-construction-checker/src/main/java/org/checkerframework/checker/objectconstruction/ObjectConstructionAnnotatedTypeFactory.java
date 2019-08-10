@@ -11,8 +11,11 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -352,6 +355,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
+  // Keep a cache of these so that when declarationFromElement doesn't work,
+  // we can still default correctly. Value is the property name to treat as
+  // defaulted.
+  private final Map<Element, String> defaultedElements = new HashMap<>();
+
   /**
    * computes the required properties of a @lombok.Builder class, i.e., the names of the fields
    * with @lombok.NonNull annotations
@@ -397,6 +405,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             if (variableTree != null && variableTree.getInitializer() != null) {
               String propName = variableTree.getName().toString();
               defaultedPropertyNames.add(propName);
+              defaultedElements.put(builderMember, propName);
+            } else if (defaultedElements.containsKey(builderMember)){
+              defaultedPropertyNames.add(defaultedElements.get(builderMember));
             }
           }
         }
