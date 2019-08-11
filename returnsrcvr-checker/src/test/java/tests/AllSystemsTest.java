@@ -9,17 +9,17 @@ import org.junit.runners.Parameterized.Parameters;
 /**
  * Test runner for tests of the Returns Receiver Checker.
  *
- * <p>Tests appear as Java files in the {@code tests/returnsrcvr} folder. To add a new test case,
+ * <p>Tests appear as Java files in the {@code tests/all-systems} folder. To add a new test case,
  * create a Java file in that directory. The file contains "// ::" comments to indicate expected
  * errors and warnings; see
  * https://github.com/typetools/checker-framework/blob/master/checker/tests/README .
  */
-public class ReturnsRcvrTest extends CheckerFrameworkPerDirectoryTest {
-  public ReturnsRcvrTest(List<File> testFiles) {
+public class AllSystemsTest extends CheckerFrameworkPerDirectoryTest {
+  public AllSystemsTest(List<File> testFiles) {
     super(
         testFiles,
         ReturnsRcvrChecker.class,
-        "returnsrcvr",
+        "all-systems",
         "-Anomsgtext",
         "-Astubs=stubs/",
         "-nowarn");
@@ -27,6 +27,6 @@ public class ReturnsRcvrTest extends CheckerFrameworkPerDirectoryTest {
 
   @Parameters
   public static String[] getTestDirs() {
-    return new String[] {"returnsrcvr"};
+    return new String[] {"all-systems"};
   }
 }

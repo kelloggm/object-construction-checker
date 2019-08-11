@@ -53,9 +53,12 @@ class SimpleTest {
     // :: error: invalid.this.location
     @This Object f;
 
-    // this is just to make sure we don't crash for interfaces
     interface I {
+
         Object foo();
+
+        SimpleTest.@This I setBar();
+
     }
 
 }

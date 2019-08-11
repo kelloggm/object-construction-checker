@@ -27,7 +27,10 @@ public class ReturnsRcvrVisitor extends BaseTypeVisitor<ReturnsRcvrAnnotatedType
       TreePath parentPath = currentPath.getParentPath();
       Tree parent = parentPath.getLeaf();
       Tree grandparent = parentPath.getParentPath().getLeaf();
-      boolean isReturnAnnot = parent instanceof ModifiersTree && grandparent instanceof MethodTree;
+      boolean isReturnAnnot =
+          grandparent instanceof MethodTree
+              && (parent.equals(((MethodTree) grandparent).getReturnType())
+                  || parent instanceof ModifiersTree);
       if (!isReturnAnnot) {
         checker.report(Result.failure("invalid.this.location"), node);
       }
