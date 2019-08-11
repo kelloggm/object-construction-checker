@@ -42,3 +42,6 @@ If your project has subprojects or you need other customizations, see the docume
 
 
 After these two steps, building your program will run the checker and alert you at compile time if any required properties might not be set.
+
+You should edit your original source code, **not** the files in the checker's error messages.
+The checker's error messages refer to Lombok's output, which is a variant of your source code that appears in a `delombok` directory.
