@@ -182,13 +182,15 @@ However, if will not warn if there are some paths on which both methods are call
 
 The checker automatically inserts default annotations for code that uses builders generated
 by Lombok and AutoValue. There are three places annotations are usually inserted:
-* an `@CalledMethods` annotation is placed on the receiver of the `build()` method. For Lombok,
+* A `@CalledMethods` annotation is placed on the receiver of the `build()` method, capturing the
+setter methods that must be invoked on the builder before calling `build()`. For Lombok,
 this annotation's argument is the set of `@lombok.NonNull` fields that do not have default values.
-For AutoValue, it is the set of fields that are neither `Optional` nor `@Nullable`.
-* if the object has a `toBuilder()` method (for example, if the `toBuilder = true` option is 
+For AutoValue, it is the set of fields that are not `@Nullable`, `Optional`, or a Guava Immutable
+Collection.
+* If the object has a `toBuilder()` method (for example, if the `toBuilder = true` option is
 passed to Lombok's `@Builder` annotation), then the return type of that method is annotated with
 the same `@CalledMethods` annotation as the receiver of `build()`, using the same rules as above.
-* an `@This` annotation is placed on the return type of each setter in the builder's implementation.
+* A `@This` annotation is placed on the return type of each setter in the builder's implementation.
 
 If you overwrite the definition of any of these methods (for example, by adding your own setters to
 a Lombok builder), you may need to write the annotations manually.
