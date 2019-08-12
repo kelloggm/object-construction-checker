@@ -17,7 +17,7 @@ What to do:
   plugins {
       ...
       id "io.freefair.lombok" version "3.6.6"
-      id "org.checkerframework" version "0.3.18"
+      id "org.checkerframework" version "0.3.20"
   }
   ```
 
@@ -35,8 +35,8 @@ If your project has subprojects or you need other customizations, see the docume
       extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
   }
   dependencies {
-      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.1'
-      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1'
+      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.2'
+      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.2'
   }
   ```
 
