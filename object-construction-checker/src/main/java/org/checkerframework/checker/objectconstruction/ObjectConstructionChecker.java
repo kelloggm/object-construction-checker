@@ -23,7 +23,9 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
         super.getImmediateSubcheckerClasses();
     checkers.add(ReturnsRcvrChecker.class);
-    checkers.add(ValueChecker.class);
+    if (this.processingEnv.getOptions().containsKey(USE_VALUE_CHECKER)) {
+      checkers.add(ValueChecker.class);
+    }
     return checkers;
   }
 }
