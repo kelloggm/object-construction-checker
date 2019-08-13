@@ -160,9 +160,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * Uses the Value Checker to determine if the argument to a call to withFilters results in an
    * owner filter being applied, for AMI sniping.
    *
+   *<p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
+   *
    * @return either the first argument, or "withOwners" if the tree includes a call to
    *     withFilters(new Filter("owner")...)
-   *     <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
    */
   String adjustMethodNameUsingValueChecker(
       final String methodName, final MethodInvocationTree tree) {
