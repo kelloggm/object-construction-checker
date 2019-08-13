@@ -157,8 +157,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Uses the Value Checker to determine if the argument to a call to withFilters results in an
-   * owner filter being applied, for AMI sniping.
+   * Given a tree, returns the method that the tree should be considered as calling. Returns
+   * "withOwners" if the call is {@code withFilters(..., new Filter("owner"), ...)}. Otherwise,
+   * returns its first argument.
    *
    * <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
    *
