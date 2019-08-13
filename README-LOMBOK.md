@@ -17,7 +17,7 @@ What to do:
   plugins {
       ...
       id "io.freefair.lombok" version "3.6.6"
-      id "org.checkerframework" version "0.3.20"
+      id "org.checkerframework" version "0.3.22"
   }
   ```
 
