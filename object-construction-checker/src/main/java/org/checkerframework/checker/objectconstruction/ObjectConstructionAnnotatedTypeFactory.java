@@ -162,8 +162,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    *
    * <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
    *
-   * @return either the first argument, or "withOwners" if the tree includes a call to
-   *     withFilters(new Filter("owner")...)
+   * @return either the first argument, or "withOwners" if the call is {@code withFilters(..., new
+   *     Filter("owner"), ...)}
    */
   String adjustMethodNameUsingValueChecker(
       final String methodName, final MethodInvocationTree tree) {
