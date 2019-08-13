@@ -171,7 +171,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     if (useValueChecker) {
       if ("withFilters".equals(methodName)) {
         for (Tree filterTree : tree.getArguments()) {
-          // find a constructor invocation, digging through receivers
+          // Search the arguments to withFilters for a Filter constructor invocation,
+          // passing through as many method invocation trees as needed. This code is searching
+          // for code of the form:
+          // new Filter("owner").withValues("...")
           while (filterTree != null && filterTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
             filterTree =
                 TreeUtils.getReceiverTree(((MethodInvocationTree) filterTree).getMethodSelect());
@@ -180,9 +183,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             continue;
           }
           if (filterTree.getKind() == Tree.Kind.NEW_CLASS) {
-            ExpressionTree argTree = ((NewClassTree) filterTree).getArguments().get(0);
+            ExpressionTree filterConstructorArgument =
+                ((NewClassTree) filterTree).getArguments().get(0);
             AnnotatedTypeMirror valueType =
-                getTypeFactoryOfSubchecker(ValueChecker.class).getAnnotatedType(argTree);
+                getTypeFactoryOfSubchecker(ValueChecker.class)
+                    .getAnnotatedType(filterConstructorArgument);
             if (valueType.hasAnnotation(StringVal.class)) {
               AnnotationMirror valueAnno = valueType.getAnnotation(StringVal.class);
               List<String> possibleValues = getValueOfAnnotationWithStringArgument(valueAnno);
