@@ -4,8 +4,10 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.checkerframework.framework.qual.DefaultFor;
 import org.checkerframework.framework.qual.DefaultQualifierInHierarchy;
 import org.checkerframework.framework.qual.SubtypeOf;
+import org.checkerframework.framework.qual.TypeUseLocation;
 
 /**
  * The top qualifier in the Called Methods type hierarchy. It is equivalent to @CalledMethods({}).
@@ -16,4 +18,5 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @DefaultQualifierInHierarchy
 @SubtypeOf({})
+@DefaultFor(value = TypeUseLocation.LOWER_BOUND)
 public @interface CalledMethodsTop {}
