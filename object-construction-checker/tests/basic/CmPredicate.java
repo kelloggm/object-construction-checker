@@ -5,7 +5,7 @@ class CmPredicate {
     void testOr1() {
         MyClass m1 = new MyClass();
 
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.c();
     }
 
@@ -26,7 +26,7 @@ class CmPredicate {
     void testAnd1() {
         MyClass m1 = new MyClass();
 
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.d();
     }
 
@@ -34,7 +34,7 @@ class CmPredicate {
         MyClass m1 = new MyClass();
 
         m1.a();
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.d();
     }
 
@@ -42,7 +42,7 @@ class CmPredicate {
         MyClass m1 = new MyClass();
 
         m1.b();
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.d();
     }
 
@@ -51,7 +51,7 @@ class CmPredicate {
 
         m1.a();
         m1.c();
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.d();
     }
 
@@ -75,7 +75,7 @@ class CmPredicate {
     void testAndOr1() {
         MyClass m1 = new MyClass();
 
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.e();
     }
 
@@ -90,7 +90,7 @@ class CmPredicate {
         MyClass m1 = new MyClass();
 
         m1.b();
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.e();
     }
 
@@ -115,7 +115,7 @@ class CmPredicate {
     void testPrecedence1() {
         MyClass m1 = new MyClass();
 
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.f();
     }
 
@@ -123,7 +123,7 @@ class CmPredicate {
         MyClass m1 = new MyClass();
 
         m1.a();
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.f();
     }
 
@@ -131,7 +131,7 @@ class CmPredicate {
         MyClass m1 = new MyClass();
 
         m1.b();
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         m1.f();
     }
 

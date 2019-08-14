@@ -9,7 +9,7 @@ class LombokToBuilderExample {
 	}
 
 	static void ensureThatErrorIssued() {
-		// :: error: method.invocation.invalid
+		// :: error: finalizer.invocation.invalid
 		LombokToBuilderExample.builder().build();
 	}
 

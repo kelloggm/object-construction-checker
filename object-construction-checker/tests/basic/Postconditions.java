@@ -62,7 +62,7 @@ class Postconditions {
     static void invokeCallBAndCWrong() {
         Postconditions y = new Postconditions();
         callBAndC(y);
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         y.build();
     }
 }

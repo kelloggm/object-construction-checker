@@ -23,7 +23,7 @@ class SimpleFluentInference {
     static void doStuffWrong() {
         SimpleFluentInference s = new SimpleFluentInference()
                 .a()
-                // :: error: method.invocation.invalid
+                // :: error: finalizer.invocation.invalid
                 .build();
     }
 
@@ -38,7 +38,7 @@ class SimpleFluentInference {
                 .a()
                 .b()
                 .c()
-                // :: error: method.invocation.invalid
+                // :: error: finalizer.invocation.invalid
                 .build();
     }
 
@@ -46,7 +46,7 @@ class SimpleFluentInference {
         SimpleFluentInference s = new SimpleFluentInference().a();
         int i = 10;
         while (i > 0) {
-            // :: error: method.invocation.invalid
+            // :: error: finalizer.invocation.invalid
             s.b().build();
             i--;
             s = new SimpleFluentInference();
