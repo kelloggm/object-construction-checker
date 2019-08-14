@@ -18,5 +18,4 @@ import org.checkerframework.framework.qual.TypeUseLocation;
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @DefaultQualifierInHierarchy
 @SubtypeOf({})
-@DefaultFor(value = TypeUseLocation.LOWER_BOUND)
 public @interface CalledMethodsTop {}

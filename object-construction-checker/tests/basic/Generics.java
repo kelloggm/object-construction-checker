@@ -3,7 +3,7 @@ import org.checkerframework.checker.returnsrcvr.qual.*;
 
 class Generics {
 
-    private <T extends Symbol> T getMember(Class<T> type) {
+    private <@CalledMethods("isStatic") T extends Symbol> T getMember(Class<T> type) {
         T sym = getMember(type);
         if (sym != null && sym.isStatic()) {
             return sym;
