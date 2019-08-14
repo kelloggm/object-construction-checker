@@ -23,7 +23,7 @@ class Not {
 
     void test3(Foo f) {
         f.a();
-        // :: error: finalizer.invocation.invalid
+        // :: error: method.invocation.invalid
         f.notA();
         f.notB();
     }
@@ -31,16 +31,16 @@ class Not {
     void test4(Foo f) {
         f.b();
         f.notA();
-        // :: error: finalizer.invocation.invalid
+        // :: error: method.invocation.invalid
         f.notB();
     }
 
     void test5(Foo f) {
         f.a();
         f.b();
-        // :: error: finalizer.invocation.invalid
+        // :: error: method.invocation.invalid
         f.notA();
-        // :: error: finalizer.invocation.invalid
+        // :: error: method.invocation.invalid
         f.notB();
     }
 
@@ -55,7 +55,7 @@ class Not {
     }
 
     void test7(@CalledMethods("a") Foo f) {
-        // :: error: finalizer.invocation.invalid
+        // :: error: method.invocation.invalid
         f.notA();
     }
 
