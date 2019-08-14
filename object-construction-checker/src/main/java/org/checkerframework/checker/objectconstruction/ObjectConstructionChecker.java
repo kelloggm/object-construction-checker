@@ -4,10 +4,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-
 import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.source.Result;
@@ -29,10 +27,7 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     return checkers;
   }
 
-  /**
-   * Parses the String representation of an @CalledMethods annotation
-   * into
-   */
+  /** Parses the String representation of an @CalledMethods annotation into */
   private Set<String> parseCalledMethods(String calledMethodsString) {
     if (calledMethodsString.contains("@CalledMethodsTop")) {
       return Collections.emptySet();
@@ -41,15 +36,16 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     String withoutCMAnno = calledMethodsString.trim().substring("@CalledMethods({".length());
     String withoutBaseType = withoutCMAnno.substring(0, withoutCMAnno.lastIndexOf(' '));
     if (withoutBaseType.length() >= 2) {
-      return new HashSet<>(Arrays.asList(withoutBaseType.substring(0, withoutBaseType.length() - 2).split(", ")));
+      return new HashSet<>(
+          Arrays.asList(withoutBaseType.substring(0, withoutBaseType.length() - 2).split(", ")));
     } else {
       return Collections.emptySet();
     }
   }
 
   /**
-   * Adds special reporting for method.invocation.invalid errors to turn them
-   * into finalizer.invocation.invalid errors.
+   * Adds special reporting for method.invocation.invalid errors to turn them into
+   * finalizer.invocation.invalid errors.
    */
   @Override
   public void report(final Result r, final Object src) {
@@ -61,7 +57,8 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
       Object[] args = r.getDiagMessages().iterator().next().getArgs();
       String actualReceiverAnnoString = (String) args[1];
       String requiredReceiverAnnoString = (String) args[2];
-      if (actualReceiverAnnoString.contains("@CalledMethods(") || actualReceiverAnnoString.contains("@CalledMethodsTop") ) {
+      if (actualReceiverAnnoString.contains("@CalledMethods(")
+          || actualReceiverAnnoString.contains("@CalledMethodsTop")) {
         Set<String> actualCalledMethods = parseCalledMethods(actualReceiverAnnoString);
         if (requiredReceiverAnnoString.contains("@CalledMethods(")) {
           Set<String> requiredCalledMethods = parseCalledMethods(requiredReceiverAnnoString);
@@ -85,15 +82,19 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
   }
 
   /**
-   * Overridden because the messages.properties file isn't being loaded, for some reason.
-   * I think it has to do with relative paths? For whatever reason, this has to be hardcoded
-   * into the checker itself here for checkers that aren't part of the CF itself.
+   * Overridden because the messages.properties file isn't being loaded, for some reason. I think it
+   * has to do with relative paths? For whatever reason, this has to be hardcoded into the checker
+   * itself here for checkers that aren't part of the CF itself.
    */
   @Override
   public Properties getMessages() {
     Properties messages = super.getMessages();
-    messages.setProperty("finalizer.invocation.invalid", "This finalizer cannot be invoked, because the following methods have not been called: %s\n");
-    messages.setProperty("predicate.invalid", "An unparseable predicate was found in an annotation. Predicates must be produced by this grammar: S → method name | (S) | S && S | S || S. The message from the evaluator was: %s \\n");
+    messages.setProperty(
+        "finalizer.invocation.invalid",
+        "This finalizer cannot be invoked, because the following methods have not been called: %s\n");
+    messages.setProperty(
+        "predicate.invalid",
+        "An unparseable predicate was found in an annotation. Predicates must be produced by this grammar: S → method name | (S) | S && S | S || S. The message from the evaluator was: %s \\n");
     return messages;
   }
 }
