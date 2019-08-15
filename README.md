@@ -35,7 +35,7 @@ annotationProcessor() ...`.
 
 There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
 
-1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1.2`.
+1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1.3`.
 
   For example, for Gradle, add the following to the `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
 
@@ -44,8 +44,8 @@ There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
       mavenCentral()
   }
   dependencies {
-      annotationProcessor 'net.sridharan.objectconstruction:object-construction-checker:0.1.2'
-      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.2'
+      annotationProcessor 'net.sridharan.objectconstruction:object-construction-checker:0.1.3'
+      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.3'
   }
   ```
 
