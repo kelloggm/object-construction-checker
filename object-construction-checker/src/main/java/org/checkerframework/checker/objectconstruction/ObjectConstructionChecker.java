@@ -27,7 +27,11 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     return checkers;
   }
 
-  /** Parses the String representation of an @CalledMethods annotation into */
+  /** Parses the String representation of an @CalledMethods annotation into
+   *  a Set containing all of the actual arguments to the annotation.
+   *
+   *  Also parses @CalledMethodsTop into the empty set.
+   */
   private Set<String> parseCalledMethods(String calledMethodsString) {
     if (calledMethodsString.contains("@CalledMethodsTop")) {
       return Collections.emptySet();
