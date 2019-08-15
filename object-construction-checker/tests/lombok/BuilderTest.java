@@ -13,7 +13,7 @@ public class BuilderTest {
         BuilderTest.builder().x(0).y(0).build(); // good builder
         BuilderTest.builder().y(0).build(); // good builder
         BuilderTest.builder().y(0).z(5).build(); // good builder
-        // :: error: (method.invocation.invalid)
+        // :: error: (finalizer.invocation.invalid)
         BuilderTest.builder().x(0).build(); // bad builder
     }
 
@@ -23,7 +23,7 @@ public class BuilderTest {
         goodBuilder.y(0);
         goodBuilder.build();
         final BuilderTest.BuilderTestBuilder badBuilder = new BuilderTestBuilder();
-        // :: error: (method.invocation.invalid)
+        // :: error: (finalizer.invocation.invalid)
         badBuilder.build();
     }
 
