@@ -278,7 +278,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       if (builderKind != BuilderKind.NONE) {
 
-        if ("build".equals(methodName)) {
+        if (isBuilderBuildMethod(element, builderKind, nextEnclosingElement)) {
           // determine the required properties and add a corresponding @CalledMethods annotation
           Set<String> allBuilderMethodNames = getAllBuilderSetterMethodNames(enclosingElement);
           List<String> requiredProperties =
@@ -291,6 +291,19 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
 
       return super.visitExecutable(t, p);
+    }
+
+    private boolean isBuilderBuildMethod(
+        ExecutableElement element, BuilderKind builderKind, Element nextEnclosingElement) {
+      switch (builderKind) {
+        case LOMBOK:
+          return "build".equals(element.getSimpleName().toString());
+        case AUTO_VALUE:
+          // return type should be enclosing AutoValue class
+          return TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement);
+        default:
+          throw new RuntimeException("not possible!");
+      }
     }
   }
 
