@@ -313,10 +313,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Is e a setter for a builder?
+   * Is e a setter for an AutoValue builder?
    *
    * @param member member of builder or one of its supertypes
-   * @param builderElement element for the builder
+   * @param builderElement element for the AutoValue builder
    * @return {@code true} if e is a setter for the builder, {@code false} otherwise
    */
   private boolean isAutoValueBuilderSetter(Element member, Element builderElement) {
@@ -330,6 +330,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
     TypeMirror retType = ((ExecutableElement) member).getReturnType();
     if (retType.getKind().equals(TypeKind.TYPEVAR)) {
+      // instantiate the type variable for the Builder class
       retType =
           AnnotatedTypes.asMemberOf(
                   getContext().getTypeUtils(),
