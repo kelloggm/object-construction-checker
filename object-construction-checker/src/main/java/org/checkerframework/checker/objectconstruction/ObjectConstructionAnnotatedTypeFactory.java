@@ -299,8 +299,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         case LOMBOK:
           return "build".equals(element.getSimpleName().toString());
         case AUTO_VALUE:
-          // return type should be enclosing AutoValue class
-          return TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement);
+          // return type should be enclosing AutoValue class and method should be abstract
+          return element.getModifiers().contains(Modifier.ABSTRACT)
+              && TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement);
         default:
           throw new RuntimeException("unexpected BuilderKind " + builderKind);
       }
