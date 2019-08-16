@@ -475,44 +475,47 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    */
   private List<String> getAutoValueRequiredProperties(
       final Element autoValueClassElement, Set<String> allBuilderMethodNames) {
-    List<String> requiredPropertyNames = new ArrayList<>();
-    for (Element e : getAllSupertypes((Symbol) autoValueClassElement)) {
-      for (Element member : e.getEnclosedElements()) {
-        if (member.getKind().equals(ElementKind.METHOD)) {
-          // should be an abstract instance method
-          Set<Modifier> modifiers = member.getModifiers();
-          if (!modifiers.contains(Modifier.STATIC) && modifiers.contains(Modifier.ABSTRACT)) {
-            String name = member.getSimpleName().toString();
-            TypeMirror returnType = ((ExecutableElement) member).getReturnType();
-            if (!IGNORED_METHOD_NAMES.contains(name)
-                && !returnType.getKind().equals(TypeKind.VOID)) {
-              // shouldn't have a nullable return
-              boolean hasNullable =
-                  Stream.concat(
-                          elements.getAllAnnotationMirrors(member).stream(),
-                          returnType.getAnnotationMirrors().stream())
-                      .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
-              if (hasNullable) {
-                continue;
+    return getAllSupertypes((Symbol) autoValueClassElement).stream()
+        .flatMap(e -> e.getEnclosedElements().stream())
+        .filter(
+            member -> {
+              if (member.getKind().equals(ElementKind.METHOD)) {
+                // should be an abstract instance method
+                Set<Modifier> modifiers = member.getModifiers();
+                if (!modifiers.contains(Modifier.STATIC) && modifiers.contains(Modifier.ABSTRACT)) {
+                  String name = member.getSimpleName().toString();
+                  TypeMirror returnType = ((ExecutableElement) member).getReturnType();
+                  if (!IGNORED_METHOD_NAMES.contains(name)
+                      && !returnType.getKind().equals(TypeKind.VOID)) {
+                    // shouldn't have a nullable return
+                    boolean hasNullable =
+                        Stream.concat(
+                                elements.getAllAnnotationMirrors(member).stream(),
+                                returnType.getAnnotationMirrors().stream())
+                            .anyMatch(
+                                anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
+                    if (hasNullable) {
+                      return false;
+                    }
+                    // if return type of foo() is a Guava Immutable type, not required if there is a
+                    // builder
+                    // method fooBuilder()
+                    if (isGuavaImmutableType(returnType)
+                        && allBuilderMethodNames.contains(name + "Builder")) {
+                      return false;
+                    }
+                    // if it's an Optional, the Builder will automatically initialize it
+                    if (isOptional(returnType)) {
+                      return false;
+                    }
+                    return true;
+                  }
+                }
               }
-              // if return type of foo() is a Guava Immutable type, not required if there is a
-              // builder
-              // method fooBuilder()
-              if (isGuavaImmutableType(returnType)
-                  && allBuilderMethodNames.contains(name + "Builder")) {
-                continue;
-              }
-              // if it's an Optional, the Builder will automatically initialize it
-              if (isOptional(returnType)) {
-                continue;
-              }
-              requiredPropertyNames.add(name);
-            }
-          }
-        }
-      }
-    }
-    return requiredPropertyNames;
+              return false;
+            })
+        .map(e -> e.getSimpleName().toString())
+        .collect(Collectors.toList());
   }
 
   private List<Element> getAllSupertypes(Symbol symbol) {
