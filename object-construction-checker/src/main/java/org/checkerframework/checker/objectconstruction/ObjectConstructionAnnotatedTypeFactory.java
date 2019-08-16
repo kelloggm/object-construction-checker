@@ -313,6 +313,37 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
+   * Is e a setter for a builder?
+   *
+   * @param member member of builder or one of its supertypes
+   * @param builderElement element for the builder
+   * @return {@code true} if e is a setter for the builder, {@code false} otherwise
+   */
+  private boolean isAutoValueBuilderSetter(Element member, Element builderElement) {
+    if (!member.getKind().equals(ElementKind.METHOD)) {
+      return false;
+    }
+    Set<Modifier> modifiers = member.getModifiers();
+    // should be abstract and not static
+    if (modifiers.contains(Modifier.STATIC) || !modifiers.contains(Modifier.ABSTRACT)) {
+      return false;
+    }
+    TypeMirror retType = ((ExecutableElement) member).getReturnType();
+    if (retType.getKind().equals(TypeKind.TYPEVAR)) {
+      retType =
+          AnnotatedTypes.asMemberOf(
+                  getContext().getTypeUtils(),
+                  ObjectConstructionAnnotatedTypeFactory.this,
+                  getAnnotatedType(builderElement),
+                  (ExecutableElement) member)
+              .getReturnType()
+              .getUnderlyingType();
+    }
+    // either the return type should be the builder itself, or it should be a Guava immutable type
+    return isGuavaImmutableType(retType)
+        || builderElement.equals(TypesUtils.getTypeElement(retType));
+  }
+  /**
    * @param builderElement Element for a Lombok or AutoValue builder
    * @return names of all methods whose return type is the builder itself or returns a Guava
    *     Immutable type
@@ -321,29 +352,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotatedTypeMirror builderType = getAnnotatedType(builderElement);
     return getAllSupertypes((Symbol) builderElement).stream()
         .flatMap(e -> e.getEnclosedElements().stream())
-        .filter(
-            e -> {
-              if (!e.getKind().equals(ElementKind.METHOD)) {
-                return false;
-              }
-              Set<Modifier> modifiers = e.getModifiers();
-              if (modifiers.contains(Modifier.STATIC) || !modifiers.contains(Modifier.ABSTRACT)) {
-                return false;
-              }
-              TypeMirror retType = ((ExecutableElement) e).getReturnType();
-              if (retType.getKind().equals(TypeKind.TYPEVAR)) {
-                retType =
-                    AnnotatedTypes.asMemberOf(
-                            getContext().getTypeUtils(),
-                            ObjectConstructionAnnotatedTypeFactory.this,
-                            builderType,
-                            (ExecutableElement) e)
-                        .getReturnType()
-                        .getUnderlyingType();
-              }
-              return isGuavaImmutableType(retType)
-                  || builderElement.equals(TypesUtils.getTypeElement(retType));
-            })
+        .filter(e -> isAutoValueBuilderSetter(e, builderElement))
         .map(e -> e.getSimpleName().toString())
         .collect(Collectors.toSet());
   }
@@ -467,8 +476,53 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * computes the required properties of an @AutoValue class, i.e., those methods returning some
-   * non-void, non-@Nullable type
+   * Does member represent a required property of an AutoValue class?
+   *
+   * @param member member of an AutoValue class
+   * @param allBuilderMethodNames names of methods in corresponding AutoValue builder
+   * @return {@code true} if member is required, {@code false} otherwise
+   */
+  private boolean isAutoValueRequiredProperty(Element member, Set<String> allBuilderMethodNames) {
+    if (!member.getKind().equals(ElementKind.METHOD)) {
+      return false;
+    }
+    // should be an abstract instance method
+    Set<Modifier> modifiers = member.getModifiers();
+    if (modifiers.contains(Modifier.STATIC) || !modifiers.contains(Modifier.ABSTRACT)) {
+      return false;
+    }
+    String name = member.getSimpleName().toString();
+    if (IGNORED_METHOD_NAMES.contains(name)) {
+      return false;
+    }
+    TypeMirror returnType = ((ExecutableElement) member).getReturnType();
+    if (returnType.getKind().equals(TypeKind.VOID)) {
+      return false;
+    }
+    // shouldn't have a nullable return
+    boolean hasNullable =
+        Stream.concat(
+                elements.getAllAnnotationMirrors(member).stream(),
+                returnType.getAnnotationMirrors().stream())
+            .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
+    if (hasNullable) {
+      return false;
+    }
+    // if return type of foo() is a Guava Immutable type, not required if there is a
+    // builder method fooBuilder()
+    if (isGuavaImmutableType(returnType) && allBuilderMethodNames.contains(name + "Builder")) {
+      return false;
+    }
+    // if it's an Optional, the Builder will automatically initialize it
+    if (isOptional(returnType)) {
+      return false;
+    }
+    // it's required!
+    return true;
+  }
+
+  /**
+   * computes the required properties of an @AutoValue class
    *
    * @param autoValueClassElement the @AutoValue class
    * @param allBuilderMethodNames
@@ -478,43 +532,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       final Element autoValueClassElement, Set<String> allBuilderMethodNames) {
     return getAllSupertypes((Symbol) autoValueClassElement).stream()
         .flatMap(e -> e.getEnclosedElements().stream())
-        .filter(
-            member -> {
-              if (member.getKind().equals(ElementKind.METHOD)) {
-                // should be an abstract instance method
-                Set<Modifier> modifiers = member.getModifiers();
-                if (!modifiers.contains(Modifier.STATIC) && modifiers.contains(Modifier.ABSTRACT)) {
-                  String name = member.getSimpleName().toString();
-                  TypeMirror returnType = ((ExecutableElement) member).getReturnType();
-                  if (!IGNORED_METHOD_NAMES.contains(name)
-                      && !returnType.getKind().equals(TypeKind.VOID)) {
-                    // shouldn't have a nullable return
-                    boolean hasNullable =
-                        Stream.concat(
-                                elements.getAllAnnotationMirrors(member).stream(),
-                                returnType.getAnnotationMirrors().stream())
-                            .anyMatch(
-                                anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
-                    if (hasNullable) {
-                      return false;
-                    }
-                    // if return type of foo() is a Guava Immutable type, not required if there is a
-                    // builder
-                    // method fooBuilder()
-                    if (isGuavaImmutableType(returnType)
-                        && allBuilderMethodNames.contains(name + "Builder")) {
-                      return false;
-                    }
-                    // if it's an Optional, the Builder will automatically initialize it
-                    if (isOptional(returnType)) {
-                      return false;
-                    }
-                    return true;
-                  }
-                }
-              }
-              return false;
-            })
+        .filter(member -> isAutoValueRequiredProperty(member, allBuilderMethodNames))
         .map(e -> e.getSimpleName().toString())
         .collect(Collectors.toList());
   }
@@ -524,7 +542,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return types.closure(symbol.type).stream().map(t -> t.tsym).collect(Collectors.toList());
   }
 
-  private boolean isGuavaImmutableType(TypeMirror returnType) {
+  private static boolean isGuavaImmutableType(TypeMirror returnType) {
     return returnType.toString().startsWith("com.google.common.collect.Immutable");
   }
 
