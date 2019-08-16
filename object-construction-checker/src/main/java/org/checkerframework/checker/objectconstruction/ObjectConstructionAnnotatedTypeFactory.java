@@ -302,7 +302,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           // return type should be enclosing AutoValue class
           return TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement);
         default:
-          throw new RuntimeException("not possible!");
+          throw new RuntimeException("unexpected BuilderKind " + builderKind);
       }
     }
   }
