@@ -6,6 +6,9 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.VariableTree;
+import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Types;
+import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import java.beans.Introspector;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -27,11 +30,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-
-import com.sun.tools.javac.code.Symbol;
-import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.code.Types;
-import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
@@ -48,6 +46,7 @@ import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
+import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -318,19 +317,31 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    *     Immutable type
    */
   private Set<String> getAllBuilderSetterMethodNames(Element builderElement) {
-    return getAllSupertypes((Symbol) builderElement).stream().flatMap(e -> e.getEnclosedElements().stream())
+    AnnotatedTypeMirror builderType = getAnnotatedType(builderElement);
+    return getAllSupertypes((Symbol) builderElement).stream()
+        .flatMap(e -> e.getEnclosedElements().stream())
         .filter(
             e -> {
               if (!e.getKind().equals(ElementKind.METHOD)) {
                 return false;
               }
-              Set<Modifier> modifiers = ((ExecutableElement)e).getModifiers();
+              Set<Modifier> modifiers = e.getModifiers();
               if (modifiers.contains(Modifier.STATIC) || !modifiers.contains(Modifier.ABSTRACT)) {
                 return false;
               }
               TypeMirror retType = ((ExecutableElement) e).getReturnType();
-              TypeElement typeElement = TypesUtils.getTypeElement(retType);
-              return isGuavaImmutableType(retType) || builderElement.equals(typeElement);
+              if (retType.getKind().equals(TypeKind.TYPEVAR)) {
+                retType =
+                    AnnotatedTypes.asMemberOf(
+                            getContext().getTypeUtils(),
+                            ObjectConstructionAnnotatedTypeFactory.this,
+                            builderType,
+                            (ExecutableElement) e)
+                        .getReturnType()
+                        .getUnderlyingType();
+              }
+              return isGuavaImmutableType(retType)
+                  || builderElement.equals(TypesUtils.getTypeElement(retType));
             })
         .map(e -> e.getSimpleName().toString())
         .collect(Collectors.toSet());
@@ -465,7 +476,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private List<String> getAutoValueRequiredProperties(
       final Element autoValueClassElement, Set<String> allBuilderMethodNames) {
     List<String> requiredPropertyNames = new ArrayList<>();
-    for (Element e: getAllSupertypes((Symbol) autoValueClassElement)) {
+    for (Element e : getAllSupertypes((Symbol) autoValueClassElement)) {
       for (Element member : e.getEnclosedElements()) {
         if (member.getKind().equals(ElementKind.METHOD)) {
           // should be an abstract instance method
@@ -473,17 +484,19 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           if (!modifiers.contains(Modifier.STATIC) && modifiers.contains(Modifier.ABSTRACT)) {
             String name = member.getSimpleName().toString();
             TypeMirror returnType = ((ExecutableElement) member).getReturnType();
-            if (!IGNORED_METHOD_NAMES.contains(name) && !returnType.getKind().equals(TypeKind.VOID)) {
+            if (!IGNORED_METHOD_NAMES.contains(name)
+                && !returnType.getKind().equals(TypeKind.VOID)) {
               // shouldn't have a nullable return
               boolean hasNullable =
                   Stream.concat(
-                      elements.getAllAnnotationMirrors(member).stream(),
-                      returnType.getAnnotationMirrors().stream())
+                          elements.getAllAnnotationMirrors(member).stream(),
+                          returnType.getAnnotationMirrors().stream())
                       .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
               if (hasNullable) {
                 continue;
               }
-              // if return type of foo() is a Guava Immutable type, not required if there is a builder
+              // if return type of foo() is a Guava Immutable type, not required if there is a
+              // builder
               // method fooBuilder()
               if (isGuavaImmutableType(returnType)
                   && allBuilderMethodNames.contains(name + "Builder")) {
@@ -498,7 +511,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
         }
       }
-
     }
     return requiredPropertyNames;
   }
