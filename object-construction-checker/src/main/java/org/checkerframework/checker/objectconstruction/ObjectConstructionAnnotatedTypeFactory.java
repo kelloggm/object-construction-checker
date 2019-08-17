@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Types;
@@ -39,6 +40,8 @@ import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
 import org.checkerframework.checker.returnsrcvr.qual.This;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.common.value.ValueChecker;
+import org.checkerframework.common.value.qual.StringVal;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
@@ -64,6 +67,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   /** The bottom annotation. Package private to permit access from the Transfer class. */
   final AnnotationMirror BOTTOM;
+
+  private final boolean useValueChecker;
 
   // The list is copied from lombok.core.handlers.HandlerUtil. The list cannot be used from that
   // class directly because Lombok does not provide class files for its own implementation, to
@@ -98,6 +103,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     super(checker);
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
+    this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
     this.postInit();
   }
 
@@ -155,6 +161,57 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
+   * Given a tree, returns the method that the tree should be considered as calling. Returns
+   * "withOwners" if the call is {@code withFilters(..., new Filter("owner"), ...)}. Otherwise,
+   * returns its first argument.
+   *
+   * <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
+   *
+   * @return either the first argument, or "withOwners" if the call is {@code withFilters(..., new
+   *     Filter("owner"), ...)}
+   */
+  String adjustMethodNameUsingValueChecker(
+      final String methodName, final MethodInvocationTree tree) {
+    if (useValueChecker) {
+      if ("withFilters".equals(methodName)) {
+        for (Tree filterTree : tree.getArguments()) {
+          // Search the arguments to withFilters for a Filter constructor invocation,
+          // passing through as many method invocation trees as needed. This code is searching
+          // for code of the form:
+          // new Filter("owner").withValues("...")
+          while (filterTree != null && filterTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
+            filterTree =
+                TreeUtils.getReceiverTree(((MethodInvocationTree) filterTree).getMethodSelect());
+          }
+          if (filterTree == null) {
+            continue;
+          }
+          if (filterTree.getKind() == Tree.Kind.NEW_CLASS) {
+            ExpressionTree filterConstructorArgument =
+                ((NewClassTree) filterTree).getArguments().get(0);
+
+            // Once https://github.com/typetools/checker-framework/pull/2726 is merged
+            // and we update to the release with that code, the next few lines should
+            // be replaced with a call to ValueCheckerUtils#getExactStringValue().
+
+            AnnotatedTypeMirror valueType =
+                getTypeFactoryOfSubchecker(ValueChecker.class)
+                    .getAnnotatedType(filterConstructorArgument);
+            if (valueType.hasAnnotation(StringVal.class)) {
+              AnnotationMirror valueAnno = valueType.getAnnotation(StringVal.class);
+              List<String> possibleValues = getValueOfAnnotationWithStringArgument(valueAnno);
+              if (possibleValues.size() == 1 && "owner".equals(possibleValues.get(0))) {
+                return "withOwners";
+              }
+            }
+          }
+        }
+      }
+    }
+    return methodName;
+  }
+
+  /**
    * This tree annotator is needed to create types for fluent builders that have @This annotations.
    */
   private class ObjectConstructionTreeAnnotator extends TreeAnnotator {
@@ -183,6 +240,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
         // Construct a new @CM annotation with just the method name
         String methodName = TreeUtils.methodName(tree).toString();
+        methodName = adjustMethodNameUsingValueChecker(methodName, tree);
         AnnotationMirror cmAnno = createCalledMethods(methodName);
 
         // Replace the return type of the method with the GLB (= union) of the two types above
