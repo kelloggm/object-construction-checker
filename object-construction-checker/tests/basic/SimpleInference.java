@@ -14,7 +14,7 @@ class SimpleInference {
 
     static void doStuffWrong() {
         SimpleInference s = new SimpleInference();
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         s.build();
     }
 }

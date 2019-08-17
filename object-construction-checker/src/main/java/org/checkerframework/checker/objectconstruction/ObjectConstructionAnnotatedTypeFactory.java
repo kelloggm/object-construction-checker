@@ -7,6 +7,9 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
+import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Types;
+import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import java.beans.Introspector;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -46,6 +49,7 @@ import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
+import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -256,6 +260,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           && element.getParameters().size() > 0) {
         handleToBuilderType(
             type,
+            superclass,
             TypesUtils.getTypeElement(superclass).getEnclosingElement(),
             BuilderKind.AUTO_VALUE);
       }
@@ -330,25 +335,79 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       if (builderKind != BuilderKind.NONE) {
 
-        if ("build".equals(methodName)) {
+        if (isBuilderBuildMethod(element, builderKind, nextEnclosingElement)) {
           // determine the required properties and add a corresponding @CalledMethods annotation
-          Set<String> allBuilderMethodNames = getAllMethodNames(enclosingElement);
+          Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(enclosingElement);
           List<String> requiredProperties =
-              getRequiredProperties(nextEnclosingElement, allBuilderMethodNames, builderKind);
+              getRequiredProperties(nextEnclosingElement, avBuilderSetterNames, builderKind);
           AnnotationMirror newCalledMethodsAnno =
               createCalledMethodsForProperties(
-                  requiredProperties, allBuilderMethodNames, builderKind);
+                  requiredProperties, avBuilderSetterNames, builderKind);
           t.getReceiverType().addAnnotation(newCalledMethodsAnno);
         }
       }
 
       return super.visitExecutable(t, p);
     }
+
+    private boolean isBuilderBuildMethod(
+        ExecutableElement element, BuilderKind builderKind, Element nextEnclosingElement) {
+      switch (builderKind) {
+        case LOMBOK:
+          return "build".equals(element.getSimpleName().toString());
+        case AUTO_VALUE:
+          // return type should be enclosing AutoValue class and method should be abstract
+          return element.getModifiers().contains(Modifier.ABSTRACT)
+              && TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement);
+        default:
+          throw new RuntimeException("unexpected BuilderKind " + builderKind);
+      }
+    }
   }
 
-  private Set<String> getAllMethodNames(Element enclosingElement) {
-    return enclosingElement.getEnclosedElements().stream()
-        .filter(e -> e.getKind().equals(ElementKind.METHOD))
+  /**
+   * Is member a setter for an AutoValue builder?
+   *
+   * @param member member of builder or one of its supertypes
+   * @param builderElement element for the AutoValue builder
+   * @return {@code true} if e is a setter for the builder, {@code false} otherwise
+   */
+  private boolean isAutoValueBuilderSetter(Element member, Element builderElement) {
+    if (!member.getKind().equals(ElementKind.METHOD)) {
+      return false;
+    }
+    Set<Modifier> modifiers = member.getModifiers();
+    // should be abstract and not static
+    if (modifiers.contains(Modifier.STATIC) || !modifiers.contains(Modifier.ABSTRACT)) {
+      return false;
+    }
+    TypeMirror retType = ((ExecutableElement) member).getReturnType();
+    if (retType.getKind().equals(TypeKind.TYPEVAR)) {
+      // instantiate the type variable for the Builder class
+      retType =
+          AnnotatedTypes.asMemberOf(
+                  getContext().getTypeUtils(),
+                  ObjectConstructionAnnotatedTypeFactory.this,
+                  getAnnotatedType(builderElement),
+                  (ExecutableElement) member)
+              .getReturnType()
+              .getUnderlyingType();
+    }
+    // either the return type should be the builder itself, or it should be a Guava immutable type
+    return isGuavaImmutableType(retType)
+        || builderElement.equals(TypesUtils.getTypeElement(retType));
+  }
+  /**
+   * Computes the names of setter methods for an AutoValue builder
+   *
+   * @param builderElement Element for an AutoValue builder
+   * @return names of all methods whose return type is the builder itself or that return a Guava
+   *     Immutable type
+   */
+  private Set<String> getAutoValueBuilderSetterMethodNames(Element builderElement) {
+    return getAllSupertypes((Symbol) builderElement).stream()
+        .flatMap(e -> e.getEnclosedElements().stream())
+        .filter(e -> isAutoValueBuilderSetter(e, builderElement))
         .map(e -> e.getSimpleName().toString())
         .collect(Collectors.toSet());
   }
@@ -364,7 +423,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private void handleToBuilder(
       AnnotatedTypeMirror.AnnotatedExecutableType t, Element classElement, BuilderKind b) {
     AnnotatedTypeMirror returnType = t.getReturnType();
-    handleToBuilderType(returnType, classElement, b);
+    handleToBuilderType(returnType, returnType.getUnderlyingType(), classElement, b);
   }
 
   /**
@@ -373,15 +432,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * constructor
    *
    * @param type type to update
+   * @param builderType type of abstract @AutoValue.Builder class
    * @param classElement corresponding AutoValue class
    * @param b whether the builder was generated by AutoValue or Lombok
    */
-  private void handleToBuilderType(AnnotatedTypeMirror type, Element classElement, BuilderKind b) {
-    Element builderElement = TypesUtils.getTypeElement(type.getUnderlyingType());
-    Set<String> allBuilderMethodNames = getAllMethodNames(builderElement);
-    List<String> requiredProperties = getRequiredProperties(classElement, allBuilderMethodNames, b);
+  private void handleToBuilderType(
+      AnnotatedTypeMirror type, TypeMirror builderType, Element classElement, BuilderKind b) {
+    Element builderElement = TypesUtils.getTypeElement(builderType);
+    Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(builderElement);
+    List<String> requiredProperties = getRequiredProperties(classElement, avBuilderSetterNames, b);
     AnnotationMirror calledMethodsAnno =
-        createCalledMethodsForProperties(requiredProperties, allBuilderMethodNames, b);
+        createCalledMethodsForProperties(requiredProperties, avBuilderSetterNames, b);
     type.replaceAnnotation(calledMethodsAnno);
   }
 
@@ -389,17 +450,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * computes the required properties of a builder class
    *
    * @param builderElement the class whose builder is to be checked
-   * @param allBuilderMethodNames
+   * @param avBuilderSetterNames
    * @param builderKind the framework by which the builder will be generated
    * @return a list of required property names
    */
   private List<String> getRequiredProperties(
       final Element builderElement,
-      Set<String> allBuilderMethodNames,
+      Set<String> avBuilderSetterNames,
       final BuilderKind builderKind) {
     switch (builderKind) {
       case AUTO_VALUE:
-        return getAutoValueRequiredProperties(builderElement, allBuilderMethodNames);
+        return getAutoValueRequiredProperties(builderElement, avBuilderSetterNames);
       case LOMBOK:
         return getLombokRequiredProperties(builderElement);
       default:
@@ -470,49 +531,74 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * computes the required properties of an @AutoValue class, i.e., those methods returning some
-   * non-void, non-@Nullable type
+   * Does member represent a required property of an AutoValue class?
+   *
+   * @param member member of an AutoValue class
+   * @param allBuilderMethodNames names of methods in corresponding AutoValue builder
+   * @return {@code true} if member is required, {@code false} otherwise
+   */
+  private boolean isAutoValueRequiredProperty(Element member, Set<String> allBuilderMethodNames) {
+    if (!member.getKind().equals(ElementKind.METHOD)) {
+      return false;
+    }
+    // should be an abstract instance method
+    Set<Modifier> modifiers = member.getModifiers();
+    if (modifiers.contains(Modifier.STATIC) || !modifiers.contains(Modifier.ABSTRACT)) {
+      return false;
+    }
+    String name = member.getSimpleName().toString();
+    if (IGNORED_METHOD_NAMES.contains(name)) {
+      return false;
+    }
+    TypeMirror returnType = ((ExecutableElement) member).getReturnType();
+    if (returnType.getKind().equals(TypeKind.VOID)) {
+      return false;
+    }
+    // shouldn't have a nullable return
+    boolean hasNullable =
+        Stream.concat(
+                elements.getAllAnnotationMirrors(member).stream(),
+                returnType.getAnnotationMirrors().stream())
+            .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
+    if (hasNullable) {
+      return false;
+    }
+    // if return type of foo() is a Guava Immutable type, not required if there is a
+    // builder method fooBuilder()
+    if (isGuavaImmutableType(returnType) && allBuilderMethodNames.contains(name + "Builder")) {
+      return false;
+    }
+    // if it's an Optional, the Builder will automatically initialize it
+    if (isOptional(returnType)) {
+      return false;
+    }
+    // it's required!
+    return true;
+  }
+
+  /**
+   * computes the required properties of an @AutoValue class
    *
    * @param autoValueClassElement the @AutoValue class
-   * @param allBuilderMethodNames
+   * @param avBuilderSetterNames
    * @return a list of required property names
    */
   private List<String> getAutoValueRequiredProperties(
-      final Element autoValueClassElement, Set<String> allBuilderMethodNames) {
-    List<String> requiredPropertyNames = new ArrayList<>();
-    for (Element member : autoValueClassElement.getEnclosedElements()) {
-      if (member.getKind().equals(ElementKind.METHOD)) {
-        // should be an abstract instance method
-        Set<Modifier> modifiers = member.getModifiers();
-        if (!modifiers.contains(Modifier.STATIC) && modifiers.contains(Modifier.ABSTRACT)) {
-          String name = member.getSimpleName().toString();
-          TypeMirror returnType = ((ExecutableElement) member).getReturnType();
-          if (!IGNORED_METHOD_NAMES.contains(name) && !returnType.getKind().equals(TypeKind.VOID)) {
-            // shouldn't have a nullable return
-            boolean hasNullable =
-                Stream.concat(
-                        elements.getAllAnnotationMirrors(member).stream(),
-                        returnType.getAnnotationMirrors().stream())
-                    .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
-            if (hasNullable) {
-              continue;
-            }
-            // if return type of foo() is a Guava Immutable type, not required if there is a builder
-            // method fooBuilder()
-            if (returnType.toString().startsWith("com.google.common.collect.Immutable")
-                && allBuilderMethodNames.contains(name + "Builder")) {
-              continue;
-            }
-            // if it's an Optional, the Builder will automatically initialize it
-            if (isOptional(returnType)) {
-              continue;
-            }
-            requiredPropertyNames.add(name);
-          }
-        }
-      }
-    }
-    return requiredPropertyNames;
+      final Element autoValueClassElement, Set<String> avBuilderSetterNames) {
+    return getAllSupertypes((Symbol) autoValueClassElement).stream()
+        .flatMap(e -> e.getEnclosedElements().stream())
+        .filter(member -> isAutoValueRequiredProperty(member, avBuilderSetterNames))
+        .map(e -> e.getSimpleName().toString())
+        .collect(Collectors.toList());
+  }
+
+  private List<Element> getAllSupertypes(Symbol symbol) {
+    Types types = Types.instance(((JavacProcessingEnvironment) getProcessingEnv()).getContext());
+    return types.closure(symbol.type).stream().map(t -> t.tsym).collect(Collectors.toList());
+  }
+
+  private static boolean isGuavaImmutableType(TypeMirror returnType) {
+    return returnType.toString().startsWith("com.google.common.collect.Immutable");
   }
 
   /**
@@ -520,17 +606,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * corresponding setter method name in the Builder
    *
    * @param propertyNames the property names
-   * @param allBuilderMethodNames names of all methods in the builder class
+   * @param avBuilderSetterNames names of all methods in the builder class
    * @param builderKind the kind of builder
    * @return the @CalledMethods annotation
    */
   public AnnotationMirror createCalledMethodsForProperties(
       final List<String> propertyNames,
-      Set<String> allBuilderMethodNames,
+      Set<String> avBuilderSetterNames,
       final BuilderKind builderKind) {
     switch (builderKind) {
       case AUTO_VALUE:
-        return createCalledMethodsForAutoValueProperties(propertyNames, allBuilderMethodNames);
+        return createCalledMethodsForAutoValueProperties(propertyNames, avBuilderSetterNames);
       case LOMBOK:
         return createCalledMethodsForLombokProperties(propertyNames);
       default:
@@ -543,10 +629,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   private AnnotationMirror createCalledMethodsForAutoValueProperties(
-      final List<String> propertyNames, Set<String> allBuilderMethodNames) {
+      final List<String> propertyNames, Set<String> avBuilderSetterNames) {
     String[] calledMethodNames =
         propertyNames.stream()
-            .map(prop -> autoValuePropToBuilderSetterName(prop, allBuilderMethodNames))
+            .map(prop -> autoValuePropToBuilderSetterName(prop, avBuilderSetterNames))
             .toArray(String[]::new);
     return createCalledMethods(calledMethodNames);
   }
@@ -683,7 +769,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   private static String autoValuePropToBuilderSetterName(
-      String prop, Set<String> allBuilderMethodNames) {
+      String prop, Set<String> builderSetterNames) {
     // we have two cases, depending on whether AutoValue strips JavaBean-style prefixes 'get' and
     // 'is'
     Set<String> possiblePropNames = new LinkedHashSet<>();
@@ -701,14 +787,18 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       ImmutableSet<String> setterNamesToTry =
           ImmutableSet.of(propName, "set" + capitalize(propName));
       for (String setterName : setterNamesToTry) {
-        if (allBuilderMethodNames.contains(setterName)) {
+        if (builderSetterNames.contains(setterName)) {
           return setterName;
         }
       }
     }
 
     // nothing worked
-    throw new RuntimeException("could not find Builder setter name for property " + prop);
+    throw new RuntimeException(
+        "could not find Builder setter name for property "
+            + prop
+            + " all names "
+            + builderSetterNames);
   }
 
   private static String capitalize(String prop) {
