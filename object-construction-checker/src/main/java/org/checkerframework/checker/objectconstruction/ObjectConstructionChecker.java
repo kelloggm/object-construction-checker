@@ -1,6 +1,5 @@
 package org.checkerframework.checker.objectconstruction;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -53,8 +52,18 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     String withoutCMAnno = calledMethodsString.trim().substring("@CalledMethods({".length());
     String withoutBaseType = withoutCMAnno.substring(0, withoutCMAnno.lastIndexOf(' '));
     if (withoutBaseType.length() >= 2) {
-      return new HashSet<>(
-          Arrays.asList(withoutBaseType.substring(0, withoutBaseType.length() - 2).split(", ")));
+      String[] withQuotes = withoutBaseType.substring(0, withoutBaseType.length() - 2).split(", ");
+      Set<String> result = new HashSet<>();
+      for (String s : withQuotes) {
+        if (s.startsWith("\"")) {
+          s = s.substring(1);
+        }
+        if (s.endsWith("\"")) {
+          s = s.substring(0, s.length() - 1);
+        }
+        result.add(s);
+      }
+      return result;
     } else {
       return Collections.emptySet();
     }
@@ -74,6 +83,11 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
       Object[] args = r.getDiagMessages().iterator().next().getArgs();
       String actualReceiverAnnoString = (String) args[1];
       String requiredReceiverAnnoString = (String) args[2];
+
+      System.out.println("constructing a finalizer error message");
+      System.out.println("actual: " + actualReceiverAnnoString);
+      System.out.println("required: " + requiredReceiverAnnoString);
+
       if (actualReceiverAnnoString.contains("@CalledMethods(")
           || actualReceiverAnnoString.contains("@CalledMethodsTop")) {
         Set<String> actualCalledMethods = parseCalledMethods(actualReceiverAnnoString);
@@ -82,18 +96,14 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
           requiredCalledMethods.removeAll(actualCalledMethods);
           StringBuilder missingMethods = new StringBuilder();
           for (String s : requiredCalledMethods) {
-            if (s.startsWith("\"")) {
-              s = s.substring(1);
-            }
-            if (s.endsWith("\"")) {
-              s = s.substring(0, s.length() - 1);
-            }
             missingMethods.append(s);
             missingMethods.append("() ");
           }
+          System.out.println("missing methods: " + missingMethods);
           theResult = Result.failure("finalizer.invocation.invalid", missingMethods.toString());
         }
       }
+      System.out.println("-----------------");
     }
     super.report(theResult, src);
   }
