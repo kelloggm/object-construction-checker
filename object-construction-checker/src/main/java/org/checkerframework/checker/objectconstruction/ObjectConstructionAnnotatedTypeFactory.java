@@ -189,6 +189,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           if (filterTree.getKind() == Tree.Kind.NEW_CLASS) {
             ExpressionTree filterConstructorArgument =
                 ((NewClassTree) filterTree).getArguments().get(0);
+
+            // Once https://github.com/typetools/checker-framework/pull/2726 is merged
+            // and we update to the release with that code, the next few lines should
+            // be replaced with a call to ValueCheckerUtils#getExactStringValue().
+
             AnnotatedTypeMirror valueType =
                 getTypeFactoryOfSubchecker(ValueChecker.class)
                     .getAnnotatedType(filterConstructorArgument);
