@@ -83,11 +83,6 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
       Object[] args = r.getDiagMessages().iterator().next().getArgs();
       String actualReceiverAnnoString = (String) args[1];
       String requiredReceiverAnnoString = (String) args[2];
-
-      System.out.println("constructing a finalizer error message");
-      System.out.println("actual: " + actualReceiverAnnoString);
-      System.out.println("required: " + requiredReceiverAnnoString);
-
       if (actualReceiverAnnoString.contains("@CalledMethods(")
           || actualReceiverAnnoString.contains("@CalledMethodsTop")) {
         Set<String> actualCalledMethods = parseCalledMethods(actualReceiverAnnoString);
@@ -99,11 +94,9 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
             missingMethods.append(s);
             missingMethods.append("() ");
           }
-          System.out.println("missing methods: " + missingMethods);
           theResult = Result.failure("finalizer.invocation.invalid", missingMethods.toString());
         }
       }
-      System.out.println("-----------------");
     }
     super.report(theResult, src);
   }
