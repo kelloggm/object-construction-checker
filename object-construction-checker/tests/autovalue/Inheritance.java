@@ -5,6 +5,7 @@ import org.checkerframework.checker.returnsrcvr.qual.This;
 class Inheritance {
   static interface Props {
     String name();
+    String somethingElse();
     abstract class Builder<B extends Builder<B>> {
       public abstract @This B name(String value);
     }
@@ -13,6 +14,8 @@ class Inheritance {
   @AutoValue
   abstract static class PropHolder implements Props {
     abstract int size();
+    @Override
+    public String somethingElse() { return "hi"; }
     static Builder builder() {
       return new AutoValue_Inheritance_PropHolder.Builder();
     }
