@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -378,21 +379,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * @return {@code true} if e is a setter for the builder, {@code false} otherwise
    */
   private boolean isAutoValueBuilderSetter(Element member, Element builderElement) {
-    if (!member.getKind().equals(ElementKind.METHOD)) {
-      return false;
-    }
-    Set<Modifier> modifiers = member.getModifiers();
-    // should be abstract and not static
-    if (modifiers.contains(Modifier.STATIC) || !modifiers.contains(Modifier.ABSTRACT)) {
-      return false;
-    }
     TypeMirror retType = ((ExecutableElement) member).getReturnType();
     if (retType.getKind().equals(TypeKind.TYPEVAR)) {
       // instantiate the type variable for the Builder class
       retType =
           AnnotatedTypes.asMemberOf(
                   getContext().getTypeUtils(),
-                  ObjectConstructionAnnotatedTypeFactory.this,
+                  this,
                   getAnnotatedType(builderElement),
                   (ExecutableElement) member)
               .getReturnType()
@@ -410,8 +403,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    *     Immutable type
    */
   private Set<String> getAutoValueBuilderSetterMethodNames(Element builderElement) {
-    return getAllSupertypes((Symbol) builderElement).stream()
-        .flatMap(e -> e.getEnclosedElements().stream())
+    return getAllAbstractMethods(builderElement).stream()
         .filter(e -> isAutoValueBuilderSetter(e, builderElement))
         .map(e -> e.getSimpleName().toString())
         .collect(Collectors.toSet());
@@ -538,19 +530,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   /**
    * Does member represent a required property of an AutoValue class?
    *
-   * @param member member of an AutoValue class
+   * @param member member of an AutoValue class or superclass
    * @param allBuilderMethodNames names of methods in corresponding AutoValue builder
    * @return {@code true} if member is required, {@code false} otherwise
    */
   private boolean isAutoValueRequiredProperty(Element member, Set<String> allBuilderMethodNames) {
-    if (!member.getKind().equals(ElementKind.METHOD)) {
-      return false;
-    }
-    // should be an abstract instance method
-    Set<Modifier> modifiers = member.getModifiers();
-    if (modifiers.contains(Modifier.STATIC) || !modifiers.contains(Modifier.ABSTRACT)) {
-      return false;
-    }
     String name = member.getSimpleName().toString();
     if (IGNORED_METHOD_NAMES.contains(name)) {
       return false;
@@ -590,13 +574,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    */
   private List<String> getAutoValueRequiredProperties(
       final Element autoValueClassElement, Set<String> avBuilderSetterNames) {
-    return getAllSupertypes((Symbol) autoValueClassElement).stream()
-        .flatMap(e -> e.getEnclosedElements().stream())
+    return getAllAbstractMethods(autoValueClassElement).stream()
         .filter(member -> isAutoValueRequiredProperty(member, avBuilderSetterNames))
         .map(e -> e.getSimpleName().toString())
         .collect(Collectors.toList());
   }
 
+  /**
+   * @param symbol symbol for a class
+   * @return list including the class and all its supertypes, with a guarantee that subtypes appear
+   *     before supertypes
+   */
   private List<Element> getAllSupertypes(Symbol symbol) {
     Types types = Types.instance(((JavacProcessingEnvironment) getProcessingEnv()).getContext());
     return types.closure(symbol.type).stream().map(t -> t.tsym).collect(Collectors.toList());
@@ -804,6 +792,42 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             + prop
             + " all names "
             + builderSetterNames);
+  }
+
+  /**
+   * Get all the abstract methods for a class. This should include those inherited abstract methods
+   * that are not overridden by the class or a superclass
+   *
+   * @param classElement the class
+   * @return list of all abstract methods
+   */
+  private List<Element> getAllAbstractMethods(Element classElement) {
+    List<Element> supertypes = getAllSupertypes((Symbol) classElement);
+    List<Element> abstractMethods = new ArrayList<>();
+    Set<Element> overriddenMethods = new HashSet<>();
+    for (Element t : supertypes) {
+      for (Element member : t.getEnclosedElements()) {
+        if (!member.getKind().equals(ElementKind.METHOD)) {
+          continue;
+        }
+        Set<Modifier> modifiers = member.getModifiers();
+        if (modifiers.contains(Modifier.STATIC)) {
+          continue;
+        }
+        if (modifiers.contains(Modifier.ABSTRACT)) {
+          // make sure it's not overridden
+          if (!overriddenMethods.contains(member)) {
+            abstractMethods.add(member);
+          }
+        } else {
+          // exclude any methods that this overrides
+          overriddenMethods.addAll(
+              AnnotatedTypes.overriddenMethods(getElementUtils(), this, (ExecutableElement) member)
+                  .values());
+        }
+      }
+    }
+    return abstractMethods;
   }
 
   private static String capitalize(String prop) {
