@@ -49,24 +49,28 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
       return Collections.emptySet();
     }
 
-    String withoutCMAnno = calledMethodsString.trim().substring("@CalledMethods({".length());
+    String withoutCMAnno = calledMethodsString.trim().substring("@CalledMethods(".length());
     String withoutBaseType = withoutCMAnno.substring(0, withoutCMAnno.lastIndexOf(' '));
-    if (withoutBaseType.length() >= 2) {
-      String[] withQuotes = withoutBaseType.substring(0, withoutBaseType.length() - 2).split(", ");
-      Set<String> result = new HashSet<>();
-      for (String s : withQuotes) {
-        if (s.startsWith("\"")) {
-          s = s.substring(1);
-        }
-        if (s.endsWith("\"")) {
-          s = s.substring(0, s.length() - 1);
-        }
-        result.add(s);
-      }
-      return result;
+    String withoutLastParen = withoutBaseType.substring(0, withoutBaseType.length() - 1);
+    String withoutBraces;
+    if (withoutLastParen.startsWith("{")) {
+      withoutBraces = withoutLastParen.substring(1, withoutLastParen.length() - 1);
     } else {
-      return Collections.emptySet();
+      withoutBraces = withoutLastParen;
     }
+
+    String[] withQuotes = withoutBraces.split(", ");
+    Set<String> result = new HashSet<>();
+    for (String s : withQuotes) {
+      if (s.startsWith("\"")) {
+        s = s.substring(1);
+      }
+      if (s.endsWith("\"")) {
+        s = s.substring(0, s.length() - 1);
+      }
+      result.add(s);
+    }
+    return result;
   }
 
   /**
