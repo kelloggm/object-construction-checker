@@ -9,12 +9,15 @@ import java.util.Arrays;
 import java.util.ArrayList;
 
 class MorePreciseFilters {
+
+    /* TODO: handle lists
     void ownerAliasList(AmazonEC2 ec2Client) {
         DescribeImagesRequest imagesRequest = new DescribeImagesRequest();
         List<Filter> imageFilters = new ArrayList<Filter>();
         imageFilters.add(new Filter().withName("owner-alias").withValues("microsoft"));
         ec2Client.describeImages(imagesRequest.withFilters(imageFilters)).getImages();
     }
+    */
 
     void withFilterNameInList(AmazonEC2 ec2Client) {
         DescribeImagesRequest request = new DescribeImagesRequest();
