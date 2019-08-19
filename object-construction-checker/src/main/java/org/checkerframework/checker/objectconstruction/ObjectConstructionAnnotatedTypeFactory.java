@@ -55,6 +55,7 @@ import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -69,6 +70,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   /** The bottom annotation. Package private to permit access from the Transfer class. */
   final AnnotationMirror BOTTOM;
+
+  private final ExecutableElement collectionsSingletonList;
 
   private final boolean useValueChecker;
 
@@ -106,6 +109,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
+    this.collectionsSingletonList =
+        TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());
     this.postInit();
   }
 
@@ -177,6 +182,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     if (!useValueChecker) {
       return methodName;
     }
+
+    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
+    if (!"com.amazonaws.services.ec2.model.DescribeImagesRequest"
+        .equals(ElementUtils.enclosingClass(invokedMethod).getQualifiedName().toString())) {
+      return methodName;
+    }
+
     if ("withFilters".equals(methodName) || "setFilters".equals(methodName)) {
       for (Tree filterTree : tree.getArguments()) {
         // Search the arguments to withFilters for a Filter constructor invocation,
@@ -202,11 +214,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
 
           // Descend into a call to Collections.singletonList()
-          if ("singletonList".equals(filterMethodName)) {
+          if (TreeUtils.isMethodInvocation(
+              filterTree, collectionsSingletonList, getProcessingEnv())) {
             filterTree = filterTreeAsMethodInvocation.getArguments().get(0);
           } else {
-            filterTree =
-                    TreeUtils.getReceiverTree(filterTreeAsMethodInvocation.getMethodSelect());
+            filterTree = TreeUtils.getReceiverTree(filterTreeAsMethodInvocation.getMethodSelect());
           }
         }
         if (filterTree == null) {
