@@ -162,14 +162,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Given a tree, returns the method that the tree should be considered as calling. Returns
-   * "withOwners" if the call is {@code withFilters(..., new Filter("owner"), ...)}. Otherwise,
-   * returns its first argument.
+   * Given a tree, returns the method that the tree should be considered as calling.
+   * Returns "withOwners" if the call sets an "owner", "owner-alias", or "owner-id" filter.
+   * Returns "withImageIds" if the call sets an "image-ids" filter.
+   *
    *
    * <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
    *
-   * @return either the first argument, or "withOwners" if the call is {@code withFilters(..., new
-   *     Filter("owner"), ...)}
+   * @return either the first argument, or "withOwners" or "withImageIds" if the tree is an
+   * equivalent filter addition.
    */
   String adjustMethodNameUsingValueChecker(
       final String methodName, final MethodInvocationTree tree) {
