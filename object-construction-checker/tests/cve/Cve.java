@@ -25,4 +25,9 @@ public class Cve {
         DescribeImagesResult result = client.describeImages(new DescribeImagesRequest()
                 .withImageIds("myImageId"));
     }
+
+    public static void correct3(AmazonEC2 client) {
+        DescribeImagesResult result = client.describeImages(new DescribeImagesRequest()
+                .withExecutableUsers("myUsers"));
+    }
 }
