@@ -41,6 +41,7 @@ import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
 import org.checkerframework.checker.returnsrcvr.qual.This;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.common.value.ValueAnnotatedTypeFactory;
 import org.checkerframework.common.value.ValueChecker;
 import org.checkerframework.common.value.qual.StringVal;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -54,6 +55,7 @@ import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -68,6 +70,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   /** The bottom annotation. Package private to permit access from the Transfer class. */
   final AnnotationMirror BOTTOM;
+
+  private final ExecutableElement collectionsSingletonList;
 
   private final boolean useValueChecker;
 
@@ -105,6 +109,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
+    this.collectionsSingletonList =
+        TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());
     this.postInit();
   }
 
@@ -163,53 +169,101 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   /**
    * Given a tree, returns the method that the tree should be considered as calling. Returns
-   * "withOwners" if the call is {@code withFilters(..., new Filter("owner"), ...)}. Otherwise,
-   * returns its first argument.
+   * "withOwners" if the call sets an "owner", "owner-alias", or "owner-id" filter. Returns
+   * "withImageIds" if the call sets an "image-ids" filter.
    *
    * <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
    *
-   * @return either the first argument, or "withOwners" if the call is {@code withFilters(..., new
-   *     Filter("owner"), ...)}
+   * @return either the first argument, or "withOwners" or "withImageIds" if the tree is an
+   *     equivalent filter addition.
    */
   String adjustMethodNameUsingValueChecker(
       final String methodName, final MethodInvocationTree tree) {
-    if (useValueChecker) {
-      if ("withFilters".equals(methodName)) {
-        for (Tree filterTree : tree.getArguments()) {
-          // Search the arguments to withFilters for a Filter constructor invocation,
-          // passing through as many method invocation trees as needed. This code is searching
-          // for code of the form:
-          // new Filter("owner").withValues("...")
-          while (filterTree != null && filterTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
-            filterTree =
-                TreeUtils.getReceiverTree(((MethodInvocationTree) filterTree).getMethodSelect());
-          }
-          if (filterTree == null) {
-            continue;
-          }
-          if (filterTree.getKind() == Tree.Kind.NEW_CLASS) {
-            ExpressionTree filterConstructorArgument =
-                ((NewClassTree) filterTree).getArguments().get(0);
+    if (!useValueChecker) {
+      return methodName;
+    }
 
-            // Once https://github.com/typetools/checker-framework/pull/2726 is merged
-            // and we update to the release with that code, the next few lines should
-            // be replaced with a call to ValueCheckerUtils#getExactStringValue().
+    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
+    if (!"com.amazonaws.services.ec2.model.DescribeImagesRequest"
+        .equals(ElementUtils.enclosingClass(invokedMethod).getQualifiedName().toString())) {
+      return methodName;
+    }
 
-            AnnotatedTypeMirror valueType =
-                getTypeFactoryOfSubchecker(ValueChecker.class)
-                    .getAnnotatedType(filterConstructorArgument);
-            if (valueType.hasAnnotation(StringVal.class)) {
-              AnnotationMirror valueAnno = valueType.getAnnotation(StringVal.class);
-              List<String> possibleValues = getValueOfAnnotationWithStringArgument(valueAnno);
-              if (possibleValues.size() == 1 && "owner".equals(possibleValues.get(0))) {
+    if ("withFilters".equals(methodName) || "setFilters".equals(methodName)) {
+      for (Tree filterTree : tree.getArguments()) {
+        // Search the arguments to withFilters for a Filter constructor invocation,
+        // passing through as many method invocation trees as needed. This code is searching
+        // for code of the form:
+        // new Filter("owner").withValues("...")
+        // or code of the form:
+        // new Filter().*.withName("owner").*
+
+        // Set to non-null iff a call to withName was observed; in that case, this variable's
+        // value is the argument to withName.
+        String withNameArg = null;
+        ValueAnnotatedTypeFactory valueATF = getTypeFactoryOfSubchecker(ValueChecker.class);
+
+        while (filterTree != null && filterTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
+
+          MethodInvocationTree filterTreeAsMethodInvocation = (MethodInvocationTree) filterTree;
+          String filterMethodName = TreeUtils.methodName(filterTreeAsMethodInvocation).toString();
+          if ("withName".equals(filterMethodName)
+              && filterTreeAsMethodInvocation.getArguments().size() >= 1) {
+            Tree withNameArgTree = filterTreeAsMethodInvocation.getArguments().get(0);
+            withNameArg = getExactStringValue(withNameArgTree, valueATF);
+          }
+
+          // Descend into a call to Collections.singletonList()
+          if (TreeUtils.isMethodInvocation(
+              filterTree, collectionsSingletonList, getProcessingEnv())) {
+            filterTree = filterTreeAsMethodInvocation.getArguments().get(0);
+          } else {
+            filterTree = TreeUtils.getReceiverTree(filterTreeAsMethodInvocation.getMethodSelect());
+          }
+        }
+        if (filterTree == null) {
+          continue;
+        }
+        if (filterTree.getKind() == Tree.Kind.NEW_CLASS) {
+
+          String value;
+          if (withNameArg != null) {
+            value = withNameArg;
+          } else {
+            ExpressionTree constructorArg = ((NewClassTree) filterTree).getArguments().get(0);
+            value = getExactStringValue(constructorArg, valueATF);
+          }
+
+          if (value != null) {
+            switch (value) {
+              case "owner":
+              case "owner-alias":
+              case "owner-id":
                 return "withOwners";
-              }
+              case "image-id":
+                return "withImageIds";
+              default:
             }
           }
         }
       }
     }
     return methodName;
+  }
+
+  // Once https://github.com/typetools/checker-framework/pull/2726 is merged
+  // and we update to the release with that code, this method should
+  // be replaced with a call to ValueCheckerUtils#getExactStringValue().
+  private static String getExactStringValue(Tree tree, ValueAnnotatedTypeFactory factory) {
+    AnnotatedTypeMirror valueType = factory.getAnnotatedType(tree);
+    if (valueType.hasAnnotation(StringVal.class)) {
+      AnnotationMirror valueAnno = valueType.getAnnotation(StringVal.class);
+      List<String> possibleValues = getValueOfAnnotationWithStringArgument(valueAnno);
+      if (possibleValues.size() == 1) {
+        return possibleValues.get(0);
+      }
+    }
+    return null;
   }
 
   /**
