@@ -16,7 +16,7 @@ class MorePreciseFilters {
         ec2Client.describeImages(imagesRequest.withFilters(imageFilters)).getImages();
     }
 
-    void withFilterName(AmazonEC2 ec2Client) {
+    void withFilterNameInList(AmazonEC2 ec2Client) {
         DescribeImagesRequest request = new DescribeImagesRequest();
         request.setFilters(Collections.singletonList(
                 new Filter().withName("image-id").withValues("12345")
@@ -30,5 +30,11 @@ class MorePreciseFilters {
                 .withFilters(new Filter("name", Arrays.asList("my_image_name")),
                         new Filter("owner-id", Arrays.asList("12345")));
         DescribeImagesResult result = ec2.describeImages(request);
+    }
+
+    void withName(AmazonEC2 ec2Client) {
+        DescribeImagesRequest request = new DescribeImagesRequest();
+        request.withFilters(new Filter().withName("image-id").withValues("12345"));
+        DescribeImagesResult result = ec2Client.describeImages(request);
     }
 }
