@@ -201,8 +201,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             withNameArg = getExactStringValue(withNameArgTree, valueATF);
           }
 
-          filterTree =
-              TreeUtils.getReceiverTree(((MethodInvocationTree) filterTree).getMethodSelect());
+          // Descend into a call to Collections.singletonList()
+          if ("singletonList".equals(filterMethodName)) {
+            filterTree = filterTreeAsMethodInvocation.getArguments().get(0);
+          } else {
+            filterTree =
+                    TreeUtils.getReceiverTree(filterTreeAsMethodInvocation.getMethodSelect());
+          }
         }
         if (filterTree == null) {
           continue;
