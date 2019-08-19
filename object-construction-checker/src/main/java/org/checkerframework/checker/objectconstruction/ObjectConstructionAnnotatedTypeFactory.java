@@ -201,8 +201,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             if (valueType.hasAnnotation(StringVal.class)) {
               AnnotationMirror valueAnno = valueType.getAnnotation(StringVal.class);
               List<String> possibleValues = getValueOfAnnotationWithStringArgument(valueAnno);
-              if (possibleValues.size() == 1 && "owner".equals(possibleValues.get(0))) {
-                return "withOwners";
+              if (possibleValues.size() == 1) {
+                String value = possibleValues.get(0);
+                switch(value) {
+                  case "owner":
+                  case "owner-alias":
+                  case "owner-id":
+                    return "withOwners";
+                  case "image-ids":
+                    return "withImageIds";
+                  default:
+                }
               }
             }
           }
