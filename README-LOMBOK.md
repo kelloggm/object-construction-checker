@@ -35,8 +35,8 @@ If your project has subprojects or you need other customizations, see the docume
       extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
   }
   dependencies {
-      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.4'
-      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.4'
+      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.5'
+      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.5'
   }
   ```
 
