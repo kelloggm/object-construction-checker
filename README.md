@@ -63,9 +63,7 @@ If your project has subprojects or you need other customizations, see the docume
   }
   ```
 
-3. Build your project normally, such as by running `./gradlew build`.
-The checker includes a manifest file defining an annotation processor, meaning that `javac` will run it
-automatically if it is on your compile classpath (as long as no annotation processors are explicitly specified).
+3. Build your project normally, such as by running `./gradlew build`.  The checker will report an error if any required properties have not been set.
 
 ### For Lombok users
 
