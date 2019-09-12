@@ -44,6 +44,7 @@ If your project uses Lombok, also see the further Lombok-specific instructions b
   }
   ```
 
+Note that the Gradle plugin is updated frequently.  We recommend you use the latest version shown [here](https://plugins.gradle.org/plugin/org.checkerframework).
 2. For a vanilla Gradle project, add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present).
 If your project has subprojects or you need other customizations, see the documentation for the
 [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) plugin.
