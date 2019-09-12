@@ -13,6 +13,11 @@ plugins {
 
 sourceCompatibility = 1.8
 
+configurations {
+    // for putting Error Prone javac in bootclasspath for running tests
+    errorproneJavac
+}
+
 dependencies {
 
     implementation "org.checkerframework:checker:${versions.checkerFramework}"
@@ -30,7 +35,7 @@ dependencies {
     testImplementation "junit:junit:4.12"
 
     // CF testing infrastructure
-    testCompile "org.checkerframework:testlib:2.5.4"
+    testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
 
     // For CVE tests
     testCompile "com.amazonaws:aws-java-sdk-ec2"
@@ -45,6 +50,9 @@ dependencies {
     // For Lombok Builders
     testCompile "org.projectlombok:lombok:${versions.lombok}"
     testCompile project(":test-lib-java")
+
+    errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
+
 }
 
 dependencyManagement {
@@ -68,6 +76,9 @@ spotless {
 
 test {
     inputs.files("tests/basic", "tests/cve", "tests/lombok", "tests/autovalue")
+    if (!JavaVersion.current().java9Compatible) {
+        jvmArgs "-Xbootclasspath/p:${configurations.errorproneJavac.asPath}"
+    }
 }
 
 clean.doFirst {

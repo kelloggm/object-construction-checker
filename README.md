@@ -33,25 +33,44 @@ annotationProcessor() ...`.
 
 ## Using the checker
 
-There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
+If your project uses Lombok, also see the further Lombok-specific instructions below.
 
-1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1.5`.
+1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file:
 
-  For example, for Gradle, add the following to the `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
-
+  ```groovy
+  plugins {
+      ...
+      id "org.checkerframework" version "0.4.0"
+  }
   ```
+
+Note that the Gradle plugin is updated frequently.  We recommend you use the latest version shown [here](https://plugins.gradle.org/plugin/org.checkerframework).
+
+2. For a vanilla Gradle project, add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present).
+If your project has subprojects or you need other customizations, see the documentation for the
+[org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) plugin.
+
+  ```groovy
   repositories {
       mavenCentral()
   }
+  checkerFramework {
+      skipVersionCheck = true
+      checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
+      extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
+  }
   dependencies {
-      annotationProcessor 'net.sridharan.objectconstruction:object-construction-checker:0.1.5'
+      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.5'
       implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.5'
   }
   ```
 
-2. Build your project normally, such as by running `./gradlew build`.
-The checker includes a manifest file defining an annotation processor, meaning that `javac` will run it
-automatically if it is on your compile classpath (as long as no annotation processors are explicitly specified).
+3. Build your project normally, such as by running `./gradlew build`.  The checker will report an error if any required properties have not been set.
+
+### For Lombok users
+
+The Object Construction Checker supports projects that use Lombok via the [io.freefair.lombok](https://plugins.gradle.org/plugin/io.freefair.lombok) Gradle plugin.  For such projects, the above instructions should work unmodified for running the checker.  However, note that to fix issues, you should edit your original source code, **not** the files in the checker's error messages.  The checker's error messages refer to Lombok's output, which is a variant of your source code that appears in a `delombok` directory.
+
 
 ## Specifying your code
 
