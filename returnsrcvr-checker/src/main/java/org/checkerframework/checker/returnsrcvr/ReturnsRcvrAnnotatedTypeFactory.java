@@ -9,6 +9,9 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.Tree;
 import org.checkerframework.checker.returnsrcvr.qual.MaybeThis;
 import org.checkerframework.checker.returnsrcvr.qual.This;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -91,6 +94,12 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
           // update enclosingElement to be for the superclass for this case
           enclosingElement = TypesUtils.getTypeElement(superclass);
           inAutoValueBuilder = enclosingElement.getAnnotation(AutoValue.Builder.class) != null;
+          if (inAutoValueBuilder) {
+            Tree tree = declarationFromElement(enclosingElement);
+            if (tree == null) {
+              throw new RuntimeException("no tree for superclass " + enclosingElement);
+            }
+          }
         }
       }
 
