@@ -9,6 +9,7 @@
 
 rootProject.name = 'object-construction-checker'
 
+include ':object-construction-auto-discover'
 include ':object-construction-checker'
 include ':object-construction-qual'
 include ':returnsrcvr-checker'
