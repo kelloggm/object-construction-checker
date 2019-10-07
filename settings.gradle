@@ -7,4 +7,10 @@
  * in the user guide at https://docs.gradle.org/5.0/userguide/multi_project_builds.html
  */
 
-rootProject.name = 'typesafe-builder-checker'
+rootProject.name = 'object-construction-checker'
+
+include ':object-construction-checker'
+include ':object-construction-qual'
+include ':returnsrcvr-checker'
+include ':returnsrcvr-qual'
+include ':test-lib-java'

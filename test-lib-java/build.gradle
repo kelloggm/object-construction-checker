@@ -1,0 +1,14 @@
+plugins {
+    id "java-library"
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.8'
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
+
+    implementation 'com.google.auto.value:auto-value-annotations:1.6.5'
+    annotationProcessor 'com.google.auto.value:auto-value:1.6.5'
+
+}
+
+sourceCompatibility = 1.8

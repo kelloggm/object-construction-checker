@@ -7,3 +7,6 @@ build
 # Ignore IntelliJ and emacs files
 .idea
 *~
+
+# Ignore the out directory created when running tests
+out

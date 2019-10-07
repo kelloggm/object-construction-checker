@@ -1,0 +1,94 @@
+plugins {
+    // Apply the java plugin to add support for Java
+    id 'java-library'
+
+    // For bringing in AWS dependencies. We're using the "legacy" version
+    // listed here: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-project-gradle.html,
+    // because the build fails when we use the Gradle 5+ way, saying that it can't find ec2.
+    // I believe that this is because we need the AWS SDK during testing, but not during the build.
+    id 'io.spring.dependency-management' version '1.0.7.RELEASE'
+
+    id "com.diffplug.gradle.spotless" version "3.23.0"
+}
+
+sourceCompatibility = 1.8
+
+configurations {
+    // for putting Error Prone javac in bootclasspath for running tests
+    errorproneJavac
+}
+
+dependencies {
+
+    implementation "org.checkerframework:checker:${versions.checkerFramework}"
+    implementation "com.google.guava:guava:28.0-jre"
+
+    // If / when other code depends on this checker, we will likely want to make these
+    // api dependencies
+    implementation project(":object-construction-qual")
+    implementation project(":returnsrcvr-checker")
+
+    // For the @CalledMethodsPredicate evaluation
+    implementation "org.springframework:spring-expression:5.1.7.RELEASE"
+
+    // Use JUnit test framework
+    testImplementation "junit:junit:4.12"
+
+    // CF testing infrastructure
+    testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
+
+    // For CVE tests
+    testCompile "com.amazonaws:aws-java-sdk-ec2"
+    // For KMS tests
+    testCompile "com.amazonaws:aws-java-sdk-kms"
+
+    // For AutoValue Builders
+    implementation "com.google.auto.value:auto-value-annotations:${versions.autoValue}"
+    testCompile "com.google.auto.value:auto-value-annotations:${versions.autoValue}"
+    testCompile "com.google.auto.value:auto-value:${versions.autoValue}"
+
+    // For Lombok Builders
+    testCompile "org.projectlombok:lombok:${versions.lombok}"
+    testCompile project(":test-lib-java")
+
+    errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
+
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.228"
+    }
+}
+
+tasks.withType(JavaCompile).all {
+    options.compilerArgs.add("-Xlint:all")
+}
+
+// run google java format
+spotless {
+    // uncomment this line to temporarily disable spotless (i.e. when debugging)
+    // enforceCheck = false
+    java {
+        googleJavaFormat()
+    }
+}
+
+test {
+    inputs.files("tests/basic", "tests/cve", "tests/lombok", "tests/autovalue")
+    if (!JavaVersion.current().java9Compatible) {
+        jvmArgs "-Xbootclasspath/p:${configurations.errorproneJavac.asPath}"
+    }
+}
+
+clean.doFirst {
+    delete "${rootDir}/object-construction-checker/tests/build/"
+}
+
+apply from: rootProject.file("gradle-mvn-push.gradle")
+
+task printClasspath {
+    doLast {
+        println sourceSets.main.runtimeClasspath.asPath
+    }
+}
