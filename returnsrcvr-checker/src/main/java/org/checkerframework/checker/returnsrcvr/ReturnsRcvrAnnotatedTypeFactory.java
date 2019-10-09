@@ -1,16 +1,17 @@
 package org.checkerframework.checker.returnsrcvr;
 
-import com.google.auto.value.AutoValue;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.lang.annotation.Annotation;
+
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
+
+import org.checkerframework.checker.framework.AutoValueSupport;
+import org.checkerframework.checker.framework.FrameworkSupport;
+import org.checkerframework.checker.framework.LombokSupport;
 import org.checkerframework.checker.returnsrcvr.qual.MaybeThis;
 import org.checkerframework.checker.returnsrcvr.qual.This;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -21,7 +22,6 @@ import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.TypesUtils;
 
 public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
@@ -32,7 +32,7 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     super(checker);
     THIS_ANNOT = AnnotationBuilder.fromClass(elements, This.class);
     
-    //supports for frameworks
+    //add supports for frameworks
     frameworkSupports = new ArrayList<FrameworkSupport>();
     frameworkSupports.add(new AutoValueSupport());
     frameworkSupports.add(new LombokSupport());
@@ -63,127 +63,38 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         AnnotatedTypeMirror.AnnotatedDeclaredType receiverType = t.getReceiverType();
         receiverType.replaceAnnotation(THIS_ANNOT);
       }
-
-      for (FrameworkSupport frameworkSupport : frameworkSupports) {
-        if (frameworkSupport.knownToReturnThis(t)) {
-          returnType.replaceAnnotation(THIS_ANNOT);
-              AnnotatedTypeMirror.AnnotatedDeclaredType receiverType = t.getReceiverType();
-              receiverType.replaceAnnotation(THIS_ANNOT);
-          break;
-        }
+      
+      // skip constructors 
+      if(!isConstructor(t)) {
+    	  // check each supported framework
+    	  for (FrameworkSupport frameworkSupport : frameworkSupports) {
+    		  // see if the method in the framework should return this
+            if (frameworkSupport.knownToReturnThis(t, (ReturnsRcvrAnnotatedTypeFactory)this.typeFactory)) {
+            	// add @This annotation
+            	  returnType.replaceAnnotation(THIS_ANNOT);
+                  AnnotatedTypeMirror.AnnotatedDeclaredType receiverType = t.getReceiverType();
+                  receiverType.replaceAnnotation(THIS_ANNOT);
+                  break;
+            }
+          }
       }
          
       return super.visitExecutable(t, p);
     }
 
-    /**
-     * Checks if the given element is a setter in either an AutoValue builder or a Lombok builder
-     */
-    private boolean isBuilderSetter(AnnotatedTypeMirror.AnnotatedExecutableType t) {
-      ExecutableElement element = t.getElement();
-
-      // skip constructors
-      if (element.getKind().equals(ElementKind.CONSTRUCTOR)) {
-        return false;
-      }
-
-      Element enclosingElement = element.getEnclosingElement();
-
-      boolean inAutoValueBuilder = hasAnnotation(enclosingElement, AutoValue.Builder.class);
-      boolean inLombokBuilder =
-          (hasAnnotationByName(enclosingElement, "lombok.Generated")
-                  || hasAnnotationByName(element, "lombok.Generated"))
-              && enclosingElement.getSimpleName().toString().endsWith("Builder");
-
-      if (!inAutoValueBuilder && !inLombokBuilder) {
-        // see if superclass is an AutoValue Builder, to handle generated code
-        TypeMirror superclass = ((TypeElement) enclosingElement).getSuperclass();
-        // if enclosingType is an interface, the superclass has TypeKind NONE
-        if (!superclass.getKind().equals(TypeKind.NONE)) {
-          // update enclosingElement to be for the superclass for this case
-          enclosingElement = TypesUtils.getTypeElement(superclass);
-          inAutoValueBuilder = enclosingElement.getAnnotation(AutoValue.Builder.class) != null;
-        }
-      }
-
-      if (inAutoValueBuilder || inLombokBuilder) {
-        AnnotatedTypeMirror returnType = t.getReturnType();
-        return returnType != null
-            && enclosingElement.equals(TypesUtils.getTypeElement(returnType.getUnderlyingType()));
-      }
-
-      return false;
-    }
-  }
-  private class LombokSupport implements FrameworkSupport {
-    public boolean knownToReturnThis(AnnotatedTypeMirror.AnnotatedExecutableType t) {
-      ExecutableElement element = t.getElement();
-
-        // skip constructors
-        if (element.getKind().equals(ElementKind.CONSTRUCTOR)) {
-          return false;
-        }
-
-        Element enclosingElement = element.getEnclosingElement();
-
-        boolean inLombokBuilder =
-            (hasAnnotationByName(enclosingElement, "lombok.Generated")
-                    || hasAnnotationByName(element, "lombok.Generated"))
-                && enclosingElement.getSimpleName().toString().endsWith("Builder");
-        
-        if (inLombokBuilder) {
-            AnnotatedTypeMirror returnType = t.getReturnType();
-            return returnType != null
-                && enclosingElement.equals(TypesUtils.getTypeElement(returnType.getUnderlyingType()));
-          }
-        
-        return false;
-    }
-  }
-  private class AutoValueSupport implements FrameworkSupport {
-    public boolean knownToReturnThis(AnnotatedTypeMirror.AnnotatedExecutableType t) {
-      ExecutableElement element = t.getElement();
-
-        // skip constructors
-        if (element.getKind().equals(ElementKind.CONSTRUCTOR)) {
-          return false;
-        }
-
-        Element enclosingElement = element.getEnclosingElement();
-
-        boolean inAutoValueBuilder = hasAnnotation(enclosingElement, AutoValue.Builder.class);
-        
-        if (!inAutoValueBuilder) {
-            // see if superclass is an AutoValue Builder, to handle generated code
-            TypeMirror superclass = ((TypeElement) enclosingElement).getSuperclass();
-            // if enclosingType is an interface, the superclass has TypeKind NONE
-            if (!superclass.getKind().equals(TypeKind.NONE)) {
-              // update enclosingElement to be for the superclass for this case
-              enclosingElement = TypesUtils.getTypeElement(superclass);
-              inAutoValueBuilder = enclosingElement.getAnnotation(AutoValue.Builder.class) != null;
-            }
-          }
-
-          if (inAutoValueBuilder) {
-            AnnotatedTypeMirror returnType = t.getReturnType();
-            return returnType != null
-                && enclosingElement.equals(TypesUtils.getTypeElement(returnType.getUnderlyingType()));
-          }
-
-          return false;
-    }
   }
   
-  private interface FrameworkSupport {
-    boolean knownToReturnThis(AnnotatedTypeMirror.AnnotatedExecutableType t);
+  private boolean isConstructor(AnnotatedTypeMirror.AnnotatedExecutableType t) {
+	  ExecutableElement element = t.getElement();
+	  return element.getKind().equals(ElementKind.CONSTRUCTOR);
   }
 
-  private boolean hasAnnotation(Element element, Class<? extends Annotation> annotClass) {
+  public boolean hasAnnotation(Element element, Class<? extends Annotation> annotClass) {
     return elements.getAllAnnotationMirrors(element).stream()
         .anyMatch(anm -> AnnotationUtils.areSameByClass(anm, annotClass));
   }
 
-  private boolean hasAnnotationByName(Element element, String annotClassName) {
+  public boolean hasAnnotationByName(Element element, String annotClassName) {
     return elements.getAllAnnotationMirrors(element).stream()
         .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotClassName));
   }
