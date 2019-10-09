@@ -14,7 +14,7 @@ import com.google.auto.value.AutoValue;
 
 /**
  * 
- * AutoValue support for returns receiver checker
+ * AutoValue support for returns receiver checker, check if the current class or the super class is AutoValue Builder 
  *
  */
 public class AutoValueSupport implements FrameworkSupport {
