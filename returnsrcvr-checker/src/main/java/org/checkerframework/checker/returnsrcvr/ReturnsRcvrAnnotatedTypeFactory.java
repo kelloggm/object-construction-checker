@@ -22,6 +22,7 @@ import org.checkerframework.javacutil.AnnotationUtils;
 public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   AnnotationMirror THIS_ANNOT;
+  // the collection of the built-in framework supports for returns receiver checker
   Collection<FrameworkSupport> frameworkSupports;
 
   public ReturnsRcvrAnnotatedTypeFactory(BaseTypeChecker checker) {

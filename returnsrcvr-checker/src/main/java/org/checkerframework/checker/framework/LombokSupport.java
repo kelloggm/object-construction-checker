@@ -8,6 +8,7 @@ import org.checkerframework.javacutil.TypesUtils;
 /** Lombok support for returns receiver checker */
 public class LombokSupport implements FrameworkSupport {
 
+  @Override
   public boolean knownToReturnThis(AnnotatedTypeMirror.AnnotatedExecutableType t) {
     ExecutableElement element = t.getElement();
 

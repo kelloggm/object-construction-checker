@@ -15,6 +15,7 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class AutoValueSupport implements FrameworkSupport {
 
+  @Override
   public boolean knownToReturnThis(AnnotatedTypeMirror.AnnotatedExecutableType t) {
 
     ExecutableElement element = t.getElement();
