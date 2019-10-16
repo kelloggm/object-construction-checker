@@ -1,10 +1,8 @@
 package org.checkerframework.checker.returnsrcvr;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.framework.AutoValueSupport;
@@ -67,8 +65,7 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         // check each supported framework
         for (FrameworkSupport frameworkSupport : frameworkSupports) {
           // see if the method in the framework should return this
-          if (frameworkSupport.knownToReturnThis(
-              t, (ReturnsRcvrAnnotatedTypeFactory) this.typeFactory)) {
+          if (frameworkSupport.knownToReturnThis(t)) {
             // add @This annotation
             returnType.replaceAnnotation(THIS_ANNOT);
             AnnotatedTypeMirror.AnnotatedDeclaredType receiverType = t.getReceiverType();
@@ -85,15 +82,5 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   private boolean isConstructor(AnnotatedTypeMirror.AnnotatedExecutableType t) {
     ExecutableElement element = t.getElement();
     return element.getKind().equals(ElementKind.CONSTRUCTOR);
-  }
-
-  public boolean hasAnnotation(Element element, Class<? extends Annotation> annotClass) {
-    return elements.getAllAnnotationMirrors(element).stream()
-        .anyMatch(anm -> AnnotationUtils.areSameByClass(anm, annotClass));
-  }
-
-  public boolean hasAnnotationByName(Element element, String annotClassName) {
-    return elements.getAllAnnotationMirrors(element).stream()
-        .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotClassName));
   }
 }

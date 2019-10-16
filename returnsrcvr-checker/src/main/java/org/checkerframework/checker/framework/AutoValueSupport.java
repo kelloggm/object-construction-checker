@@ -6,7 +6,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.returnsrcvr.ReturnsRcvrAnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -16,14 +15,14 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class AutoValueSupport implements FrameworkSupport {
 
-  public boolean knownToReturnThis(
-      AnnotatedTypeMirror.AnnotatedExecutableType t, ReturnsRcvrAnnotatedTypeFactory typeFactory) {
+  public boolean knownToReturnThis(AnnotatedTypeMirror.AnnotatedExecutableType t) {
+
     ExecutableElement element = t.getElement();
 
     Element enclosingElement = element.getEnclosingElement();
 
     boolean inAutoValueBuilder =
-        typeFactory.hasAnnotation(enclosingElement, AutoValue.Builder.class);
+        FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.Builder.class);
 
     if (!inAutoValueBuilder) {
       // see if superclass is an AutoValue Builder, to handle generated code
