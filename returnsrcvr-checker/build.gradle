@@ -20,6 +20,8 @@ configurations {
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation "org.checkerframework:checker:${versions.checkerFramework}"
+    compileOnly "com.google.errorprone:javac:9+181-r4173-1"
+
     // Export qualifiers to upstream dependencies, for convenience
     api project(':returnsrcvr-qual')
 
