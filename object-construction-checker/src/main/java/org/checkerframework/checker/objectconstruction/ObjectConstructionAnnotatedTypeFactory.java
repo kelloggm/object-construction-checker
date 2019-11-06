@@ -1,19 +1,10 @@
 package org.checkerframework.checker.objectconstruction;
 
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
-import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.NewClassTree;
-import com.sun.source.tree.Tree;
-import com.sun.source.tree.VariableTree;
-import com.sun.tools.javac.code.Symbol;
-import com.sun.tools.javac.code.Types;
-import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import java.beans.Introspector;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -32,6 +24,9 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+
+import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
+import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
@@ -59,6 +54,17 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
+import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Types;
+import com.sun.tools.javac.processing.JavacProcessingEnvironment;
+
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
  * subtyping rules between @CalledMethod annotations.
@@ -74,6 +80,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private final ExecutableElement collectionsSingletonList;
 
   private final boolean useValueChecker;
+  
+  private Collection<FrameworkSupport> frameworkSupports;
 
   // The list is copied from lombok.core.handlers.HandlerUtil. The list cannot be used from that
   // class directly because Lombok does not provide class files for its own implementation, to
@@ -108,6 +116,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     super(checker);
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
+    
+    //for framework support
+    frameworkSupports = new ArrayList<FrameworkSupport>();
+    frameworkSupports.add(new AutoValueSupport(this));
+    
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
     this.collectionsSingletonList =
         TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());
@@ -355,19 +368,23 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       TypeMirror superclass = enclosingElement.getSuperclass();
 
       if ("toBuilder".equals(methodName)) {
-        if (hasAnnotation(enclosingElement, AutoValue.class)
-            && element.getModifiers().contains(Modifier.ABSTRACT)) {
-          handleToBuilder(t, enclosingElement, BuilderKind.AUTO_VALUE);
-          return super.visitExecutable(t, p);
-        }
-        // check superclass, to handle generated code
-        if (!superclass.getKind().equals(TypeKind.NONE)) {
-          TypeElement superElement = TypesUtils.getTypeElement(superclass);
-          if (hasAnnotation(superElement, AutoValue.class)) {
-            handleToBuilder(t, superElement, BuilderKind.AUTO_VALUE);
-            return super.visitExecutable(t, p);
-          }
-        }
+//        if (hasAnnotation(enclosingElement, AutoValue.class)
+//            && element.getModifiers().contains(Modifier.ABSTRACT)) {
+//          handleToBuilder(t, enclosingElement, BuilderKind.AUTO_VALUE);
+//          return super.visitExecutable(t, p);
+//        }
+//        // check superclass, to handle generated code
+//        if (!superclass.getKind().equals(TypeKind.NONE)) {
+//          TypeElement superElement = TypesUtils.getTypeElement(superclass);
+//          if (hasAnnotation(superElement, AutoValue.class)) {
+//            handleToBuilder(t, superElement, BuilderKind.AUTO_VALUE);
+//            return super.visitExecutable(t, p);
+//          }
+//        }
+    	
+    	for (FrameworkSupport frameworkSupport : frameworkSupports) {
+//    		frameworkSupport
+    	}
 
         if (hasAnnotation(element, "lombok.Generated")
             || hasAnnotation(enclosingElement, "lombok.Generated")) {
