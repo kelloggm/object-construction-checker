@@ -326,6 +326,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       // we override this method to handle a constructor call inside a generated toBuilder
       // implementation for AutoValue
+      for (FrameworkSupport frameworkSupport : frameworkSupports) {
+    	  frameworkSupport.handleConstructor(tree, type);
+      }
+      /*
       ExecutableElement element = TreeUtils.elementFromUse(tree);
       TypeMirror superclass = ((TypeElement) element.getEnclosingElement()).getSuperclass();
 
@@ -341,6 +345,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 //        AutoValueSupport a = new AutoValueSupport((ObjectConstructionAnnotatedTypeFactory)this.atypeFactory);
 //        a.handleConstructor();
       }
+      */
 
       return super.visitNewClass(tree, type);
     }
@@ -369,8 +374,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       String methodName = element.getSimpleName().toString();
 
       TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
-      TypeMirror superclass = enclosingElement.getSuperclass();
+//      TypeMirror superclass = enclosingElement.getSuperclass();
 
+      //return after AutoValue + toBuilder?
       if ("toBuilder".equals(methodName)) {
     	  for (FrameworkSupport frameworkSupport : frameworkSupports) {
       		frameworkSupport.handleToBulder(t);
@@ -389,13 +395,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             return super.visitExecutable(t, p);
           }
         }
-    	*/
-    	
-    	//to builder Lombok fail
-//        if (hasAnnotation(element, "lombok.Generated")
-//            || hasAnnotation(enclosingElement, "lombok.Generated")) {
-//          handleToBuilder(t, enclosingElement, BuilderKind.LOMBOK);
-//        }
+        if (hasAnnotation(element, "lombok.Generated")
+            || hasAnnotation(enclosingElement, "lombok.Generated")) {
+          handleToBuilder(t, enclosingElement, BuilderKind.LOMBOK);
+        }
+        */
       }
 
       //ensure nextEnclosingElement nonnull

@@ -21,6 +21,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutab
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.VariableTree;
 
 public class LombokSupport implements FrameworkSupport{
@@ -160,6 +161,12 @@ public class LombokSupport implements FrameworkSupport{
 	    requiredPropertyNames.removeAll(defaultedPropertyNames);
 	    return requiredPropertyNames;
 	  }
+
+	@Override
+	public void handleConstructor(NewClassTree tree, AnnotatedTypeMirror type) {
+		return;
+		
+	}
 
 
 	  
