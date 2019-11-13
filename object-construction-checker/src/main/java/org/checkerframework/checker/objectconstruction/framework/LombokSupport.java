@@ -55,7 +55,30 @@ public class LombokSupport implements FrameworkSupport{
 	            "org.netbeans.api.annotations.common.NonNull",
 	            "org.springframework.lang.NonNull"));
 
+	@Override
+	public void handleBuilderBuildMethod(AnnotatedExecutableType t) {
+		ExecutableElement element = t.getElement();
+		
+		TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
+		Element nextEnclosingElement = enclosingElement.getEnclosingElement();
+		
+		if((FrameworkSupportUtils.hasAnnotation(enclosingElement, "lombok.Generated")
+              || FrameworkSupportUtils.hasAnnotation(element, "lombok.Generated"))
+				&& enclosingElement.getSimpleName().toString().endsWith("Builder")) {
+			if(isBuilderBuildMethod(element, nextEnclosingElement)) {
+				List<String> requiredProperties =
+			              getLombokRequiredProperties(nextEnclosingElement);
+				AnnotationMirror newCalledMethodsAnno = atypeFactory.createCalledMethods(requiredProperties.toArray(new String[0]));
+				t.getReceiverType().addAnnotation(newCalledMethodsAnno);
+			}
+		}
+		
+	}
 	  
+	private boolean isBuilderBuildMethod(ExecutableElement element, Element nextEnclosingElement) {
+		return "build".equals(element.getSimpleName().toString());
+	}
+
 	@Override
 	public void handleToBulder(AnnotatedExecutableType t) {
 		
@@ -139,6 +162,8 @@ public class LombokSupport implements FrameworkSupport{
 	    requiredPropertyNames.removeAll(defaultedPropertyNames);
 	    return requiredPropertyNames;
 	  }
+
+
 	  
 	  
 

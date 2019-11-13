@@ -39,6 +39,36 @@ public class AutoValueSupport implements FrameworkSupport{
 	public AutoValueSupport (ObjectConstructionAnnotatedTypeFactory atypeFactory) {
 		this.atypeFactory = atypeFactory;
 	}
+	
+	@Override
+	public void handleBuilderBuildMethod(AnnotatedExecutableType t) {
+		
+		ExecutableElement element = t.getElement();
+		
+		TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
+		Element nextEnclosingElement = enclosingElement.getEnclosingElement();
+		
+		if(FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
+			assert FrameworkSupportUtils.hasAnnotation(nextEnclosingElement, AutoValue.class)
+            : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
+			if (isBuilderBuildMethod(element, nextEnclosingElement)) {
+				// determine the required properties and add a corresponding @CalledMethods annotation
+				Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(enclosingElement);
+				List<String> requiredProperties =
+			        getAutoValueRequiredProperties(nextEnclosingElement, avBuilderSetterNames);
+			    AnnotationMirror newCalledMethodsAnno =
+			        createCalledMethodsForAutoValueProperties(
+			        	requiredProperties, avBuilderSetterNames);
+			    t.getReceiverType().addAnnotation(newCalledMethodsAnno);
+			    
+			}
+		}
+	}
+
+	private boolean isBuilderBuildMethod(ExecutableElement element, Element nextEnclosingElement) {
+		return element.getModifiers().contains(Modifier.ABSTRACT)
+        && TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement);
+	}
 
 	@Override
 	public void handleToBulder(AnnotatedExecutableType t) {
@@ -79,20 +109,18 @@ public class AutoValueSupport implements FrameworkSupport{
 	    Element builderElement = TypesUtils.getTypeElement(builderType);
 	    Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(builderElement);
 	    List<String> requiredProperties = getAutoValueRequiredProperties(classElement, avBuilderSetterNames);
-	    AnnotationMirror calledMethodsAnno =
-	    		atypeFactory.createCalledMethods(createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames));
+	    AnnotationMirror calledMethodsAnno = createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames);
 	    type.replaceAnnotation(calledMethodsAnno);
 	  }
 	  
 	  // make it return the String[] and createCalledMethods inside the ObjectConstuctionChecker
-	  private String[] createCalledMethodsForAutoValueProperties(
+	  private AnnotationMirror createCalledMethodsForAutoValueProperties(
 		      final List<String> propertyNames, Set<String> avBuilderSetterNames) {
 		    String[] calledMethodNames =
 		        propertyNames.stream()
 		            .map(prop -> autoValuePropToBuilderSetterName(prop, avBuilderSetterNames))
 		            .toArray(String[]::new);
-		    return calledMethodNames;
-//		    return createCalledMethods(calledMethodNames);
+		    return atypeFactory.createCalledMethods(calledMethodNames);
 		  }
 
 	  private static String autoValuePropToBuilderSetterName(

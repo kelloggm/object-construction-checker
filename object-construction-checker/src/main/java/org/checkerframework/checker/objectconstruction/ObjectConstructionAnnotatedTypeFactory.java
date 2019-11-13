@@ -370,6 +370,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       TypeMirror superclass = enclosingElement.getSuperclass();
 
       if ("toBuilder".equals(methodName)) {
+    	  for (FrameworkSupport frameworkSupport : frameworkSupports) {
+      		frameworkSupport.handleToBulder(t);
+      	}
     	  /*
         if (hasAnnotation(enclosingElement, AutoValue.class)
             && element.getModifiers().contains(Modifier.ABSTRACT)) {
@@ -385,22 +388,25 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
         }
     	*/
-    	  //can't return here in this way
-    	for (FrameworkSupport frameworkSupport : frameworkSupports) {
-    		frameworkSupport.handleToBulder(t);
-    	}
-
-        if (hasAnnotation(element, "lombok.Generated")
-            || hasAnnotation(enclosingElement, "lombok.Generated")) {
-          handleToBuilder(t, enclosingElement, BuilderKind.LOMBOK);
-        }
+    	
+    	//to builder Lombok fail
+//        if (hasAnnotation(element, "lombok.Generated")
+//            || hasAnnotation(enclosingElement, "lombok.Generated")) {
+//          handleToBuilder(t, enclosingElement, BuilderKind.LOMBOK);
+//        }
       }
 
-      Element nextEnclosingElement = enclosingElement.getEnclosingElement();
-      if (!nextEnclosingElement.getKind().isClass()) {
-        return super.visitExecutable(t, p);
+      //ensure nextEnclosingElement nonnull
+//      Element nextEnclosingElement = enclosingElement.getEnclosingElement();
+//      if (!nextEnclosingElement.getKind().isClass()) {
+//        return super.visitExecutable(t, p);
+//      }
+      
+      for (FrameworkSupport frameworkSupport : frameworkSupports) {
+    	  frameworkSupport.handleBuilderBuildMethod(t);
       }
 
+      /*
       BuilderKind builderKind = BuilderKind.NONE;
 
       if (hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
@@ -427,6 +433,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           t.getReceiverType().addAnnotation(newCalledMethodsAnno);
         }
       }
+      */
 
       return super.visitExecutable(t, p);
     }
