@@ -27,6 +27,7 @@ import javax.lang.model.type.TypeMirror;
 
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
+import org.checkerframework.checker.objectconstruction.framework.LombokSupport;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
@@ -120,6 +121,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     //for framework support
     frameworkSupports = new ArrayList<FrameworkSupport>();
     frameworkSupports.add(new AutoValueSupport(this));
+    frameworkSupports.add(new LombokSupport(this));
     
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
     this.collectionsSingletonList =
@@ -368,22 +370,24 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       TypeMirror superclass = enclosingElement.getSuperclass();
 
       if ("toBuilder".equals(methodName)) {
-//        if (hasAnnotation(enclosingElement, AutoValue.class)
-//            && element.getModifiers().contains(Modifier.ABSTRACT)) {
-//          handleToBuilder(t, enclosingElement, BuilderKind.AUTO_VALUE);
-//          return super.visitExecutable(t, p);
-//        }
-//        // check superclass, to handle generated code
-//        if (!superclass.getKind().equals(TypeKind.NONE)) {
-//          TypeElement superElement = TypesUtils.getTypeElement(superclass);
-//          if (hasAnnotation(superElement, AutoValue.class)) {
-//            handleToBuilder(t, superElement, BuilderKind.AUTO_VALUE);
-//            return super.visitExecutable(t, p);
-//          }
-//        }
-    	
+    	  /*
+        if (hasAnnotation(enclosingElement, AutoValue.class)
+            && element.getModifiers().contains(Modifier.ABSTRACT)) {
+          handleToBuilder(t, enclosingElement, BuilderKind.AUTO_VALUE);
+          return super.visitExecutable(t, p);
+        }
+        // check superclass, to handle generated code
+        if (!superclass.getKind().equals(TypeKind.NONE)) {
+          TypeElement superElement = TypesUtils.getTypeElement(superclass);
+          if (hasAnnotation(superElement, AutoValue.class)) {
+            handleToBuilder(t, superElement, BuilderKind.AUTO_VALUE);
+            return super.visitExecutable(t, p);
+          }
+        }
+    	*/
+    	  //can't return here in this way
     	for (FrameworkSupport frameworkSupport : frameworkSupports) {
-//    		frameworkSupport
+    		frameworkSupport.handleToBulder(t);
     	}
 
         if (hasAnnotation(element, "lombok.Generated")
@@ -509,6 +513,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     Element builderElement = TypesUtils.getTypeElement(builderType);
     Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(builderElement);
     List<String> requiredProperties = getRequiredProperties(classElement, avBuilderSetterNames, b);
+    System.out.println(avBuilderSetterNames.size()+"\n");
+    System.out.println(requiredProperties.size());
     AnnotationMirror calledMethodsAnno =
         createCalledMethodsForProperties(requiredProperties, avBuilderSetterNames, b);
     type.replaceAnnotation(calledMethodsAnno);
@@ -540,6 +546,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   // we can still default correctly. Value is the property name to treat as
   // defaulted.
   private final Map<Element, String> defaultedElements = new HashMap<>();
+  
+  public Map<Element, String> getDefaultedElements(){
+	  return this.defaultedElements;
+  }
 
   /**
    * computes the required properties of a @lombok.Builder class, i.e., the names of the fields
@@ -938,4 +948,5 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return OPTIONAL_CLASS_NAMES.contains(typeElement.getQualifiedName().toString())
         && typeElement.getTypeParameters().size() == declaredType.getTypeArguments().size();
   }
+  
 }
