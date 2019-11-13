@@ -338,6 +338,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             superclass,
             TypesUtils.getTypeElement(superclass).getEnclosingElement(),
             BuilderKind.AUTO_VALUE);
+//        AutoValueSupport a = new AutoValueSupport((ObjectConstructionAnnotatedTypeFactory)this.atypeFactory);
+//        a.handleConstructor();
       }
 
       return super.visitNewClass(tree, type);
@@ -397,10 +399,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
 
       //ensure nextEnclosingElement nonnull
-//      Element nextEnclosingElement = enclosingElement.getEnclosingElement();
-//      if (!nextEnclosingElement.getKind().isClass()) {
-//        return super.visitExecutable(t, p);
-//      }
+      Element nextEnclosingElement = enclosingElement.getEnclosingElement();
+      if (!nextEnclosingElement.getKind().isClass()) {
+        return super.visitExecutable(t, p);
+      }
       
       for (FrameworkSupport frameworkSupport : frameworkSupports) {
     	  frameworkSupport.handleBuilderBuildMethod(t);
@@ -520,8 +522,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     Element builderElement = TypesUtils.getTypeElement(builderType);
     Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(builderElement);
     List<String> requiredProperties = getRequiredProperties(classElement, avBuilderSetterNames, b);
-    System.out.println(avBuilderSetterNames.size()+"\n");
-    System.out.println(requiredProperties.size());
     AnnotationMirror calledMethodsAnno =
         createCalledMethodsForProperties(requiredProperties, avBuilderSetterNames, b);
     type.replaceAnnotation(calledMethodsAnno);

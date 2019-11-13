@@ -96,11 +96,8 @@ public class LombokSupport implements FrameworkSupport{
 	
 	private void handleToBuilderType(
 		      AnnotatedTypeMirror type, TypeMirror builderType, Element classElement) {
-		System.out.println("start handle to builder type");
 		Element builderElement = TypesUtils.getTypeElement(builderType);
-		List<String> requiredProperties = getLombokRequiredProperties(builderElement);
-
-		System.out.println(requiredProperties.size());
+		List<String> requiredProperties = getLombokRequiredProperties(classElement);
 		AnnotationMirror calledMethodsAnno =
 				atypeFactory.createCalledMethods(requiredProperties.toArray(new String[0]));
 		type.replaceAnnotation(calledMethodsAnno);
@@ -119,6 +116,7 @@ public class LombokSupport implements FrameworkSupport{
 	    for (Element member : lombokClassElement.getEnclosedElements()) {
 	      if (member.getKind() == ElementKind.FIELD) {
 	        for (AnnotationMirror anm : atypeFactory.getElementUtils().getAllAnnotationMirrors(member)) {
+//	          System.out.println();
 	          if (NONNULL_ANNOTATIONS.contains(AnnotationUtils.annotationName(anm))) {
 	            requiredPropertyNames.add(member.getSimpleName().toString());
 	          }

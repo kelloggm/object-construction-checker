@@ -40,6 +40,10 @@ public class AutoValueSupport implements FrameworkSupport{
 		this.atypeFactory = atypeFactory;
 	}
 	
+	public void handleConstructor() {
+		
+	}
+	
 	@Override
 	public void handleBuilderBuildMethod(AnnotatedExecutableType t) {
 		
