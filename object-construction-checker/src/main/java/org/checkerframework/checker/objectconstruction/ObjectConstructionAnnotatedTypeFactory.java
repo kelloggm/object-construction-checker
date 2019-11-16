@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -680,6 +681,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     String[] calledMethodNames =
         propertyNames.stream()
             .map(prop -> autoValuePropToBuilderSetterName(prop, avBuilderSetterNames))
+            .filter(Objects::nonNull)
             .toArray(String[]::new);
     return createCalledMethods(calledMethodNames);
   }
@@ -840,12 +842,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
     }
 
-    // nothing worked
-    throw new RuntimeException(
-        "could not find Builder setter name for property "
-            + prop
-            + " all names "
-            + builderSetterNames);
+    // Could not find a corresponding setter.  This is likely because an AutoValue Extension is in
+    // use.
+    // See https://github.com/kelloggm/object-construction-checker/issues/110
+    // Until that bug is fixed, we should not have a hard failure here.  Return null instead.
+    return null;
   }
 
   /**
