@@ -2,7 +2,9 @@ import com.google.auto.value.AutoValue;
 import android.os.Parcelable;
 
 /**
- * Test for support of AutoValue Parcel extension
+ * Test for support of AutoValue Parcel extension.  This test currently passes, but only because we ignore cases
+ * where we cannot find a matching setter for a method we think corresponds to an AutoValue property.
+ * See https://github.com/kelloggm/object-construction-checker/issues/110
  */
 @AutoValue
 abstract class FooParcelable implements Parcelable {

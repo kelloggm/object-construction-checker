@@ -843,9 +843,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
 
     // Could not find a corresponding setter.  This is likely because an AutoValue Extension is in
-    // use.
-    // See https://github.com/kelloggm/object-construction-checker/issues/110
-    // Until that bug is fixed, we should not have a hard failure here.  Return null instead.
+    // use.  See https://github.com/kelloggm/object-construction-checker/issues/110
+    // For now we return null, but once that bug is fixed, this should be changed to an assertion
+    // failure.
     return null;
   }
 
