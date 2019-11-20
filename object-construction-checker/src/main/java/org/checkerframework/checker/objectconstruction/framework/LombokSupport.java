@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -57,8 +56,8 @@ public class LombokSupport implements FrameworkSupport {
               "org.jmlspecs.annotation.NonNull",
               "org.netbeans.api.annotations.common.NonNull",
               "org.springframework.lang.NonNull"));
-  
-  //Keep a cache of these so that when declarationFromElement doesn't work,
+
+  // Keep a cache of these so that when declarationFromElement doesn't work,
   // we can still default correctly. Value is the property name to treat as
   // defaulted.
   private final Map<Element, String> defaultedElements = new HashMap<>();
