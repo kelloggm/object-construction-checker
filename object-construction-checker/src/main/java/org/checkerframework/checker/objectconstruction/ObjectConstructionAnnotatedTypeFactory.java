@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -330,7 +331,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   /**
    * return the cache of defaulted elements, which is the property name to treat as defaulted
-   * @return 
    */
   public Map<Element, String> getDefaultedElements() {
     return this.defaultedElements;
