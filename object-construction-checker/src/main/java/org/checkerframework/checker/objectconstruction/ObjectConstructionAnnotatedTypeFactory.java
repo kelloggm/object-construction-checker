@@ -321,16 +321,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
-  // Keep a cache of these so that when declarationFromElement doesn't work,
-  // we can still default correctly. Value is the property name to treat as
-  // defaulted.
-  private final Map<Element, String> defaultedElements = new HashMap<>();
-
-  /** return the cache of defaulted elements, which is the property name to treat as defaulted */
-  public Map<Element, String> getDefaultedElements() {
-    return this.defaultedElements;
-  }
-
   /**
    * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
    * declaratively defined subtyping relationships, like our @CalledMethods annotation.

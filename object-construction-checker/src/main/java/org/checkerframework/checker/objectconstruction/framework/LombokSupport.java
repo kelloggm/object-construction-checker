@@ -6,7 +6,10 @@ import java.beans.Introspector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -55,6 +58,11 @@ public class LombokSupport implements FrameworkSupport {
               "org.jmlspecs.annotation.NonNull",
               "org.netbeans.api.annotations.common.NonNull",
               "org.springframework.lang.NonNull"));
+  
+  //Keep a cache of these so that when declarationFromElement doesn't work,
+  // we can still default correctly. Value is the property name to treat as
+  // defaulted.
+  private final Map<Element, String> defaultedElements = new HashMap<>();
 
   /**
    * determine the required properties and add a corresponding @CalledMethods annotation to the
@@ -182,9 +190,9 @@ public class LombokSupport implements FrameworkSupport {
             if (variableTree != null && variableTree.getInitializer() != null) {
               String propName = variableTree.getName().toString();
               defaultedPropertyNames.add(propName);
-              atypeFactory.getDefaultedElements().put(builderMember, propName);
-            } else if (atypeFactory.getDefaultedElements().containsKey(builderMember)) {
-              defaultedPropertyNames.add(atypeFactory.getDefaultedElements().get(builderMember));
+              defaultedElements.put(builderMember, propName);
+            } else if (defaultedElements.containsKey(builderMember)) {
+              defaultedPropertyNames.add(defaultedElements.get(builderMember));
             }
           }
         }
