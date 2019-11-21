@@ -12,7 +12,7 @@ public interface FrameworkSupport {
    *
    * @param t
    */
-  public void handleToBuilder(AnnotatedTypeMirror.AnnotatedExecutableType t);
+  public void handlePossibleToBuilder(AnnotatedTypeMirror.AnnotatedExecutableType t);
 
   /**
    * determine the required properties and add a corresponding @CalledMethods annotation to the
