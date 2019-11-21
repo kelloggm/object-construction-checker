@@ -7,26 +7,32 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 public interface FrameworkSupport {
 
   /**
-   * For a toBuilder routine, we know that the returned Builder effectively has had all the required
-   * setters invoked. Add a CalledMethods annotation capturing this fact.
+   * Allows for supporting a framework's {@code toBuilder} routine. Typically, the returned Builder
+   * setters invoked. So, the framework support can add a {@link
+   * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotation capturing this
+   * fact.
    *
-   * @param t
+   * @param t method named "toBuilder"
    */
   public void handleToBuilder(AnnotatedTypeMirror.AnnotatedExecutableType t);
 
   /**
-   * determine the required properties and add a corresponding @CalledMethods annotation to the
-   * receiver
+   * For {@code build} methods on {@code Builder} types, the framework support should determine the
+   * required properties and add a corresponding {@link
+   * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotation to the receiver.
    *
-   * @param t
+   * @param t a method that is possibly the {@code build} method for a builder. The only guaranteed
+   *     condition is that the enclosing class for the method is itself an inner class.
    */
   public void handlePossibleBuilderBuildMethod(AnnotatedTypeMirror.AnnotatedExecutableType t);
 
   /**
-   * add CalledMethods annotation to constructor call inside a generated toBuilder method
+   * For frameworks to add any necessary @{@link
+   * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotation to a constructor
+   * call
    *
-   * @param tree
-   * @param type
+   * @param tree AST for the call
+   * @param type type of the call expression
    */
   public void handleConstructor(NewClassTree tree, AnnotatedTypeMirror type);
 }
