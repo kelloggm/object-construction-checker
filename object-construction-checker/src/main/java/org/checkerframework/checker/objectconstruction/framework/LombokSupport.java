@@ -88,14 +88,6 @@ public class LombokSupport implements FrameworkSupport {
     }
   }
 
-  /**
-   * Allows for supporting a framework's {@code toBuilder} routine. Typically, the returned Builder
-   * setters invoked. So, the framework support can add a {@link
-   * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotation capturing this
-   * fact.
-   *
-   * @param t method named "toBuilder"
-   */
   @Override
   public void handlePossibleToBuilder(AnnotatedExecutableType t) {
 

@@ -8,11 +8,12 @@ public interface FrameworkSupport {
 
   /**
    * Allows for supporting a framework's {@code toBuilder} routine. Typically, the returned Builder
-   * setters invoked. So, the framework support can add a {@link
+   * has had all of its required setters invoked. So, the framework support can add a {@link
    * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotation capturing this
    * fact.
    *
-   * @param t method named "toBuilder"
+   * @param t a method whose name is "toBuilder". An implementation must check that this is actually
+   *     a toBuilder method for the corresponding framework
    */
   public void handlePossibleToBuilder(AnnotatedTypeMirror.AnnotatedExecutableType t);
 
