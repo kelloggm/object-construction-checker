@@ -12,8 +12,9 @@ public interface FrameworkSupport {
    * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotation capturing this
    * fact.
    *
-   * @param t a method whose name is "toBuilder". An implementation must check that this is actually
-   *     a toBuilder method for the corresponding framework
+   * @param t a method that is possibly the {@code toBuilder} method for a type that has an
+   *     associated builder. An implementation must check that this is actually the {@code
+   *     toBuilder} method for the corresponding framework
    */
   public void handlePossibleToBuilder(AnnotatedTypeMirror.AnnotatedExecutableType t);
 
