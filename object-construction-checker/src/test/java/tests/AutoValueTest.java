@@ -27,7 +27,6 @@ public class AutoValueTest extends CheckerFrameworkPerDirectoryTest {
         org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
         "autovalue",
         "-Anomsgtext",
-        "-AunableLombok",
         "-nowarn");
   }
 

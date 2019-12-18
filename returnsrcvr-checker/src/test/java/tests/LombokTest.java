@@ -20,7 +20,6 @@ public class LombokTest extends CheckerFrameworkPerDirectoryTest {
         ReturnsRcvrChecker.class,
         "lombok",
         "-Anomsgtext",
-        "-AunableAutovalue",
         "-nowarn",
         "-AsuppressWarnings=type.anno.before.modifier");
   }

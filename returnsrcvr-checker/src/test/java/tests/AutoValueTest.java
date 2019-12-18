@@ -5,6 +5,7 @@ import static org.checkerframework.framework.test.TestConfigurationBuilder.build
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+
 import org.checkerframework.com.google.common.collect.ImmutableList;
 import org.checkerframework.framework.test.CheckerFrameworkPerDirectoryTest;
 import org.checkerframework.framework.test.TestConfiguration;
@@ -30,7 +31,6 @@ public class AutoValueTest extends CheckerFrameworkPerDirectoryTest {
         org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker.class,
         "basic",
         "-Anomsgtext",
-        "-AunableLombok",
         "-nowarn");
   }
 

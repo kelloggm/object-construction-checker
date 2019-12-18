@@ -33,26 +33,26 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     super(checker);
     THIS_ANNOT = AnnotationBuilder.fromClass(elements, This.class);
 
-    boolean unableAutoValue = false;
-    boolean unableLombok = false;
-    if (checker.hasOption(ReturnsRcvrChecker.UNABLE_FRAMEWORK_SUPPORTS)) {
-    	String unableFrameworkSupports = checker.getOption(ReturnsRcvrChecker.UNABLE_FRAMEWORK_SUPPORTS);
-    	if (unableFrameworkSupports != null) {
-	    	for (String unableFrameworkSupport : unableFrameworkSupports.split(",")) {
-	    		if (unableFrameworkSupport.equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
-	    			unableAutoValue = true;
-	    		}
-	    		if (unableFrameworkSupport.equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
-	    			unableLombok = true;
-	    		}
-	    	}
+    boolean disableAutoValue = false;
+    boolean disableLombok = false;
+    
+	String disabledFrameworkSupports = checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS);
+	if (disabledFrameworkSupports != null) {
+    	for (String disabledFrameworkSupport : disabledFrameworkSupports.split(",")) {
+    		if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
+    			disableAutoValue = true;
+    		}
+    		if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
+    			disableLombok = true;
+    		}
     	}
-    }
+	}
+	
     frameworkSupports = new ArrayList<FrameworkSupport>();
-    if(!unableAutoValue) {
+    if(!disableAutoValue) {
     	frameworkSupports.add(new AutoValueSupport());
     }
-    if(!unableLombok) {
+    if(!disableLombok) {
     	frameworkSupports.add(new LombokSupport());
     }
     // we have to call this explicitly
