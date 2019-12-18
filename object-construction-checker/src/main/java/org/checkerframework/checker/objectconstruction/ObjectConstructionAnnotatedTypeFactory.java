@@ -73,15 +73,29 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
 
-    boolean autovalueUnable = checker.hasOption(ReturnsRcvrChecker.AUTOVALUE_SUPPORT_UNABLE);
-    boolean lombokUnable = checker.hasOption(ReturnsRcvrChecker.LOMBOK_SUPPORT_UNABLE);
+    boolean unableAutoValue = false;
+    boolean unableLombok = false;
+    if (checker.hasOption(ReturnsRcvrChecker.UNABLE_FRAMEWORK_SUPPORTS)) {
+    	String unableFrameworkSupports = checker.getOption(ReturnsRcvrChecker.UNABLE_FRAMEWORK_SUPPORTS);
+    	if (unableFrameworkSupports != null) {
+	    	for (String unableFrameworkSupport : unableFrameworkSupports.split(",")) {
+	    		if (unableFrameworkSupport.equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
+	    			unableAutoValue = true;
+	    		}
+	    		if (unableFrameworkSupport.equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
+	    			unableLombok = true;
+	    		}
+	    	}
+    	}
+    }
     frameworkSupports = new ArrayList<FrameworkSupport>();
-    if(!autovalueUnable) {
+    if(!unableAutoValue) {
     	frameworkSupports.add(new AutoValueSupport(this));
     }
-    if(!lombokUnable) {
+    if(!unableLombok) {
     	frameworkSupports.add(new LombokSupport(this));
     }
+    
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
     this.collectionsSingletonList =
         TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());
