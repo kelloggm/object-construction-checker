@@ -29,11 +29,15 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     super(checker);
     THIS_ANNOT = AnnotationBuilder.fromClass(elements, This.class);
 
-    // add supports for frameworks
+    boolean autovalueUnable = checker.hasOption(ReturnsRcvrChecker.AUTOVALUE_SUPPORT_UNABLE);
+    boolean lombokUnable = checker.hasOption(ReturnsRcvrChecker.LOMBOK_SUPPORT_UNABLE);
     frameworkSupports = new ArrayList<FrameworkSupport>();
-    frameworkSupports.add(new AutoValueSupport());
-    frameworkSupports.add(new LombokSupport());
-
+    if(!autovalueUnable) {
+    	frameworkSupports.add(new AutoValueSupport());
+    }
+    if(!lombokUnable) {
+    	frameworkSupports.add(new LombokSupport());
+    }
     // we have to call this explicitly
     this.postInit();
   }

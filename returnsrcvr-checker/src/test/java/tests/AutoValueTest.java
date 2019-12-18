@@ -30,6 +30,7 @@ public class AutoValueTest extends CheckerFrameworkPerDirectoryTest {
         org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker.class,
         "basic",
         "-Anomsgtext",
+        "-AunableLombok",
         "-nowarn");
   }
 

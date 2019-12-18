@@ -73,10 +73,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
 
+    boolean autovalueUnable = checker.hasOption(ReturnsRcvrChecker.AUTOVALUE_SUPPORT_UNABLE);
+    boolean lombokUnable = checker.hasOption(ReturnsRcvrChecker.LOMBOK_SUPPORT_UNABLE);
     frameworkSupports = new ArrayList<FrameworkSupport>();
-    frameworkSupports.add(new AutoValueSupport(this));
-    frameworkSupports.add(new LombokSupport(this));
-
+    if(!autovalueUnable) {
+    	frameworkSupports.add(new AutoValueSupport(this));
+    }
+    if(!lombokUnable) {
+    	frameworkSupports.add(new LombokSupport(this));
+    }
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
     this.collectionsSingletonList =
         TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());

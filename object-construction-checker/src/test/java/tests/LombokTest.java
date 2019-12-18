@@ -31,6 +31,7 @@ public class LombokTest extends CheckerFrameworkPerDirectoryTest {
         org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
         "lombok",
         "-Anomsgtext",
+        "-AunableAutovalue",
         "-nowarn",
         "-AsuppressWarnings=type.anno.before.modifier");
   }
