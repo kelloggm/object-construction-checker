@@ -1,10 +1,14 @@
 package org.checkerframework.checker.returnsrcvr;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+
 import org.checkerframework.checker.framework.AutoValueSupport;
 import org.checkerframework.checker.framework.FrameworkSupport;
 import org.checkerframework.checker.framework.LombokSupport;
@@ -29,13 +33,26 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     super(checker);
     THIS_ANNOT = AnnotationBuilder.fromClass(elements, This.class);
 
-    boolean autovalueUnable = checker.hasOption(ReturnsRcvrChecker.AUTOVALUE_SUPPORT_UNABLE);
-    boolean lombokUnable = checker.hasOption(ReturnsRcvrChecker.LOMBOK_SUPPORT_UNABLE);
+    boolean unableAutoValue = false;
+    boolean unableLombok = false;
+    if (checker.hasOption(ReturnsRcvrChecker.UNABLE_FRAMEWORK_SUPPORTS)) {
+    	String unableFrameworkSupports = checker.getOption(ReturnsRcvrChecker.UNABLE_FRAMEWORK_SUPPORTS);
+    	if (unableFrameworkSupports != null) {
+	    	for (String unableFrameworkSupport : unableFrameworkSupports.split(",")) {
+	    		if (unableFrameworkSupport.equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
+	    			unableAutoValue = true;
+	    		}
+	    		if (unableFrameworkSupport.equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
+	    			unableLombok = true;
+	    		}
+	    	}
+    	}
+    }
     frameworkSupports = new ArrayList<FrameworkSupport>();
-    if(!autovalueUnable) {
+    if(!unableAutoValue) {
     	frameworkSupports.add(new AutoValueSupport());
     }
-    if(!lombokUnable) {
+    if(!unableLombok) {
     	frameworkSupports.add(new LombokSupport());
     }
     // we have to call this explicitly

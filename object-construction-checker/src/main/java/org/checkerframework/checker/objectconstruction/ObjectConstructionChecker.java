@@ -18,7 +18,7 @@ import org.checkerframework.framework.source.SuppressWarningsKeys;
  * objects from being instantiated.
  */
 @SuppressWarningsKeys({"builder", "object.construction", "objectconstruction"})
-@SupportedOptions({ObjectConstructionChecker.USE_VALUE_CHECKER, ReturnsRcvrChecker.AUTOVALUE_SUPPORT_UNABLE, ReturnsRcvrChecker.LOMBOK_SUPPORT_UNABLE})
+@SupportedOptions({ObjectConstructionChecker.USE_VALUE_CHECKER, ReturnsRcvrChecker.UNABLE_FRAMEWORK_SUPPORTS})
 public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String USE_VALUE_CHECKER = "useValueChecker";

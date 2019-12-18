@@ -9,8 +9,8 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
  * https://checkerframework.org/manual/#creating-a-checker
  */
 public class ReturnsRcvrChecker extends BaseTypeChecker {
-
-	  public static final String AUTOVALUE_SUPPORT_UNABLE = "unableAutovalue";
-	  public static final String LOMBOK_SUPPORT_UNABLE = "unableLombok";
+	public static final String UNABLE_FRAMEWORK_SUPPORTS = "unableFrameworkSupports";
+	public static final String LOMBOK_SUPPORT = "Lombok";
+	public static final String AUTOVALUE_SUPPORT = "Autovalue";
 	  
 }
