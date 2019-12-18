@@ -13,8 +13,8 @@ public class FrameworkSupportUtils {
   /**
    * Given an annotation class, return true if the element has the annotation
    *
-   * @param element
-   * @param annotClass
+   * @param element the element that might have an annotation
+   * @param annotClass the class of the annotation that might be present
    * @return true if the element has the annotation
    */
   public static boolean hasAnnotation(Element element, Class<? extends Annotation> annotClass) {
@@ -25,9 +25,9 @@ public class FrameworkSupportUtils {
   /**
    * Given an annotation name, return true if the element has the annotation of that name
    *
-   * @param element
-   * @param annotClassName
-   * @return true if the element has the annotation of that name
+   * @param element the element that might have an annotation
+   * @param annotClassName the class of the annotation that might be present
+   * @return true if the element has the annotation of that class
    */
   public static boolean hasAnnotationByName(Element element, String annotClassName) {
     return element.getAnnotationMirrors().stream()
