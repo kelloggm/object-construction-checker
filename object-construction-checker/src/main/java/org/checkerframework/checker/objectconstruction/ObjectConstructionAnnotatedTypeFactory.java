@@ -75,27 +75,28 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     boolean disableAutoValue = false;
     boolean disableLombok = false;
-    
-	String disabledFrameworkSupports = checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS);
-	if (disabledFrameworkSupports != null) {
-    	for (String disabledFrameworkSupport : disabledFrameworkSupports.split(",")) {
-    		if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
-    			disableAutoValue = true;
-    		}
-    		if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
-    			disableLombok = true;
-    		}
-    	}
-	}
-    
+
+    String disabledFrameworkSupports =
+        checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS);
+    if (disabledFrameworkSupports != null) {
+      for (String disabledFrameworkSupport : disabledFrameworkSupports.split(",")) {
+        if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
+          disableAutoValue = true;
+        }
+        if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
+          disableLombok = true;
+        }
+      }
+    }
+
     frameworkSupports = new ArrayList<FrameworkSupport>();
-    if(!disableAutoValue) {
-    	frameworkSupports.add(new AutoValueSupport(this));
+    if (!disableAutoValue) {
+      frameworkSupports.add(new AutoValueSupport(this));
     }
-    if(!disableLombok) {
-    	frameworkSupports.add(new LombokSupport(this));
+    if (!disableLombok) {
+      frameworkSupports.add(new LombokSupport(this));
     }
-    
+
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
     this.collectionsSingletonList =
         TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());

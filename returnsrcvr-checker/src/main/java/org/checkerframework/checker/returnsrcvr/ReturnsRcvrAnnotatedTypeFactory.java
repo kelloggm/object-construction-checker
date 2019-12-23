@@ -1,14 +1,10 @@
 package org.checkerframework.checker.returnsrcvr;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
-
 import org.checkerframework.checker.framework.AutoValueSupport;
 import org.checkerframework.checker.framework.FrameworkSupport;
 import org.checkerframework.checker.framework.LombokSupport;
@@ -35,25 +31,26 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     boolean disableAutoValue = false;
     boolean disableLombok = false;
-    
-	String disabledFrameworkSupports = checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS);
-	if (disabledFrameworkSupports != null) {
-    	for (String disabledFrameworkSupport : disabledFrameworkSupports.split(",")) {
-    		if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
-    			disableAutoValue = true;
-    		}
-    		if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
-    			disableLombok = true;
-    		}
-    	}
-	}
-	
-    frameworkSupports = new ArrayList<FrameworkSupport>();
-    if(!disableAutoValue) {
-    	frameworkSupports.add(new AutoValueSupport());
+
+    String disabledFrameworkSupports =
+        checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS);
+    if (disabledFrameworkSupports != null) {
+      for (String disabledFrameworkSupport : disabledFrameworkSupports.split(",")) {
+        if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
+          disableAutoValue = true;
+        }
+        if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
+          disableLombok = true;
+        }
+      }
     }
-    if(!disableLombok) {
-    	frameworkSupports.add(new LombokSupport());
+
+    frameworkSupports = new ArrayList<FrameworkSupport>();
+    if (!disableAutoValue) {
+      frameworkSupports.add(new AutoValueSupport());
+    }
+    if (!disableLombok) {
+      frameworkSupports.add(new LombokSupport());
     }
     // we have to call this explicitly
     this.postInit();

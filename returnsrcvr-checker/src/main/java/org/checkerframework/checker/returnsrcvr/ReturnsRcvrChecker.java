@@ -11,8 +11,7 @@ import org.checkerframework.framework.source.SupportedOptions;
  */
 @SupportedOptions({ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS})
 public class ReturnsRcvrChecker extends BaseTypeChecker {
-	public static final String DISABLED_FRAMEWORK_SUPPORTS = "disabledFrameworkSupports";
-	public static final String LOMBOK_SUPPORT = "Lombok";
-	public static final String AUTOVALUE_SUPPORT = "AutoValue";
-	  
+  public static final String DISABLED_FRAMEWORK_SUPPORTS = "disabledFrameworkSupports";
+  public static final String LOMBOK_SUPPORT = "Lombok";
+  public static final String AUTOVALUE_SUPPORT = "AutoValue";
 }
