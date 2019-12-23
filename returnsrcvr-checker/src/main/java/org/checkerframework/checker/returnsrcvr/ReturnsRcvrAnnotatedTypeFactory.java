@@ -1,26 +1,20 @@
 package org.checkerframework.checker.returnsrcvr;
 
-<<<<<<< HEAD
 import java.util.ArrayList;
 import java.util.Collection;
-=======
 import com.google.auto.value.AutoValue;
 import java.lang.annotation.Annotation;
 import java.util.Set;
->>>>>>> 7c5d9e9... hack to get around qualifier loading issue
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
-<<<<<<< HEAD
 import org.checkerframework.checker.framework.AutoValueSupport;
 import org.checkerframework.checker.framework.FrameworkSupport;
 import org.checkerframework.checker.framework.LombokSupport;
-=======
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.returnsrcvr.qual.BottomThis;
->>>>>>> 7c5d9e9... hack to get around qualifier loading issue
 import org.checkerframework.checker.returnsrcvr.qual.MaybeThis;
 import org.checkerframework.checker.returnsrcvr.qual.This;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
