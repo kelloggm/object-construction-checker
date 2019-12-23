@@ -446,7 +446,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   @Override
   protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
-    return getBundledTypeQualifiersWithPolyAll(
+    return getBundledTypeQualifiers(
         CalledMethods.class,
         CalledMethodsBottom.class,
         CalledMethodsPredicate.class,
