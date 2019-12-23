@@ -1,13 +1,16 @@
 package org.checkerframework.checker.returnsrcvr;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.framework.AutoValueSupport;
 import org.checkerframework.checker.framework.FrameworkSupport;
 import org.checkerframework.checker.framework.LombokSupport;
+import org.checkerframework.checker.returnsrcvr.qual.BottomThis;
 import org.checkerframework.checker.returnsrcvr.qual.MaybeThis;
 import org.checkerframework.checker.returnsrcvr.qual.This;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -36,6 +39,11 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     // we have to call this explicitly
     this.postInit();
+  }
+
+  @Override
+  protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
+    return getBundledTypeQualifiers(BottomThis.class, MaybeThis.class, This.class);
   }
 
   @Override
