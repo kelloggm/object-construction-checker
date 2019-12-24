@@ -458,6 +458,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return element.getAnnotation(annotClass) != null;
   }
 
+  @Override
+  protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
+    return getBundledTypeQualifiers(
+        CalledMethods.class,
+        CalledMethodsBottom.class,
+        CalledMethodsPredicate.class,
+        CalledMethodsTop.class);
+  }
+
   private boolean hasAnnotation(Element element, String annotName) {
     return element.getAnnotationMirrors().stream()
         .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
