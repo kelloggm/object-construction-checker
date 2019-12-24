@@ -3,12 +3,14 @@ package org.checkerframework.checker.returnsrcvr;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.framework.AutoValueSupport;
 import org.checkerframework.checker.framework.FrameworkSupport;
+import org.checkerframework.checker.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.framework.LombokSupport;
 import org.checkerframework.checker.returnsrcvr.qual.BottomThis;
 import org.checkerframework.checker.returnsrcvr.qual.MaybeThis;
@@ -32,10 +34,21 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     super(checker);
     THIS_ANNOT = AnnotationBuilder.fromClass(elements, This.class);
 
-    // add supports for frameworks
+    EnumSet<FrameworkSupportUtils.Framework> frameworkSet =
+        FrameworkSupportUtils.getFrameworkSet(
+            checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS));
     frameworkSupports = new ArrayList<FrameworkSupport>();
-    frameworkSupports.add(new AutoValueSupport());
-    frameworkSupports.add(new LombokSupport());
+
+    for (FrameworkSupportUtils.Framework framework : frameworkSet) {
+      switch (framework) {
+        case AUTO_VALUE:
+          frameworkSupports.add(new AutoValueSupport());
+          break;
+        case LOMBOK:
+          frameworkSupports.add(new LombokSupport());
+          break;
+      }
+    }
 
     // we have to call this explicitly
     this.postInit();

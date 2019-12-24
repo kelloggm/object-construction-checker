@@ -1,6 +1,7 @@
 package org.checkerframework.checker.returnsrcvr;
 
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.framework.source.SupportedOptions;
 
 /**
  * Empty Checker is the entry point for pluggable type-checking.
@@ -8,4 +9,9 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
  * <p>This one does nothing. The Checker Framework manual tells you how to make it do something:
  * https://checkerframework.org/manual/#creating-a-checker
  */
-public class ReturnsRcvrChecker extends BaseTypeChecker {}
+@SupportedOptions({ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS})
+public class ReturnsRcvrChecker extends BaseTypeChecker {
+  public static final String DISABLED_FRAMEWORK_SUPPORTS = "disableFrameworkSupports";
+  public static final String LOMBOK_SUPPORT = "LOMBOK";
+  public static final String AUTOVALUE_SUPPORT = "AUTOVALUE";
+}

@@ -1,7 +1,9 @@
 package org.checkerframework.checker.framework;
 
 import java.lang.annotation.Annotation;
+import java.util.EnumSet;
 import javax.lang.model.element.Element;
+import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
 import org.checkerframework.javacutil.AnnotationUtils;
 
 /** A utility class for framework support in returns receiver checker */
@@ -9,6 +11,36 @@ public class FrameworkSupportUtils {
 
   // this class is non-instantiable
   private FrameworkSupportUtils() {}
+
+  public enum Framework {
+    AUTO_VALUE,
+    LOMBOK;
+  }
+
+  /**
+   * Determine the framework supports that should be disabled according to the flag {@code
+   * disableFrameworkSupports}, return a EnumSet containing the framework supports in use
+   *
+   * @param option a comma-separated list of frameworks whose support should be disabled
+   * @return an EnumSet of all framework supports in use
+   */
+  public static EnumSet<Framework> getFrameworkSet(String option) {
+    EnumSet<Framework> frameworkSet = EnumSet.allOf(Framework.class);
+
+    if (option != null) {
+      for (String disabledFrameworkSupport : option.split("\\s?,\\s?")) {
+        switch (disabledFrameworkSupport.toUpperCase()) {
+          case ReturnsRcvrChecker.AUTOVALUE_SUPPORT:
+            frameworkSet.remove(Framework.AUTO_VALUE);
+            break;
+          case ReturnsRcvrChecker.LOMBOK_SUPPORT:
+            frameworkSet.remove(Framework.LOMBOK);
+            break;
+        }
+      }
+    }
+    return frameworkSet;
+  }
 
   /**
    * Given an annotation class, return true if the element has the annotation

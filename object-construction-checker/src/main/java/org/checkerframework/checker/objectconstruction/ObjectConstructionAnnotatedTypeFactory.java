@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,6 +17,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import org.checkerframework.checker.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.framework.LombokSupport;
@@ -73,9 +75,21 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
 
+    EnumSet<FrameworkSupportUtils.Framework> frameworkSet =
+        FrameworkSupportUtils.getFrameworkSet(
+            checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS));
     frameworkSupports = new ArrayList<FrameworkSupport>();
-    frameworkSupports.add(new AutoValueSupport(this));
-    frameworkSupports.add(new LombokSupport(this));
+
+    for (FrameworkSupportUtils.Framework framework : frameworkSet) {
+      switch (framework) {
+        case AUTO_VALUE:
+          frameworkSupports.add(new AutoValueSupport(this));
+          break;
+        case LOMBOK:
+          frameworkSupports.add(new LombokSupport(this));
+          break;
+      }
+    }
 
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
     this.collectionsSingletonList =
