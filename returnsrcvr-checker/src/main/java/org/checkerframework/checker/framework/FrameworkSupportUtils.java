@@ -18,8 +18,8 @@ public class FrameworkSupportUtils {
   }
 
   /**
-   * Determine the framework supports that should be disabled according to the command-line flag
-   * {@code disableFrameworkSupports}, return a EnumSet containing the framework supports in use
+   * Determine the framework supports that should be disabled according to the flag {@code
+   * disableFrameworkSupports}, return a EnumSet containing the framework supports in use
    *
    * @param option
    * @return an EnumSet of all framework supports in use
