@@ -213,7 +213,7 @@ the same `@CalledMethods` annotation as the receiver of `build()`, using the sam
 
 You can disable the framework supports by specifying them in a comma-separated list to the 
 command-line flag `disabledFrameworkSupports`.  For example, to disable both Lombok and AutoValue supports,
-use `diabledFrameworkSupports=AutoValue,Lombok` . 
+use `-AdiabledFrameworkSupports=AutoValue,Lombok` . 
  
 If you overwrite the definition of any of these methods (for example, by adding your own setters to
 a Lombok builder), you may need to write the annotations manually.

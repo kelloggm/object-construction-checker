@@ -13,7 +13,7 @@ import org.checkerframework.framework.test.TypecheckExecutor;
 import org.checkerframework.framework.test.TypecheckResult;
 import org.junit.runners.Parameterized.Parameters;
 
-public class DisabledframeworksTest extends CheckerFrameworkPerDirectoryTest {
+public class DisableframeworksTest extends CheckerFrameworkPerDirectoryTest {
 
   private static final ImmutableList<String> ANNOTATION_PROCS =
       ImmutableList.of(
@@ -25,19 +25,19 @@ public class DisabledframeworksTest extends CheckerFrameworkPerDirectoryTest {
           org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class
               .getName());
 
-  public DisabledframeworksTest(List<File> testFiles) {
+  public DisableframeworksTest(List<File> testFiles) {
     super(
         testFiles,
         org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
-        "diabledframeworks",
+        "diableframeworks",
         "-Anomsgtext",
-        "-AdisabledFrameworkSupports=AutoValue,Lombok",
+        "-AdisableFrameworkSupports=AutoValue,Lombok",
         "-nowarn");
   }
 
   @Parameters
   public static String[] getTestDirs() {
-    return new String[] {"disabledframeworks"};
+    return new String[] {"disableframeworks"};
   }
 
   /**

@@ -36,10 +36,10 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS);
     if (disabledFrameworkSupports != null) {
       for (String disabledFrameworkSupport : disabledFrameworkSupports.split(",")) {
-        if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
+        if (disabledFrameworkSupport.toUpperCase().equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
           disableAutoValue = true;
         }
-        if (disabledFrameworkSupport.equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
+        if (disabledFrameworkSupport.toUpperCase().equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
           disableLombok = true;
         }
       }
