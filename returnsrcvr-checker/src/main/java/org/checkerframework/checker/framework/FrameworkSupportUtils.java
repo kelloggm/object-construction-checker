@@ -21,7 +21,7 @@ public class FrameworkSupportUtils {
    * Determine the framework supports that should be disabled according to the flag {@code
    * disableFrameworkSupports}, return a EnumSet containing the framework supports in use
    *
-   * @param option
+   * @param option a comma-separated list of frameworks whose support should be disabled
    * @return an EnumSet of all framework supports in use
    */
   public static EnumSet<Framework> getFrameworkSet(String option) {

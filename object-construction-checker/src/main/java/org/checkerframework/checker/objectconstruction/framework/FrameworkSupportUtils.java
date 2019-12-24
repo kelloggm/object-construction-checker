@@ -20,8 +20,8 @@ public class FrameworkSupportUtils {
   /**
    * Given an annotation class, return true if the element has the annotation
    *
-   * @param element
-   * @param annotClass
+   * @param element the element
+   * @param annotClass class for the annotation
    * @return true if the element has the annotation
    */
   public static boolean hasAnnotation(Element element, Class<? extends Annotation> annotClass) {
@@ -31,8 +31,8 @@ public class FrameworkSupportUtils {
   /**
    * Given an annotation name, return true if the element has the annotation of that name
    *
-   * @param element
-   * @param annotName
+   * @param element the element
+   * @param annotName name of the annotation
    * @return true if the element has the annotation of that name
    */
   public static boolean hasAnnotation(Element element, String annotName) {
