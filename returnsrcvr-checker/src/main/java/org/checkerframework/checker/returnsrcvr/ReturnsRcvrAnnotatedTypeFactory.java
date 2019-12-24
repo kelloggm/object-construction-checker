@@ -2,7 +2,7 @@ package org.checkerframework.checker.returnsrcvr;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Set;
+import java.util.EnumSet;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -31,7 +31,7 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     super(checker);
     THIS_ANNOT = AnnotationBuilder.fromClass(elements, This.class);
 
-    Set<FrameworkSupportUtils.Framework> frameworkSet =
+    EnumSet<FrameworkSupportUtils.Framework> frameworkSet =
         FrameworkSupportUtils.getFrameworkSet(
             checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS));
     frameworkSupports = new ArrayList<FrameworkSupport>();

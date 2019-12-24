@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -74,7 +75,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
 
-    Set<FrameworkSupportUtils.Framework> frameworkSet =
+    EnumSet<FrameworkSupportUtils.Framework> frameworkSet =
         FrameworkSupportUtils.getFrameworkSet(
             checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS));
     frameworkSupports = new ArrayList<FrameworkSupport>();
