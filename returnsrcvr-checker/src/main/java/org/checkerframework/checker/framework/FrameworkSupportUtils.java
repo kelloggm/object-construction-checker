@@ -18,7 +18,14 @@ public class FrameworkSupportUtils {
     AUTO_VALUE,
     LOMBOK;
   }
-
+  
+  /**
+   * determine the framework supports that should be disabled according to 
+   * the flag {@code disableFrameworkSupports}, return a enumSet containing 
+   * the framework supports in use
+   * @param option
+   * @return a enumSet of all framework supports in use
+   */
   public static Set<Framework> getFrameworkSet(String option) {
     Set<Framework> frameworkSet = new HashSet<Framework>(Arrays.asList(Framework.values()));
     Set<Framework> disableFrameworkSet = new HashSet<Framework>();
