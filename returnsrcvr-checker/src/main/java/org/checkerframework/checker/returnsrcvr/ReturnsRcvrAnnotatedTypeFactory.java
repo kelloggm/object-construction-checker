@@ -2,11 +2,13 @@ package org.checkerframework.checker.returnsrcvr;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.framework.AutoValueSupport;
 import org.checkerframework.checker.framework.FrameworkSupport;
+import org.checkerframework.checker.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.framework.LombokSupport;
 import org.checkerframework.checker.returnsrcvr.qual.MaybeThis;
 import org.checkerframework.checker.returnsrcvr.qual.This;
@@ -29,29 +31,22 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     super(checker);
     THIS_ANNOT = AnnotationBuilder.fromClass(elements, This.class);
 
-    boolean disableAutoValue = false;
-    boolean disableLombok = false;
+    Set<FrameworkSupportUtils.Framework> frameworkSet =
+        FrameworkSupportUtils.getFrameworkSet(
+            checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS));
+    frameworkSupports = new ArrayList<FrameworkSupport>();
 
-    String disabledFrameworkSupports =
-        checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS);
-    if (disabledFrameworkSupports != null) {
-      for (String disabledFrameworkSupport : disabledFrameworkSupports.split(",")) {
-        if (disabledFrameworkSupport.toUpperCase().equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
-          disableAutoValue = true;
-        }
-        if (disabledFrameworkSupport.toUpperCase().equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
-          disableLombok = true;
-        }
+    for (FrameworkSupportUtils.Framework framework : frameworkSet) {
+      switch (framework) {
+        case AUTO_VALUE:
+          frameworkSupports.add(new AutoValueSupport());
+          break;
+        case LOMBOK:
+          frameworkSupports.add(new LombokSupport());
+          break;
       }
     }
 
-    frameworkSupports = new ArrayList<FrameworkSupport>();
-    if (!disableAutoValue) {
-      frameworkSupports.add(new AutoValueSupport());
-    }
-    if (!disableLombok) {
-      frameworkSupports.add(new LombokSupport());
-    }
     // we have to call this explicitly
     this.postInit();
   }

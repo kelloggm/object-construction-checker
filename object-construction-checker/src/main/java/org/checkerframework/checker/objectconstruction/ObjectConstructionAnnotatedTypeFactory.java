@@ -16,6 +16,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import org.checkerframework.checker.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.framework.LombokSupport;
@@ -73,28 +74,20 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
 
-    boolean disableAutoValue = false;
-    boolean disableLombok = false;
-
-    String disabledFrameworkSupports =
-        checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS);
-    if (disabledFrameworkSupports != null) {
-      for (String disabledFrameworkSupport : disabledFrameworkSupports.split(",")) {
-        if (disabledFrameworkSupport.toUpperCase().equals(ReturnsRcvrChecker.AUTOVALUE_SUPPORT)) {
-          disableAutoValue = true;
-        }
-        if (disabledFrameworkSupport.toUpperCase().equals(ReturnsRcvrChecker.LOMBOK_SUPPORT)) {
-          disableLombok = true;
-        }
-      }
-    }
-
+    Set<FrameworkSupportUtils.Framework> frameworkSet =
+        FrameworkSupportUtils.getFrameworkSet(
+            checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS));
     frameworkSupports = new ArrayList<FrameworkSupport>();
-    if (!disableAutoValue) {
-      frameworkSupports.add(new AutoValueSupport(this));
-    }
-    if (!disableLombok) {
-      frameworkSupports.add(new LombokSupport(this));
+
+    for (FrameworkSupportUtils.Framework framework : frameworkSet) {
+      switch (framework) {
+        case AUTO_VALUE:
+          frameworkSupports.add(new AutoValueSupport(this));
+          break;
+        case LOMBOK:
+          frameworkSupports.add(new LombokSupport(this));
+          break;
+      }
     }
 
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
