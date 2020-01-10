@@ -420,6 +420,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
 
       if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
+        if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
+          // Permit this only if the predicates are identical, to avoid complicated
+          // predicate equivalence calculation. Good enough in practice.
+          String predicate1 =
+              AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
+          String predicate2 =
+              AnnotationUtils.getElementValue(subAnno, "value", String.class, false);
+          return predicate1.equals(predicate2);
+        }
         return false;
       }
 
