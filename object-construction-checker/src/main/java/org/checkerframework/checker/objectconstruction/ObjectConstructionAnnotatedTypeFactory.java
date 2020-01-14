@@ -17,7 +17,10 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.framework.FrameworkSupportUtils;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.framework.LombokSupport;
@@ -479,5 +482,21 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private boolean hasAnnotation(Element element, String annotName) {
     return element.getAnnotationMirrors().stream()
         .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
+  }
+
+  /**
+   * Returns the annotation type mirror for the type of {@code expressionTree} with default
+   * annotations applied. As types relevant to object construction checking are rarely used inside
+   * generics, this is typically the best choice for type inference.
+   */
+  @Override
+  public @Nullable AnnotatedTypeMirror getDummyAssignedTo(ExpressionTree expressionTree) {
+    TypeMirror type = TreeUtils.typeOf(expressionTree);
+    if (type.getKind() != TypeKind.VOID) {
+      AnnotatedTypeMirror atm = type(expressionTree);
+      addDefaultAnnotations(atm);
+      return atm;
+    }
+    return null;
   }
 }

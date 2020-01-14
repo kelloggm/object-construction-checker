@@ -1,8 +1,10 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.returnsrcvr.qual.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.stream.Stream;
 
 class Generics {
 
@@ -43,5 +45,12 @@ class Generics {
         return null;
     }
 
+    static Stream<String> stringList() {
+        String s = "hi";
+        // dummy method call
+        s.contains("h");
+        // should infer type Stream<@CalledMethodsTop String>
+        return Arrays.asList(s).stream();
+    }
 
 }
