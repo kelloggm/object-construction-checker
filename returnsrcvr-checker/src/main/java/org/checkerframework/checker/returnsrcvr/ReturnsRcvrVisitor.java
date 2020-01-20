@@ -4,6 +4,7 @@ import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ModifiersTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.TypeCastTree;
 import com.sun.source.util.TreePath;
 import javax.lang.model.element.AnnotationMirror;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -31,7 +32,10 @@ public class ReturnsRcvrVisitor extends BaseTypeVisitor<ReturnsRcvrAnnotatedType
           grandparent instanceof MethodTree
               && (parent.equals(((MethodTree) grandparent).getReturnType())
                   || parent instanceof ModifiersTree);
-      if (!isReturnAnnot) {
+      boolean isCastAnnot =
+          grandparent instanceof TypeCastTree
+              && parent.equals(((TypeCastTree) grandparent).getType());
+      if (!(isReturnAnnot || isCastAnnot)) {
         checker.report(Result.failure("invalid.this.location"), node);
       }
     }
