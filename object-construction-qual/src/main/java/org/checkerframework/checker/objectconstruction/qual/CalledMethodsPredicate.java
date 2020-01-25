@@ -15,7 +15,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
  *
  * <p>The argument is a string. The string must be constructed from the following grammar:
  *
- * <p>S → method name | (S) | S &amp;&amp; S | S || S
+ * <p>S &rarr; method name | (S) | S &amp;&amp; S | S || S
  *
  * <p>That is, the permitted elements are method names, parentheses, and the strings "&amp;&amp;"
  * and "||". "&amp;&amp;" has higher precedence than "||", following standard Java operator
