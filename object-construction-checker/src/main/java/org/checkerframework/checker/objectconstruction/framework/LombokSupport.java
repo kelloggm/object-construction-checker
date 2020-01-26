@@ -108,7 +108,8 @@ public class LombokSupport implements FrameworkSupport {
   }
 
   /** is element the build method for Lombok Builder? */
-  private boolean isBuilderBuildMethod(ExecutableElement element, Element nextEnclosingElement) {
+  public static boolean isBuilderBuildMethod(
+      ExecutableElement element, Element nextEnclosingElement) {
     return "build".equals(element.getSimpleName().toString());
   }
 

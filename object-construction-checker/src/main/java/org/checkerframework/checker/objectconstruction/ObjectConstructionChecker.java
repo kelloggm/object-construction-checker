@@ -125,11 +125,11 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     return messages;
   }
 
-  int numCalls = 0;
+  int numBuildCalls = 0;
 
   @Override
   public void typeProcessingOver() {
-    System.out.printf("Found %d method calls.\n", numCalls);
+    System.out.printf("Found %d build() method calls.\n", numBuildCalls);
     super.typeProcessingOver();
   }
 }
