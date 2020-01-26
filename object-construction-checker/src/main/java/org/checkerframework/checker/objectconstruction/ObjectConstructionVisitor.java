@@ -3,6 +3,8 @@ package org.checkerframework.checker.objectconstruction;
 import com.sun.source.tree.AnnotationTree;
 import java.util.Collections;
 import javax.lang.model.element.AnnotationMirror;
+
+import com.sun.source.tree.MethodInvocationTree;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -33,5 +35,11 @@ public class ObjectConstructionVisitor
       }
     }
     return super.visitAnnotation(node, p);
+  }
+
+  @Override
+  public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
+    ((ObjectConstructionChecker)checker).numCalls++;
+    return super.visitMethodInvocation(node, p);
   }
 }

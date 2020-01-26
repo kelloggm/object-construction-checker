@@ -124,4 +124,12 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
         "An unparseable predicate was found in an annotation. Predicates must be produced by this grammar: S --> method name | (S) | S && S | S || S. The message from the evaluator was: %s \\n");
     return messages;
   }
+
+  int numCalls = 0;
+
+  @Override
+  public void typeProcessingOver() {
+    System.out.printf("Found %d method calls.\n", numCalls);
+    super.typeProcessingOver();
+  }
 }
