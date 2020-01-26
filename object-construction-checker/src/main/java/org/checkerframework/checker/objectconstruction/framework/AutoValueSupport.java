@@ -126,7 +126,8 @@ public class AutoValueSupport implements FrameworkSupport {
   }
 
   /** is element the build method for AutoValue Builder? */
-  private boolean isBuilderBuildMethod(ExecutableElement element, Element nextEnclosingElement) {
+  public static boolean isBuilderBuildMethod(
+      ExecutableElement element, Element nextEnclosingElement) {
     return element.getModifiers().contains(Modifier.ABSTRACT)
         && TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement);
   }
