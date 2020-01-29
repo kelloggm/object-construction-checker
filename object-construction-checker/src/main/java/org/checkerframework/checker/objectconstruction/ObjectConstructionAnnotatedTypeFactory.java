@@ -429,7 +429,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           String subPredicate =
               AnnotationUtils.getElementValue(subAnno, "value", String.class, false);
           // shortcut if they're equal (most common case) to avoid calling the SMT solver
-          if(superPredicate.equals(subPredicate)) {
+          if (superPredicate.equals(subPredicate)) {
             return true;
           } else {
             return CalledMethodsPredicateEvaluator.implies(subPredicate, superPredicate);
