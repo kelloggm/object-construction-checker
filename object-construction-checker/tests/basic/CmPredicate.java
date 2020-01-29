@@ -176,5 +176,13 @@ class CmPredicate {
             // :: error: method.invocation.invalid
             cAble.f();
         }
+
+        static void testAssignability2(@CalledMethodsPredicate("a && b") MyClass dAble) {
+            dAble.c();
+            dAble.d();
+            // :: error: method.invocation.invalid
+            dAble.e();
+            dAble.f();
+        }
     }
 }

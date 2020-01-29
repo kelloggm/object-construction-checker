@@ -424,13 +424,16 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
         if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
-          // Permit this only if the predicates are identical, to avoid complicated
-          // predicate equivalence calculation. Good enough in practice.
-          String predicate1 =
+          String superPredicate =
               AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
-          String predicate2 =
+          String subPredicate =
               AnnotationUtils.getElementValue(subAnno, "value", String.class, false);
-          return predicate1.equals(predicate2);
+          // shortcut if they're equal (most common case) to avoid calling the SMT solver
+          if(superPredicate.equals(subPredicate)) {
+            return true;
+          } else {
+            return CalledMethodsPredicateEvaluator.implies(subPredicate, superPredicate);
+          }
         }
         return false;
       }
@@ -446,7 +449,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         CalledMethodsPredicateEvaluator evaluator = new CalledMethodsPredicateEvaluator(subVal);
         return evaluator.evaluate(predicate);
       } else {
-        // superAnno is a CM annotation, so compare the sets
+        // superAnno is a CM annotation, so implies the sets
         return subVal.containsAll(getValueOfAnnotationWithStringArgument(superAnno));
       }
     }
