@@ -160,6 +160,20 @@ class CmPredicate {
     }
 
     private static class MyClass {
+
+        @CalledMethods("a") MyClass a;
+        @CalledMethods({"a", "b"}) MyClass aB;
+        @CalledMethodsPredicate("a || b") MyClass aOrB;
+        @CalledMethodsPredicate("a && b") MyClass aAndB;
+        @CalledMethodsPredicate("a || b && c") MyClass bAndCOrA;
+        @CalledMethodsPredicate("a || (b && c)") MyClass bAndCOrAParens;
+        @CalledMethodsPredicate("a && b || c") MyClass aAndBOrC;
+        @CalledMethodsPredicate("(a && b) || c") MyClass aAndBOrCParens;
+        @CalledMethodsPredicate("(a || b) && c") MyClass aOrBAndC;
+        @CalledMethodsPredicate("a && (b || c)") MyClass bOrCAndA;
+        @CalledMethodsPredicate("b && c") MyClass bAndC;
+        @CalledMethodsPredicate("(b && c)") MyClass bAndCParens;
+
         void a() { }
         void b() { }
         void c(@CalledMethodsPredicate("a || b") MyClass this) { }
@@ -183,6 +197,259 @@ class CmPredicate {
             // :: error: method.invocation.invalid
             dAble.e();
             dAble.f();
+        }
+
+        void testAllAssignability() {
+
+            @CalledMethods("a") MyClass aLocal;
+            @CalledMethodsPredicate("a || b") MyClass aOrBLocal;
+            @CalledMethods({"a", "b"}) MyClass aBLocal;
+            @CalledMethodsPredicate("a && b") MyClass aAndBLocal;
+            @CalledMethodsPredicate("a || b && c") MyClass bAndCOrALocal;
+            @CalledMethodsPredicate("a || (b && c)") MyClass bAndCOrAParensLocal;
+            @CalledMethodsPredicate("a && b || c") MyClass aAndBOrCLocal;
+            @CalledMethodsPredicate("(a && b) || c") MyClass aAndBOrCParensLocal;
+            @CalledMethodsPredicate("(a || b) && c") MyClass aOrBAndCLocal;
+            @CalledMethodsPredicate("a && (b || c)") MyClass bOrCAndALocal;
+            @CalledMethodsPredicate("b && c") MyClass bAndCLocal;
+            @CalledMethodsPredicate("(b && c)") MyClass bAndCParensLocal;
+
+            aLocal = a;
+            aLocal = aOrB;
+            aLocal = aB;
+            aLocal = aAndB;
+            aLocal = bAndCOrA;
+            aLocal = bAndCOrAParens;
+            aLocal = aAndBOrC;
+            aLocal = aAndBOrCParens;
+            aLocal = aOrBAndC;
+            aLocal = bOrCAndA;
+            aLocal = bAndC;
+            aLocal = bAndCParens;
+
+            aOrBLocal = a;
+            aOrBLocal = aOrB;
+            aOrBLocal = aB;
+            aOrBLocal = aAndB;
+            aOrBLocal = bAndCOrA;
+            aOrBLocal = bAndCOrAParens;
+            aOrBLocal = aAndBOrC;
+            aOrBLocal = aAndBOrCParens;
+            aOrBLocal = aOrBAndC;
+            aOrBLocal = bOrCAndA;
+            aOrBLocal = bAndC;
+            aOrBLocal = bAndCParens;
+
+            // :: error: (assignment.type.incompatible)
+            aBLocal = a;
+            // :: error: (assignment.type.incompatible)
+            aBLocal = aOrB;
+            aBLocal = aB;
+            aBLocal = aAndB;
+            // :: error: (assignment.type.incompatible)
+            aBLocal = bAndCOrA;
+            // :: error: (assignment.type.incompatible)
+            aBLocal = bAndCOrAParens;
+            // :: error: (assignment.type.incompatible)
+            aBLocal = aAndBOrC;
+            // :: error: (assignment.type.incompatible)
+            aBLocal = aAndBOrCParens;
+            // :: error: (assignment.type.incompatible)
+            aBLocal = aOrBAndC;
+            // :: error: (assignment.type.incompatible)
+            aBLocal = bOrCAndA;
+            // :: error: (assignment.type.incompatible)
+            aBLocal = bAndC;
+            // :: error: (assignment.type.incompatible)
+            aBLocal = bAndCParens;
+
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = a;
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = aOrB;
+            aAndBLocal = aB;
+            aAndBLocal = aAndB;
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = bAndCOrA;
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = bAndCOrAParens;
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = aAndBOrC;
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = aAndBOrCParens;
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = aOrBAndC;
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = bOrCAndA;
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = bAndC;
+            // :: error: (assignment.type.incompatible)
+            aAndBLocal = bAndCParens;
+
+            bAndCOrALocal = a;
+            // :: error: (assignment.type.incompatible)
+            bAndCOrALocal = aOrB;
+            bAndCOrALocal = aB;
+            bAndCOrALocal = aAndB;
+            bAndCOrALocal = bAndCOrA;
+            bAndCOrALocal = bAndCOrAParens;
+            // :: error: (assignment.type.incompatible)
+            bAndCOrALocal = aAndBOrC;
+            // :: error: (assignment.type.incompatible)
+            bAndCOrALocal = aAndBOrCParens;
+            // :: error: (assignment.type.incompatible)
+            bAndCOrALocal = aOrBAndC;
+            // :: error: (assignment.type.incompatible)
+            bAndCOrALocal = bOrCAndA;
+            bAndCOrALocal = bAndC;
+            bAndCOrALocal = bAndCParens;
+
+            bAndCOrAParensLocal = a;
+            // :: error: (assignment.type.incompatible)
+            bAndCOrAParensLocal = aOrB;
+            bAndCOrAParensLocal = aB;
+            bAndCOrAParensLocal = aAndB;
+            // :: error: (assignment.type.incompatible)
+            bAndCOrAParensLocal = bAndCOrA;
+            bAndCOrAParensLocal = bAndCOrAParens;
+            bAndCOrAParensLocal = aAndBOrC;
+            bAndCOrAParensLocal = aAndBOrCParens;
+            // :: error: (assignment.type.incompatible)
+            bAndCOrAParensLocal = aOrBAndC;
+            // :: error: (assignment.type.incompatible)
+            bAndCOrAParensLocal = bOrCAndA;
+            bAndCOrAParensLocal = bAndC;
+            bAndCOrAParensLocal = bAndCParens;
+
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCLocal = a;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCLocal = aOrB;
+            aAndBOrCLocal = aB;
+            aAndBOrCLocal = aAndB;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCLocal = bAndCOrA;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCLocal = bAndCOrAParens;
+            aAndBOrCLocal = aAndBOrC;
+            aAndBOrCLocal = aAndBOrCParens;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCLocal = aOrBAndC;
+            aAndBOrCLocal = bOrCAndA;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCLocal = bAndC;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCLocal = bAndCParens;
+
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCParensLocal = a;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCParensLocal = aOrB;
+            aAndBOrCParensLocal = aB;
+            aAndBOrCParensLocal = aAndB;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCParensLocal = bAndCOrA;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCParensLocal = bAndCOrAParens;
+            aAndBOrCParensLocal = aAndBOrC;
+            aAndBOrCParensLocal = aAndBOrCParens;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCParensLocal = aOrBAndC;
+            aAndBOrCParensLocal = bOrCAndA;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCParensLocal = bAndC;
+            // :: error: (assignment.type.incompatible)
+            aAndBOrCParensLocal = bAndCParens;
+
+            // :: error: (assignment.type.incompatible)
+            aOrBAndCLocal = a;
+            // :: error: (assignment.type.incompatible)
+            aOrBAndCLocal = aOrB;
+            // :: error: (assignment.type.incompatible)
+            aOrBAndCLocal = aB;
+            // :: error: (assignment.type.incompatible)
+            aOrBAndCLocal = aAndB;
+            // :: error: (assignment.type.incompatible)
+            aOrBAndCLocal = bAndCOrA;
+            // :: error: (assignment.type.incompatible)
+            aOrBAndCLocal = bAndCOrAParens;
+            // :: error: (assignment.type.incompatible)
+            aOrBAndCLocal = aAndBOrC;
+            // :: error: (assignment.type.incompatible)
+            aOrBAndCLocal = aAndBOrCParens;
+            aOrBAndCLocal = aOrBAndC;
+            // :: error: (assignment.type.incompatible)
+            aOrBAndCLocal = bOrCAndA;
+            aOrBAndCLocal = bAndC;
+            aOrBAndCLocal = bAndCParens;
+
+            // :: error: (assignment.type.incompatible)
+            bOrCAndALocal = a;
+            // :: error: (assignment.type.incompatible)
+            bOrCAndALocal = aOrB;
+            bOrCAndALocal = aB;
+            bOrCAndALocal = aAndB;
+            // :: error: (assignment.type.incompatible)
+            bOrCAndALocal = bAndCOrA;
+            // :: error: (assignment.type.incompatible)
+            bOrCAndALocal = bAndCOrAParens;
+            // :: error: (assignment.type.incompatible)
+            bOrCAndALocal = aAndBOrC;
+            // :: error: (assignment.type.incompatible)
+            bOrCAndALocal = aAndBOrCParens;
+            // :: error: (assignment.type.incompatible)
+            bOrCAndALocal = aOrBAndC;
+            bOrCAndALocal = bOrCAndA;
+            // :: error: (assignment.type.incompatible)
+            bOrCAndALocal = bAndC;
+            // :: error: (assignment.type.incompatible)
+            bOrCAndALocal = bAndCParens;
+
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = a;
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = aOrB;
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = aB;
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = aAndB;
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = bAndCOrA;
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = bAndCOrAParens;
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = aAndBOrC;
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = aAndBOrCParens;
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = aOrBAndC;
+            // :: error: (assignment.type.incompatible)
+            bAndCLocal = bOrCAndA;
+            bAndCLocal = bAndC;
+            bAndCLocal = bAndCParens;
+
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = a;
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = aOrB;
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = aB;
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = aAndB;
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = bAndCOrA;
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = bAndCOrAParens;
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = aAndBOrC;
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = aAndBOrCParens;
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = aOrBAndC;
+            // :: error: (assignment.type.incompatible)
+            bAndCParensLocal = bOrCAndA;
+            bAndCParensLocal = bAndC;
+            bAndCParensLocal = bAndCParens;
         }
     }
 }
