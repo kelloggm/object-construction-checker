@@ -423,17 +423,23 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
 
       if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
+        String subPredicate =
+                AnnotationUtils.getElementValue(subAnno, "value", String.class, false);
         if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
           String superPredicate =
               AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
-          String subPredicate =
-              AnnotationUtils.getElementValue(subAnno, "value", String.class, false);
           // shortcut if they're equal (most common case) to avoid calling the SMT solver
           if (superPredicate.equals(subPredicate)) {
             return true;
           } else {
             return CalledMethodsPredicateEvaluator.implies(subPredicate, superPredicate);
           }
+        } else if (AnnotationUtils.areSameByClass(superAnno, CalledMethods.class)) {
+          // If the supertype is a called methods type, treat it as a conjunction of its
+          // arguments and use the predicate evaluator.
+          List<String> superVals = getValueOfAnnotationWithStringArgument(superAnno);
+          String superValPredicate = String.join(" && ", superVals);
+          return CalledMethodsPredicateEvaluator.implies(subPredicate, superValPredicate);
         }
         return false;
       }

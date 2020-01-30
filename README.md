@@ -147,7 +147,7 @@ subtyping.  Then
 `@CalledMethods(`*set1*`) T1` &#8849; `@CalledMethods(`*set2*`) T2` iff  *set1 &supe; set2* and T1 &#8849; T2.
 
 Subtyping between two `@CalledMethodsPredicate` annotations is determined by checking
-whether the proposed subtype implies the proposed supertype using an SMT solver. In
+whether the proposed subtype implies the proposed supertype. In
 particular:
 
 `CalledMethodsPredicate(`P`) T1` &#8849; `CalledMethodsPredicate(`Q`) T2` iff T1 &#8849; T2

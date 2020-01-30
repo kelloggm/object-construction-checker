@@ -194,7 +194,6 @@ class CmPredicate {
         static void testAssignability2(@CalledMethodsPredicate("a && b") MyClass dAble) {
             dAble.c();
             dAble.d();
-            // :: error: method.invocation.invalid
             dAble.e();
             dAble.f();
         }
@@ -215,16 +214,24 @@ class CmPredicate {
             @CalledMethodsPredicate("(b && c)") MyClass bAndCParensLocal;
 
             aLocal = a;
+            // :: error: assignment.type.incompatible
             aLocal = aOrB;
             aLocal = aB;
             aLocal = aAndB;
+            // :: error: assignment.type.incompatible
             aLocal = bAndCOrA;
+            // :: error: assignment.type.incompatible
             aLocal = bAndCOrAParens;
+            // :: error: assignment.type.incompatible
             aLocal = aAndBOrC;
+            // :: error: assignment.type.incompatible
             aLocal = aAndBOrCParens;
+            // :: error: assignment.type.incompatible
             aLocal = aOrBAndC;
             aLocal = bOrCAndA;
+            // :: error: assignment.type.incompatible
             aLocal = bAndC;
+            // :: error: assignment.type.incompatible
             aLocal = bAndCParens;
 
             aOrBLocal = a;
@@ -233,7 +240,9 @@ class CmPredicate {
             aOrBLocal = aAndB;
             aOrBLocal = bAndCOrA;
             aOrBLocal = bAndCOrAParens;
+            // :: error: assignment.type.incompatible
             aOrBLocal = aAndBOrC;
+            // :: error: assignment.type.incompatible
             aOrBLocal = aAndBOrCParens;
             aOrBLocal = aOrBAndC;
             aOrBLocal = bOrCAndA;
@@ -297,9 +306,7 @@ class CmPredicate {
             bAndCOrALocal = aAndBOrC;
             // :: error: (assignment.type.incompatible)
             bAndCOrALocal = aAndBOrCParens;
-            // :: error: (assignment.type.incompatible)
             bAndCOrALocal = aOrBAndC;
-            // :: error: (assignment.type.incompatible)
             bAndCOrALocal = bOrCAndA;
             bAndCOrALocal = bAndC;
             bAndCOrALocal = bAndCParens;
@@ -309,14 +316,13 @@ class CmPredicate {
             bAndCOrAParensLocal = aOrB;
             bAndCOrAParensLocal = aB;
             bAndCOrAParensLocal = aAndB;
-            // :: error: (assignment.type.incompatible)
             bAndCOrAParensLocal = bAndCOrA;
             bAndCOrAParensLocal = bAndCOrAParens;
+            // :: error: (assignment.type.incompatible)
             bAndCOrAParensLocal = aAndBOrC;
+            // :: error: (assignment.type.incompatible)
             bAndCOrAParensLocal = aAndBOrCParens;
-            // :: error: (assignment.type.incompatible)
             bAndCOrAParensLocal = aOrBAndC;
-            // :: error: (assignment.type.incompatible)
             bAndCOrAParensLocal = bOrCAndA;
             bAndCOrAParensLocal = bAndC;
             bAndCOrAParensLocal = bAndCParens;
@@ -333,12 +339,9 @@ class CmPredicate {
             aAndBOrCLocal = bAndCOrAParens;
             aAndBOrCLocal = aAndBOrC;
             aAndBOrCLocal = aAndBOrCParens;
-            // :: error: (assignment.type.incompatible)
             aAndBOrCLocal = aOrBAndC;
             aAndBOrCLocal = bOrCAndA;
-            // :: error: (assignment.type.incompatible)
             aAndBOrCLocal = bAndC;
-            // :: error: (assignment.type.incompatible)
             aAndBOrCLocal = bAndCParens;
 
             // :: error: (assignment.type.incompatible)
@@ -353,12 +356,9 @@ class CmPredicate {
             aAndBOrCParensLocal = bAndCOrAParens;
             aAndBOrCParensLocal = aAndBOrC;
             aAndBOrCParensLocal = aAndBOrCParens;
-            // :: error: (assignment.type.incompatible)
             aAndBOrCParensLocal = aOrBAndC;
             aAndBOrCParensLocal = bOrCAndA;
-            // :: error: (assignment.type.incompatible)
             aAndBOrCParensLocal = bAndC;
-            // :: error: (assignment.type.incompatible)
             aAndBOrCParensLocal = bAndCParens;
 
             // :: error: (assignment.type.incompatible)
