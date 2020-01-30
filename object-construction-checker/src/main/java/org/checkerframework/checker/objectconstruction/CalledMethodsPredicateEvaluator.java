@@ -135,7 +135,8 @@ public class CalledMethodsPredicateEvaluator {
                 theExpression.asBinaryExpr().getRight(), booleanFormulaManager));
       }
     } else if (theExpression.isEnclosedExpr()) {
-      return expressionToBooleanFormula(theExpression.asEnclosedExpr().getInner(), booleanFormulaManager);
+      return expressionToBooleanFormula(
+          theExpression.asEnclosedExpr().getInner(), booleanFormulaManager);
     }
     throw new UnsupportedOperationException();
   }

@@ -424,7 +424,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
         String subPredicate =
-                AnnotationUtils.getElementValue(subAnno, "value", String.class, false);
+            AnnotationUtils.getElementValue(subAnno, "value", String.class, false);
         if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
           String superPredicate =
               AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
