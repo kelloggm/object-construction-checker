@@ -455,7 +455,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         CalledMethodsPredicateEvaluator evaluator = new CalledMethodsPredicateEvaluator(subVal);
         return evaluator.evaluate(predicate);
       } else {
-        // superAnno is a CM annotation, so implies the sets
+        // superAnno is a CM annotation, so compare the sets
         return subVal.containsAll(getValueOfAnnotationWithStringArgument(superAnno));
       }
     }
