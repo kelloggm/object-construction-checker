@@ -4,6 +4,7 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import java.util.Collection;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
@@ -18,64 +19,58 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
-import java.util.Collection;
-
 /**
- * This class parses and evaluates the arguments of
- * {@link org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate}
- * annotations, so that they can be compared to each other and to
- * {@link org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotations.
+ * This class parses and evaluates the arguments of {@link
+ * org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate} annotations, so that
+ * they can be compared to each other and to {@link
+ * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotations.
  */
 public class CalledMethodsPredicateEvaluator {
 
-  /**
-   * The parser to use when converting formulae to ASTs.
-   */
+  /** The parser to use when converting formulae to ASTs. */
   private static final JavaParser parser = new JavaParser();
 
   /**
-   * When parsing a formula to an AST, the parser requires a complete Java class.
-   * This is the code that surrounds the formula: to parse a formula phi,
-   * the parser must be passed the String PARSER_PREAMBLE + phi + PARSER_AFTERWARD.
-   *
+   * When parsing a formula to an AST, the parser requires a complete Java class. This is the code
+   * that surrounds the formula: to parse a formula phi, the parser must be passed the String
+   * PARSER_PREAMBLE + phi + PARSER_AFTERWARD.
    */
   private static final String PARSER_PREAMBLE = "class DUMMY { boolean DUMMY() { return ";
+
   private static final String PARSER_AFTERWARD = "; } }";
 
-  /**
-   * No-op constructor. This class is not instantiable; use the static methods instead.
-   */
-  private CalledMethodsPredicateEvaluator() {
-  }
+  /** No-op constructor. This class is not instantiable; use the static methods instead. */
+  private CalledMethodsPredicateEvaluator() {}
 
-  /**
-   * Construct a solver to use when comparing predicates.
-   */
+  /** Construct a solver to use when comparing predicates. Each query should use a new solver. */
   private static SolverContext setupSolver() {
-      Configuration config = Configuration.defaultConfiguration();
-      LogManager log = LogManager.createNullLogManager();
-      ShutdownNotifier notifier = ShutdownManager.create().getNotifier();
-      try {
-        return SolverContextFactory.createSolverContext(
-                config, log, notifier, SolverContextFactory.Solvers.SMTINTERPOL);
-      } catch (InvalidConfigurationException e) {
-        return null;
-      }
+    Configuration config = Configuration.defaultConfiguration();
+    LogManager log = LogManager.createNullLogManager();
+    ShutdownNotifier notifier = ShutdownManager.create().getNotifier();
+    try {
+      return SolverContextFactory.createSolverContext(
+          config, log, notifier, SolverContextFactory.Solvers.SMTINTERPOL);
+    } catch (InvalidConfigurationException e) {
+      return null;
+    }
   }
 
   /**
    * Return true iff the boolean formula "lhs -> rhs" is valid, treating all variables as
    * uninterpreted.
-   *
-   * Works by parsing each formula into an AST, then converting each AST into a boolean
-   * formula that can be passed to a solver, and then constructing a query to check
-   * if "not (lhs -> rhs)" is unsatisfiable. The result is the result of that query.
    */
   public static boolean implies(final String lhs, final String rhs) {
 
+    /**
+     * General approach: parse each formula into an AST, then convert each AST into a boolean
+     * formula that can be passed to a solver, and then construct a query to check if "not (lhs ->
+     * rhs)" is unsatisfiable. The result is the result of that query.
+     */
+
     // setup solver
     SolverContext context = setupSolver();
-    BooleanFormulaManager booleanFormulaManager = context.getFormulaManager().getBooleanFormulaManager();
+    BooleanFormulaManager booleanFormulaManager =
+        context.getFormulaManager().getBooleanFormulaManager();
 
     // parse the formulas into the solver's format
     BooleanFormula lhsBool, rhsBool;
@@ -88,7 +83,8 @@ public class CalledMethodsPredicateEvaluator {
 
     BooleanFormula satQuery =
         booleanFormulaManager.not(booleanFormulaManager.implication(lhsBool, rhsBool));
-    ProverEnvironment prover = context.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS);
+    ProverEnvironment prover =
+        context.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS);
 
     try {
       prover.addConstraint(satQuery);
@@ -104,8 +100,8 @@ public class CalledMethodsPredicateEvaluator {
   }
 
   /**
-   * Converts a String representing a boolean expression into a
-   * boolean formula in the SMT solver's format.
+   * Converts a String representing a boolean expression into a boolean formula in the SMT solver's
+   * format.
    */
   private static BooleanFormula formulaStringToBooleanFormula(
       String formula, BooleanFormulaManager booleanFormulaManager) {
@@ -119,14 +115,14 @@ public class CalledMethodsPredicateEvaluator {
     com.github.javaparser.ast.expr.Expression theExpression =
         theBlock.getStatements().get(0).asReturnStmt().getExpression().get();
 
-    try {
-      return expressionToBooleanFormula(theExpression, booleanFormulaManager);
-    } catch (UnsupportedOperationException e) {
-      throw e;
-    }
+    return expressionToBooleanFormula(theExpression, booleanFormulaManager);
   }
 
-  /** Actual implementation of conversion between Javaparser expression and boolean formula. */
+  /**
+   * Convert between Javaparser expression and boolean formula via recursive descent.
+   *
+   * @throws UnsupportedOperationException if an unexpected expression is encountered
+   */
   private static BooleanFormula expressionToBooleanFormula(
       com.github.javaparser.ast.expr.Expression theExpression,
       BooleanFormulaManager booleanFormulaManager) {
@@ -150,12 +146,17 @@ public class CalledMethodsPredicateEvaluator {
       return expressionToBooleanFormula(
           theExpression.asEnclosedExpr().getInner(), booleanFormulaManager);
     }
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(
+        "encountered an unexpected type of expression in an "
+            + "@CalledMethodsPredicate expression: "
+            + theExpression
+            + " was of type "
+            + theExpression.getClass());
   }
 
   /**
-   * Evaluate the given expression if every String in {@code cmMethods}
-   * is replaced by "true" in the boolean formula.
+   * Evaluate the given expression if every String in {@code cmMethods} is replaced by "true" in the
+   * boolean formula.
    */
   public static boolean evaluate(String expression, Collection<String> cmMethods) {
 
