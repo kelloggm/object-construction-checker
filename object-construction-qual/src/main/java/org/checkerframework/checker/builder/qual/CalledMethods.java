@@ -9,15 +9,13 @@ import java.lang.annotation.Target;
 /**
  * For compatibility with Lombok, retain the old annotations it generates.
  *
- * You should use {@link org.checkerframework.checker.objectconstruction.qual.CalledMethods}
+ * <p>You should use {@link org.checkerframework.checker.objectconstruction.qual.CalledMethods}
  * instead. The Object Construction Checker treats this annotation as identical to that one.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 public @interface CalledMethods {
-    /**
-     * The names of the methods that have been called.
-     */
-    String[] value();
+  /** The names of the methods that have been called. */
+  String[] value();
 }

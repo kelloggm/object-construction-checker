@@ -19,7 +19,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -71,16 +70,18 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private Collection<FrameworkSupport> frameworkSupports;
 
   /**
-   * Lombok has a flag to generate @CalledMethods annotations, but they used the old package name, so
-   * we maintain it as an alias.
+   * Lombok has a flag to generate @CalledMethods annotations, but they used the old package name,
+   * so we maintain it as an alias.
    */
-  private final static String OLD_CALLED_METHODS = "org.checkerframework.checker.builder.qual.CalledMethods";
+  private static final String OLD_CALLED_METHODS =
+      "org.checkerframework.checker.builder.qual.CalledMethods";
 
   /**
-   * Lombok also generates an @NotCalledMethods annotation, which we have no support for. We therefore
-   * treat it as top.
+   * Lombok also generates an @NotCalledMethods annotation, which we have no support for. We
+   * therefore treat it as top.
    */
-  private final static String OLD_NOT_CALLED_METHODS = "org.checkerframework.checker.builder.qual.NotCalledMethods";
+  private static final String OLD_NOT_CALLED_METHODS =
+      "org.checkerframework.checker.builder.qual.NotCalledMethods";
 
   /**
    * Default constructor matching super. Should be called automatically.
@@ -174,8 +175,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Continue to trust but not check the old {@link org.checkerframework.checker.builder.qual.ReturnsReceiver}
-   * annotation, for backwards-compatibility.
+   * Continue to trust but not check the old {@link
+   * org.checkerframework.checker.builder.qual.ReturnsReceiver} annotation, for
+   * backwards-compatibility.
    */
   private boolean hasOldReturnsReceiverAnnotation(MethodInvocationTree tree) {
     return this.getDeclAnnotation(TreeUtils.elementFromUse(tree), ReturnsReceiver.class) != null;

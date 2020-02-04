@@ -7,15 +7,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation speculatively used by Lombok's lombok.config checkerframework = true option.
- * It has not meaning to the Object Construction Checker, which treats it as
- * {@link org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop}.
+ * An annotation speculatively used by Lombok's lombok.config checkerframework = true option. It has
+ * not meaning to the Object Construction Checker, which treats it as {@link
+ * org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop}.
  *
- * A similar annotation might be supported in the future.
+ * <p>A similar annotation might be supported in the future.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 public @interface NotCalledMethods {
-    String[] value();
+  String[] value();
 }

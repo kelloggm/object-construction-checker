@@ -13,9 +13,10 @@ import java.lang.annotation.Target;
  * <p>This annotation can only be written on a method declaration. It is inherited by all overrides
  * of that method.
  *
- * This annotation has been replaced by {@link org.checkerframework.checker.returnsrcvr.qual.This}.
- * It is retained only for backwards-compatibility, including with Lombok's checkerframework = true lombok.config
- * flag. It should not be used in new code, because it is TRUSTED, NOT CHECKED.
+ * <p>This annotation has been replaced by {@link
+ * org.checkerframework.checker.returnsrcvr.qual.This}. It is retained only for
+ * backwards-compatibility, including with Lombok's checkerframework = true lombok.config flag. It
+ * should not be used in new code, because it is TRUSTED, NOT CHECKED.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
