@@ -167,11 +167,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
     AnnotatedTypeMirror rrType =
         ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
-    if (rrType != null && rrType.hasAnnotation(This.class)) {
-      return true;
-    } else {
-      return hasOldReturnsReceiverAnnotation(tree);
-    }
+    return (rrType != null && rrType.hasAnnotation(This.class))
+        || hasOldReturnsReceiverAnnotation(tree);
   }
 
   /**
