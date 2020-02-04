@@ -3,6 +3,7 @@ package org.checkerframework.checker.objectconstruction;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import java.util.Collection;
 import org.sosy_lab.common.ShutdownManager;
@@ -56,8 +57,15 @@ public class CalledMethodsPredicateEvaluator {
   }
 
   /**
-   * Return true iff the boolean formula "lhs -> rhs" is valid, treating all variables as
+   * Return true iff the boolean formula "lhs -&gt; rhs" is valid, treating all variables as
    * uninterpreted.
+   *
+   * @param lhs a formula in Java format as a String containing only {@literal &}{@literal &}, ||,
+   *     (), !, and literals
+   * @param rhs a formula in Java format as a String containing only {@literal &}{@literal &}, ||,
+   *     (), !, and literals
+   * @return true iff lhs implies rhs
+   * @throws UnsupportedOperationException if the input contains an unexpected kind of expression
    */
   public static boolean implies(final String lhs, final String rhs) {
 
@@ -74,12 +82,8 @@ public class CalledMethodsPredicateEvaluator {
 
     // parse the formulas into the solver's format
     BooleanFormula lhsBool, rhsBool;
-    try {
-      lhsBool = formulaStringToBooleanFormula(lhs, booleanFormulaManager);
-      rhsBool = formulaStringToBooleanFormula(rhs, booleanFormulaManager);
-    } catch (UnsupportedOperationException e) {
-      return false;
-    }
+    lhsBool = formulaStringToBooleanFormula(lhs, booleanFormulaManager);
+    rhsBool = formulaStringToBooleanFormula(rhs, booleanFormulaManager);
 
     BooleanFormula satQuery =
         booleanFormulaManager.not(booleanFormulaManager.implication(lhsBool, rhsBool));
@@ -145,6 +149,12 @@ public class CalledMethodsPredicateEvaluator {
     } else if (theExpression.isEnclosedExpr()) {
       return expressionToBooleanFormula(
           theExpression.asEnclosedExpr().getInner(), booleanFormulaManager);
+    } else if (theExpression.isUnaryExpr()) {
+      if (theExpression.asUnaryExpr().getOperator().equals(UnaryExpr.Operator.LOGICAL_COMPLEMENT)) {
+        return booleanFormulaManager.not(
+            expressionToBooleanFormula(
+                theExpression.asUnaryExpr().getExpression(), booleanFormulaManager));
+      }
     }
     throw new UnsupportedOperationException(
         "encountered an unexpected type of expression in an "
@@ -155,12 +165,17 @@ public class CalledMethodsPredicateEvaluator {
   }
 
   /**
-   * Evaluate the given expression if every String in {@code cmMethods} is replaced by "true" in the
-   * boolean formula.
+   * Evaluate the given expression if every String in {@code trueLiterals} is replaced by "true" in
+   * the boolean formula.
+   *
+   * @param expression a boolean formula in Java format, as a String
+   * @param trueLiterals the literals in the boolean expression to treat as "true"
+   * @return whether the expression evaluates to true in the context where only the literals in
+   *     trueLiterals are true, and all other literals are false
    */
-  public static boolean evaluate(String expression, Collection<String> cmMethods) {
+  public static boolean evaluate(String expression, Collection<String> trueLiterals) {
 
-    for (String cmMethod : cmMethods) {
+    for (String cmMethod : trueLiterals) {
       expression = expression.replaceAll(cmMethod, "true");
     }
 
