@@ -12,15 +12,22 @@ repositories {
 
 sourceCompatibility = 1.8
 
+configurations {
+    // for putting Error Prone javac in bootclasspath for running tests
+    errorproneJavac
+}
+
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation "org.checkerframework:checker:${versions.checkerFramework}"
+    compileOnly "com.google.errorprone:javac:9+181-r4173-1"
+
     // Export qualifiers to upstream dependencies, for convenience
     api project(':returnsrcvr-qual')
 
     // Testing
     testImplementation "junit:junit:4.12"
-    testCompile "org.checkerframework:testlib:2.5.4"
+    testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
 
     // AutoValue support
     implementation "com.google.auto.value:auto-value-annotations:${versions.autoValue}"
@@ -29,6 +36,8 @@ dependencies {
 
     // Lombok support
     testCompile "org.projectlombok:lombok:${versions.lombok}"
+
+    errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
 }
 
 tasks.withType(JavaCompile).all {
@@ -46,6 +55,9 @@ spotless {
 
 test {
     inputs.files("tests/all-systems", "tests/autovalue", "tests/lombok", "tests/returnsrcvr")
+    if (!JavaVersion.current().java9Compatible) {
+        jvmArgs "-Xbootclasspath/p:${configurations.errorproneJavac.asPath}"
+    }
 }
 
 apply from: rootProject.file("gradle-mvn-push.gradle")

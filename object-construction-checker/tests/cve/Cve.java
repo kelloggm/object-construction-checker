@@ -28,6 +28,11 @@ public class Cve {
                 .withImageIds("myImageId"));
     }
 
+    public static void correct3(AmazonEC2 client) {
+        DescribeImagesResult result = client.describeImages(new DescribeImagesRequest()
+                .withExecutableUsers("myUsers"));
+    }
+
     // Using impl class instead of interface
     public static void onlyNames(AmazonEC2Client client) {
         // Should not be allowed unless .withOwner is also used

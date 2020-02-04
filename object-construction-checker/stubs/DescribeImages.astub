@@ -6,8 +6,8 @@ import org.checkerframework.checker.returnsrcvr.qual.*;
 // Interface
 class AmazonEC2 {
     DescribeImagesResult describeImages(
-    // any combination of withX/setX has to be permitted if an owner has been set or an imageId has been set
-    @CalledMethodsPredicate("(withOwners || setOwners) || (withImageIds || setImageIds)")
+    // any combination of withX/setX has to be permitted if an owner has been set or an imageId has been set or an executable user list has been set
+    @CalledMethodsPredicate("(withOwners || setOwners) || (withImageIds || setImageIds) || (withExecutableUsers || setExecutableUsers)")
     DescribeImagesRequest request);
 }
 
@@ -42,4 +42,8 @@ class DescribeImagesRequest {
     @This DescribeImagesRequest withOwners(Collection<String> o);
 
     @This DescribeImagesRequest withImageIds(Collection<String> i);
+
+    @This DescribeImagesRequest withExecutableUsers(String... i);
+
+    @This DescribeImagesRequest withExecutable(Collection<String> f);
 }

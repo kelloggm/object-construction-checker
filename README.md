@@ -33,25 +33,44 @@ annotationProcessor() ...`.
 
 ## Using the checker
 
-There are [separate instructions](README-LOMBOK.md) if your project uses Lombok.
+If your project uses Lombok, also see the further Lombok-specific instructions below.
 
-1. Make your Maven/Gradle project depend on `net.sridharan.objectconstruction:object-construction-checker:0.1.1`.
+1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file:
 
-  For example, for Gradle, add the following to the `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present):
-
+  ```groovy
+  plugins {
+      ...
+      id "org.checkerframework" version "0.4.0"
+  }
   ```
+
+Note that the Gradle plugin is updated frequently.  We recommend you use the latest version shown [here](https://plugins.gradle.org/plugin/org.checkerframework).
+
+2. For a vanilla Gradle project, add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present).
+If your project has subprojects or you need other customizations, see the documentation for the
+[org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) plugin.
+
+  ```groovy
   repositories {
       mavenCentral()
   }
+  checkerFramework {
+      skipVersionCheck = true
+      checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
+      extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
+  }
   dependencies {
-      annotationProcessor 'net.sridharan.objectconstruction:object-construction-checker:0.1.1'
-      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.1'
+      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.6'
+      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.6'
   }
   ```
 
-2. Build your project normally, such as by running `./gradlew build`.
-The checker includes a manifest file defining an annotation processor, meaning that `javac` will run it
-automatically if it is on your compile classpath (as long as no annotation processors are explicitly specified).
+3. Build your project normally, such as by running `./gradlew build`.  The checker will report an error if any required properties have not been set.
+
+### For Lombok users
+
+The Object Construction Checker supports projects that use Lombok via the [io.freefair.lombok](https://plugins.gradle.org/plugin/io.freefair.lombok) Gradle plugin.  For such projects, the above instructions should work unmodified for running the checker.  However, note that to fix issues, you should edit your original source code, **not** the files in the checker's error messages.  The checker's error messages refer to Lombok's output, which is a variant of your source code that appears in a `delombok` directory.
+
 
 ## Specifying your code
 
@@ -62,7 +81,8 @@ The Object Construction Checker works as follows:
 
 If you use AutoValue or Lombok, most specifications are automatically
 inferred by the Object Construction Checker, from field annotations such as
-`@Nullable` and field types such as `Optional`.
+`@Nullable` and field types such as `Optional`. See the
+ [section on defaulting rules for Lombok and AutoValue for more details](#default-handling-for-lombok-and-autovalue).
 
 In some cases, you may need to specify your code.  You do so by writing
 type annotations.  A type annotation is written before a type.  For
@@ -177,6 +197,34 @@ It will soundly verify that at least one method is called.
 It will warn if both methods are definitely called.
 However, if will not warn if there are some paths on which both methods are called, and some paths on which only one method is called.
 
+### Default handling for Lombok and AutoValue
+
+The checker automatically inserts default annotations for code that uses builders generated
+by Lombok and AutoValue. There are three places annotations are usually inserted:
+* A `@CalledMethods` annotation is placed on the receiver of the `build()` method, capturing the
+setter methods that must be invoked on the builder before calling `build()`. For Lombok,
+this annotation's argument is the set of `@lombok.NonNull` fields that do not have default values.
+For AutoValue, it is the set of fields that are not `@Nullable`, `Optional`, or a Guava Immutable
+Collection.
+* If the object has a `toBuilder()` method (for example, if the `toBuilder = true` option is
+passed to Lombok's `@Builder` annotation), then the return type of that method is annotated with
+the same `@CalledMethods` annotation as the receiver of `build()`, using the same rules as above.
+* A `@This` annotation is placed on the return type of each setter in the builder's implementation.
+
+You can disable the framework supports by specifying them in a comma-separated list to the 
+command-line flag `disableFrameworkSupports`.  For example, to disable both Lombok and AutoValue supports,
+use `-AdisableFrameworkSupports=AutoValue,Lombok` . 
+ 
+If you overwrite the definition of any of these methods (for example, by adding your own setters to
+a Lombok builder), you may need to write the annotations manually.
+
+Minor notes/caveats on these rules:
+* Lombok fields annotated with `@Singular` will be treated as defaulted (i.e. not required), because
+Lombok will set them to empty collections if the appropriate setter is not called.
+* If you manually provide defaults to a Lombok builder (for example by defining the builder yourself,
+and assigning a default value to the builder's field), the checker will treat that field as defaulted
+*most of the time*. In particular, it will not treat it as defaulted across module boundaries (because
+the checker needs access to the source code to determine that the defaulting is occurring).
 
 ## More information
 

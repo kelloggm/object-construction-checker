@@ -32,7 +32,7 @@ class SimpleInferenceMerge {
             s.b();
             s.c();
         }
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         s.build();
     }
 }

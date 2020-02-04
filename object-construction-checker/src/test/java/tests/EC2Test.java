@@ -13,6 +13,7 @@ public class EC2Test extends CheckerFrameworkPerDirectoryTest {
         "cve",
         "-Anomsgtext",
         "-Astubs=stubs",
+        "-AuseValueChecker",
         "-nowarn");
   }
 

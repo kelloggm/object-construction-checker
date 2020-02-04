@@ -5,7 +5,7 @@ import testlib.lombok.Foo;
 
 class UseLombokBuilder {
     void test() {
-        // :: error: method.invocation.invalid
+        // :: error: finalizer.invocation.invalid
         Foo foo = Foo.builder().build();
 
         Foo foo2 = Foo.builder().requiredProperty("foo!").build();

@@ -66,6 +66,8 @@ public class ObjectConstructionTransfer extends CFTransfer {
     }
 
     String methodName = node.getTarget().getMethod().getSimpleName().toString();
+    methodName = atypefactory.adjustMethodNameUsingValueChecker(methodName, node.getTree());
+
     List<String> currentMethods =
         ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(type);
     List<String> newList =

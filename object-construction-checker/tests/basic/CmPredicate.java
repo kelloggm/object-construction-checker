@@ -159,12 +159,22 @@ class CmPredicate {
         m1.f();
     }
 
-    private class MyClass {
+    private static class MyClass {
         void a() { }
         void b() { }
         void c(@CalledMethodsPredicate("a || b") MyClass this) { }
         void d(@CalledMethodsPredicate("a && b") MyClass this) { }
         void e(@CalledMethodsPredicate("a || (b && c)") MyClass this) { }
         void f(@CalledMethodsPredicate("a && b || c") MyClass this) { }
+
+        static void testAssignability1(@CalledMethodsPredicate("a || b") MyClass cAble) {
+            cAble.c();
+            // :: error: method.invocation.invalid
+            cAble.d();
+            // :: error: method.invocation.invalid
+            cAble.e();
+            // :: error: method.invocation.invalid
+            cAble.f();
+        }
     }
 }
