@@ -69,6 +69,18 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private Collection<FrameworkSupport> frameworkSupports;
 
   /**
+   * Lombok has a flag to generate @CalledMethods annotations, but they used the old package name, so
+   * we maintain it as an alias.
+   */
+  private final static String OLD_CALLED_METHODS = "org.checkerframework.checker.builder.qual.CalledMethods";
+
+  /**
+   * Lombok also generates an @NotCalledMethods annotation, which we have no support for. We therefore
+   * treat it as top.
+   */
+  private final static String OLD_NOT_CALLED_METHODS = "org.checkerframework.checker.builder.qual.NotCalledMethods";
+
+  /**
    * Default constructor matching super. Should be called automatically.
    *
    * @param checker the checker associated with this type factory
@@ -97,6 +109,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
     this.collectionsSingletonList =
         TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());
+    addAliasedAnnotation(OLD_CALLED_METHODS, CalledMethods.class, true);
+    addAliasedAnnotation(OLD_NOT_CALLED_METHODS, TOP);
     this.postInit();
   }
 
