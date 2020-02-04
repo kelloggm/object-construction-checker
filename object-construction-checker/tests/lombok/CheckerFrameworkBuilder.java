@@ -8,7 +8,8 @@ class CheckerFrameworkBuilder {
      * with the exception of the following lines until the next long comment. I have made one change outside
      * the scope of these comments:
      *  - I fixed the placement of the type annotations, which were originally on scoping constructs.
-     *  I think this is a bug in the delombok pretty-printer.
+     *  I think this is a bug in the delombok pretty-printer used to generate this code, but I wasn't
+     *  able to find the configuration options used to reproduce it in the public release.
      *
      * This test represents exactly the code that Lombok generates with the checkerframework = True
      * option in a lombok.config file, including the weird package names they use for the CF and the
@@ -26,6 +27,15 @@ class CheckerFrameworkBuilder {
     public static void testOldCalledMethodsBad(@org.checkerframework.checker.objectconstruction.qual.CalledMethods({"y"}) CheckerFrameworkBuilderBuilder pb) {
         // :: error: finalizer.invocation.invalid
         pb.build(); // pb requires y, z
+    }
+
+    public static void testOldRRGood() {
+        CheckerFrameworkBuilder b = CheckerFrameworkBuilder.builder().y(5).z(6).build();
+    }
+
+    public static void testOldRRBad() {
+        // :: error: finalizer.invocation.invalid
+        CheckerFrameworkBuilder b = CheckerFrameworkBuilder.builder().z(6).build(); // also needs to call y
     }
 
     /**

@@ -19,6 +19,8 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+
+import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
@@ -164,7 +166,19 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
     AnnotatedTypeMirror rrType =
         ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
-    return rrType != null && rrType.hasAnnotation(This.class);
+    if (rrType != null && rrType.hasAnnotation(This.class)) {
+      return true;
+    } else {
+      return hasOldReturnsReceiverAnnotation(tree);
+    }
+  }
+
+  /**
+   * Continue to trust but not check the old {@link org.checkerframework.checker.builder.qual.ReturnsReceiver}
+   * annotation, for backwards-compatibility.
+   */
+  private boolean hasOldReturnsReceiverAnnotation(MethodInvocationTree tree) {
+    return this.getDeclAnnotation(TreeUtils.elementFromUse(tree), ReturnsReceiver.class) != null;
   }
 
   /**
