@@ -4,7 +4,6 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
-import java.util.Set;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
@@ -19,68 +18,77 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
-/** This class parses and evaluates a single @CalledMethodsPredicate argument. */
+import java.util.Collection;
+
+/**
+ * This class parses and evaluates the arguments of
+ * {@link org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate}
+ * annotations, so that they can be compared to each other and to
+ * {@link org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotations.
+ */
 public class CalledMethodsPredicateEvaluator {
 
-  // A set containing all the names of methods that ought to evaluate to true.
-  private final Set<String> cmMethods;
+  /**
+   * The parser to use when converting formulae to ASTs.
+   */
+  private static final JavaParser parser = new JavaParser();
 
-  public CalledMethodsPredicateEvaluator(final Set<String> cmMethods) {
-    this.cmMethods = cmMethods;
+  /**
+   * When parsing a formula to an AST, the parser requires a complete Java class.
+   * This is the code that surrounds the formula: to parse a formula phi,
+   * the parser must be passed the String PARSER_PREAMBLE + phi + PARSER_AFTERWARD.
+   *
+   */
+  private static final String PARSER_PREAMBLE = "class DUMMY { boolean DUMMY() { return ";
+  private static final String PARSER_AFTERWARD = "; } }";
+
+  /**
+   * No-op constructor. This class is not instantiable; use the static methods instead.
+   */
+  private CalledMethodsPredicateEvaluator() {
+  }
+
+  /**
+   * Construct a solver to use when comparing predicates.
+   */
+  private static SolverContext setupSolver() {
+      Configuration config = Configuration.defaultConfiguration();
+      LogManager log = LogManager.createNullLogManager();
+      ShutdownNotifier notifier = ShutdownManager.create().getNotifier();
+      try {
+        return SolverContextFactory.createSolverContext(
+                config, log, notifier, SolverContextFactory.Solvers.SMTINTERPOL);
+      } catch (InvalidConfigurationException e) {
+        return null;
+      }
   }
 
   /**
    * Return true iff the boolean formula "lhs -> rhs" is valid, treating all variables as
    * uninterpreted.
    *
-   * <p>Used to determine subtyping between two @CalledMethodsPredicate annotations that are not
-   * identical.
+   * Works by parsing each formula into an AST, then converting each AST into a boolean
+   * formula that can be passed to a solver, and then constructing a query to check
+   * if "not (lhs -> rhs)" is unsatisfiable. The result is the result of that query.
    */
-  public static boolean implies(final String lhsOrig, final String rhsOrig) {
+  public static boolean implies(final String lhs, final String rhs) {
 
-    JavaParser parser = new JavaParser();
+    // setup solver
+    SolverContext context = setupSolver();
+    BooleanFormulaManager booleanFormulaManager = context.getFormulaManager().getBooleanFormulaManager();
 
-    String preamble = "class DUMMY { boolean DUMMY() { return ";
-    String afterward = "; } }";
-
-    String lhs = preamble + lhsOrig + afterward;
-    String rhs = preamble + rhsOrig + afterward;
-
-    CompilationUnit lhsAst = parser.parse(lhs).getResult().orElse(null);
-    CompilationUnit rhsAst = parser.parse(rhs).getResult().orElse(null);
-
-    if (lhsAst == null || rhsAst == null) {
-      return false;
-    }
-
-    Configuration config = Configuration.defaultConfiguration();
-    LogManager log = LogManager.createNullLogManager();
-    ShutdownNotifier notifier = ShutdownManager.create().getNotifier();
-    SolverContext context = null;
-    try {
-      context =
-          SolverContextFactory.createSolverContext(
-              config, log, notifier, SolverContextFactory.Solvers.SMTINTERPOL);
-    } catch (InvalidConfigurationException e) {
-      return false;
-    }
-
-    BooleanFormulaManager booleanFormulaManager =
-        context.getFormulaManager().getBooleanFormulaManager();
+    // parse the formulas into the solver's format
     BooleanFormula lhsBool, rhsBool;
-
     try {
-      lhsBool = compilationUnitToBooleanFormula(lhsAst, booleanFormulaManager);
-      rhsBool = compilationUnitToBooleanFormula(rhsAst, booleanFormulaManager);
+      lhsBool = formulaStringToBooleanFormula(lhs, booleanFormulaManager);
+      rhsBool = formulaStringToBooleanFormula(rhs, booleanFormulaManager);
     } catch (UnsupportedOperationException e) {
       return false;
     }
 
     BooleanFormula satQuery =
         booleanFormulaManager.not(booleanFormulaManager.implication(lhsBool, rhsBool));
-
-    ProverEnvironment prover =
-        context.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS);
+    ProverEnvironment prover = context.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS);
 
     try {
       prover.addConstraint(satQuery);
@@ -96,11 +104,15 @@ public class CalledMethodsPredicateEvaluator {
   }
 
   /**
-   * Converts a Javaparser AST representing a boolean expression into a boolean formula that could
-   * be passed to an SMT solver.
+   * Converts a String representing a boolean expression into a
+   * boolean formula in the SMT solver's format.
    */
-  private static BooleanFormula compilationUnitToBooleanFormula(
-      CompilationUnit ast, BooleanFormulaManager booleanFormulaManager) {
+  private static BooleanFormula formulaStringToBooleanFormula(
+      String formula, BooleanFormulaManager booleanFormulaManager) {
+
+    String classWithFormula = PARSER_PREAMBLE + formula + PARSER_AFTERWARD;
+
+    CompilationUnit ast = parser.parse(classWithFormula).getResult().orElse(null);
 
     BlockStmt theBlock = ast.getType(0).getMembers().get(0).asMethodDeclaration().getBody().get();
 
@@ -141,7 +153,11 @@ public class CalledMethodsPredicateEvaluator {
     throw new UnsupportedOperationException();
   }
 
-  protected boolean evaluate(String expression) {
+  /**
+   * Evaluate the given expression if every String in {@code cmMethods}
+   * is replaced by "true" in the boolean formula.
+   */
+  public static boolean evaluate(String expression, Collection<String> cmMethods) {
 
     for (String cmMethod : cmMethods) {
       expression = expression.replaceAll(cmMethod, "true");
