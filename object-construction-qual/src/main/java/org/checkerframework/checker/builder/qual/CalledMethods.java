@@ -16,6 +16,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 public @interface CalledMethods {
-  /** The names of the methods that have been called. */
+  /** @return the names of the methods that have been called.*/
   String[] value();
 }
