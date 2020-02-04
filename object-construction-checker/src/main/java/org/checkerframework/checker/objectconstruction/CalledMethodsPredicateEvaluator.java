@@ -1,6 +1,6 @@
 package org.checkerframework.checker.objectconstruction;
 
-import java.util.Set;
+import java.util.Collection;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -8,10 +8,10 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 /** This class parses and evaluates a single @CalledMethodsPredicate argument. */
 public class CalledMethodsPredicateEvaluator {
 
-  // A set containing all the names of methods that ought to evaluate to true.
-  private final Set<String> cmMethods;
+  // All the names of methods that ought to evaluate to true.
+  private final Collection<String> cmMethods;
 
-  public CalledMethodsPredicateEvaluator(final Set<String> cmMethods) {
+  public CalledMethodsPredicateEvaluator(final Collection<String> cmMethods) {
     this.cmMethods = cmMethods;
   }
 
