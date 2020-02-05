@@ -20,11 +20,14 @@ import org.checkerframework.framework.source.SuppressWarningsKeys;
 @SuppressWarningsKeys({"builder", "object.construction", "objectconstruction"})
 @SupportedOptions({
   ObjectConstructionChecker.USE_VALUE_CHECKER,
+  ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
   ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS
 })
 public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String USE_VALUE_CHECKER = "useValueChecker";
+
+  public static final String COUNT_FRAMEWORK_BUILD_CALLS = "countFrameworkBuildCalls";
 
   @Override
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
@@ -129,7 +132,9 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
 
   @Override
   public void typeProcessingOver() {
-    System.out.printf("Found %d build() method calls.\n", numBuildCalls);
+    if (getBooleanOption(COUNT_FRAMEWORK_BUILD_CALLS)) {
+      System.out.printf("Found %d build() method calls.\n", numBuildCalls);
+    }
     super.typeProcessingOver();
   }
 }

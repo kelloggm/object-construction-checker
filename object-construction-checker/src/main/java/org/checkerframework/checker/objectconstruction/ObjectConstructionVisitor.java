@@ -45,26 +45,27 @@ public class ObjectConstructionVisitor
 
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-    ExecutableElement element = TreeUtils.elementFromUse(node);
-    TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
-    Element nextEnclosingElement = enclosingElement.getEnclosingElement();
 
-    // autovalue builder
-    if (FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
-      if (AutoValueSupport.isBuilderBuildMethod(element, nextEnclosingElement)) {
-        ((ObjectConstructionChecker) checker).numBuildCalls++;
+    if (checker.getBooleanOption(ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS)) {
+      ExecutableElement element = TreeUtils.elementFromUse(node);
+      TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
+      Element nextEnclosingElement = enclosingElement.getEnclosingElement();
+      // AutoValue builders
+      if (FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
+        if (AutoValueSupport.isBuilderBuildMethod(element, nextEnclosingElement)) {
+          ((ObjectConstructionChecker) checker).numBuildCalls++;
+        }
+      }
+
+      // Lombok builders
+      if ((FrameworkSupportUtils.hasAnnotation(enclosingElement, "lombok.Generated")
+              || FrameworkSupportUtils.hasAnnotation(element, "lombok.Generated"))
+          && enclosingElement.getSimpleName().toString().endsWith("Builder")) {
+        if (LombokSupport.isBuilderBuildMethod(element, nextEnclosingElement)) {
+          ((ObjectConstructionChecker) checker).numBuildCalls++;
+        }
       }
     }
-
-    // lombok builder
-    if ((FrameworkSupportUtils.hasAnnotation(enclosingElement, "lombok.Generated")
-            || FrameworkSupportUtils.hasAnnotation(element, "lombok.Generated"))
-        && enclosingElement.getSimpleName().toString().endsWith("Builder")) {
-      if (LombokSupport.isBuilderBuildMethod(element, nextEnclosingElement)) {
-        ((ObjectConstructionChecker) checker).numBuildCalls++;
-      }
-    }
-
     return super.visitMethodInvocation(node, p);
   }
 }
