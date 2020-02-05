@@ -19,6 +19,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
@@ -69,6 +70,20 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private Collection<FrameworkSupport> frameworkSupports;
 
   /**
+   * Lombok has a flag to generate @CalledMethods annotations, but they used the old package name,
+   * so we maintain it as an alias.
+   */
+  private static final String OLD_CALLED_METHODS =
+      "org.checkerframework.checker.builder.qual.CalledMethods";
+
+  /**
+   * Lombok also generates an @NotCalledMethods annotation, which we have no support for. We
+   * therefore treat it as top.
+   */
+  private static final String OLD_NOT_CALLED_METHODS =
+      "org.checkerframework.checker.builder.qual.NotCalledMethods";
+
+  /**
    * Default constructor matching super. Should be called automatically.
    *
    * @param checker the checker associated with this type factory
@@ -97,6 +112,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
     this.collectionsSingletonList =
         TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());
+    addAliasedAnnotation(OLD_CALLED_METHODS, CalledMethods.class, true);
+    addAliasedAnnotation(OLD_NOT_CALLED_METHODS, TOP);
     this.postInit();
   }
 
@@ -150,7 +167,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
     AnnotatedTypeMirror rrType =
         ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
-    return rrType != null && rrType.hasAnnotation(This.class);
+    return (rrType != null && rrType.hasAnnotation(This.class))
+        || hasOldReturnsReceiverAnnotation(tree);
+  }
+
+  /**
+   * Continue to trust but not check the old {@link
+   * org.checkerframework.checker.builder.qual.ReturnsReceiver} annotation, for
+   * backwards-compatibility.
+   */
+  private boolean hasOldReturnsReceiverAnnotation(MethodInvocationTree tree) {
+    return this.getDeclAnnotation(TreeUtils.elementFromUse(tree), ReturnsReceiver.class) != null;
   }
 
   /**
