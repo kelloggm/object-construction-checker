@@ -1,16 +1,11 @@
 package org.checkerframework.checker.objectconstruction;
 
-import com.google.auto.value.AutoValue;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.MethodInvocationTree;
 import java.util.Collections;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
-import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
-import org.checkerframework.checker.objectconstruction.framework.FrameworkSupportUtils;
-import org.checkerframework.checker.objectconstruction.framework.LombokSupport;
+import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -48,21 +43,10 @@ public class ObjectConstructionVisitor
 
     if (checker.getBooleanOption(ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS)) {
       ExecutableElement element = TreeUtils.elementFromUse(node);
-      TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
-      Element nextEnclosingElement = enclosingElement.getEnclosingElement();
-      // AutoValue builders
-      if (FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
-        if (AutoValueSupport.isBuilderBuildMethod(element, nextEnclosingElement)) {
+      for (FrameworkSupport frameworkSupport : getTypeFactory().getFrameworkSupports()) {
+        if (frameworkSupport.isBuilderBuildMethod(element)) {
           ((ObjectConstructionChecker) checker).numBuildCalls++;
-        }
-      }
-
-      // Lombok builders
-      if ((FrameworkSupportUtils.hasAnnotation(enclosingElement, "lombok.Generated")
-              || FrameworkSupportUtils.hasAnnotation(element, "lombok.Generated"))
-          && enclosingElement.getSimpleName().toString().endsWith("Builder")) {
-        if (LombokSupport.isBuilderBuildMethod(element, nextEnclosingElement)) {
-          ((ObjectConstructionChecker) checker).numBuildCalls++;
+          break;
         }
       }
     }

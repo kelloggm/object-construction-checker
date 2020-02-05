@@ -526,4 +526,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
     return null;
   }
+
+  Collection<FrameworkSupport> getFrameworkSupports() {
+    return frameworkSupports;
+  }
 }
