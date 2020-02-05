@@ -6,6 +6,7 @@ import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import java.util.Collection;
+import org.checkerframework.javacutil.BugInCF;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
@@ -113,6 +114,13 @@ public class CalledMethodsPredicateEvaluator {
     String classWithFormula = PARSER_PREAMBLE + formula + PARSER_AFTERWARD;
 
     CompilationUnit ast = parser.parse(classWithFormula).getResult().orElse(null);
+
+    if (ast == null) {
+      throw new BugInCF(
+          "Encountered an unparseable formula while parsing an @CalledMethodsPredicate"
+              + "annotation, but ObjectConstructionVisitor failed to stop compilation. Unparseable formula: "
+              + formula);
+    }
 
     BlockStmt theBlock = ast.getType(0).getMembers().get(0).asMethodDeclaration().getBody().get();
 
