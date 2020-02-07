@@ -173,11 +173,17 @@ public class CalledMethodsPredicateEvaluator {
    */
   public static boolean evaluate(String expression, Collection<String> trueLiterals) {
 
+    System.out.println(expression);
+
     for (String cmMethod : trueLiterals) {
       expression = expression.replaceAll(cmMethod, "true");
     }
 
-    expression = expression.replaceAll("((?!true)[a-zA-Z0-9])+", "false");
+    System.out.println(expression);
+
+    expression = expression.replaceAll("((?!true)[_a-zA-Z][_a-zA-Z0-9]*)", "false");
+
+    System.out.println(expression);
 
     // horrible hack but I can't figure out the right regex to make the above not replace "true"
     // with "tfalse"
