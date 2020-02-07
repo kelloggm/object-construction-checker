@@ -474,7 +474,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         }
       }
 
-      if (AnnotationUtils.areSameByClass(subAnno, CalledMethods.class) || AnnotationUtils.areSame(subAnno, TOP)) {
+      if (AnnotationUtils.areSameByClass(subAnno, CalledMethods.class)
+          || AnnotationUtils.areSame(subAnno, TOP)) {
         // Treat top as @CalledMethods({}) so that predicates with ! are evaluated correctly.
         List<String> subVal =
             AnnotationUtils.areSame(subAnno, TOP)

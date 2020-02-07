@@ -109,10 +109,7 @@ public class CalledMethodsPredicateEvaluator {
     CompilationUnit ast = parser.parse(classWithFormula).getResult().orElse(null);
 
     if (ast == null) {
-      throw new BugInCF(
-          "Encountered an unparseable formula while parsing an @CalledMethodsPredicate "
-              + "annotation, but ObjectConstructionVisitor failed to stop compilation. Unparseable formula: "
-              + formula);
+      throw new BugInCF("Unparseable formula: " + formula);
     }
 
     BlockStmt theBlock = ast.getType(0).getMembers().get(0).asMethodDeclaration().getBody().get();
