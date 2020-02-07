@@ -23,7 +23,7 @@ class AmazonEC2Client {
 class AmazonEC2AsyncClient {
     DescribeImagesResult describeImages(
     // any combination of withX/setX has to be permitted if an owner has been set or an imageId has been set
-    @CalledMethodsPredicate("(withOwners || setOwners) || (withImageIds || setImageIds)")
+    @CalledMethodsPredicate("(withOwners || setOwners) || (withImageIds || setImageIds) || (withExecutableUsers || setExecutableUsers)")
     DescribeImagesRequest request);
 }
 
