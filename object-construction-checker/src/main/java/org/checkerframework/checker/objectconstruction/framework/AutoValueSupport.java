@@ -66,6 +66,24 @@ public class AutoValueSupport implements FrameworkSupport {
     }
   }
 
+  @Override
+  public boolean isBuilderBuildMethod(ExecutableElement element) {
+    TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
+    Element nextEnclosingElement = enclosingElement.getEnclosingElement();
+
+    if (FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
+      assert FrameworkSupportUtils.hasAnnotation(nextEnclosingElement, AutoValue.class)
+          : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
+      // it is a build method if it is an abstract method that returns the type with the @AutoValue
+      // annotation
+      if (element.getModifiers().contains(Modifier.ABSTRACT)
+          && TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * For {@code build} methods on {@code Builder} types, the framework support should determine the
    * required properties and add a corresponding {@link
@@ -79,21 +97,16 @@ public class AutoValueSupport implements FrameworkSupport {
 
     ExecutableElement element = t.getElement();
 
-    TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
-    Element nextEnclosingElement = enclosingElement.getEnclosingElement();
-
-    if (FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
-      assert FrameworkSupportUtils.hasAnnotation(nextEnclosingElement, AutoValue.class)
-          : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
-      if (isBuilderBuildMethod(element, nextEnclosingElement)) {
-        // determine the required properties and add a corresponding @CalledMethods annotation
-        Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(enclosingElement);
-        List<String> requiredProperties =
-            getAutoValueRequiredProperties(nextEnclosingElement, avBuilderSetterNames);
-        AnnotationMirror newCalledMethodsAnno =
-            createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames);
-        t.getReceiverType().addAnnotation(newCalledMethodsAnno);
-      }
+    if (isBuilderBuildMethod(element)) {
+      // determine the required properties and add a corresponding @CalledMethods annotation
+      TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
+      Element nextEnclosingElement = enclosingElement.getEnclosingElement();
+      Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(enclosingElement);
+      List<String> requiredProperties =
+          getAutoValueRequiredProperties(nextEnclosingElement, avBuilderSetterNames);
+      AnnotationMirror newCalledMethodsAnno =
+          createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames);
+      t.getReceiverType().addAnnotation(newCalledMethodsAnno);
     }
   }
 
@@ -123,12 +136,6 @@ public class AutoValueSupport implements FrameworkSupport {
         }
       }
     }
-  }
-
-  /** is element the build method for AutoValue Builder? */
-  private boolean isBuilderBuildMethod(ExecutableElement element, Element nextEnclosingElement) {
-    return element.getModifiers().contains(Modifier.ABSTRACT)
-        && TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement);
   }
 
   /**
