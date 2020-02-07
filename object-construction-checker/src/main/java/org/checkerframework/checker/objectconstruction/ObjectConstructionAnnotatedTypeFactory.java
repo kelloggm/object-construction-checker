@@ -47,6 +47,7 @@ import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -439,6 +440,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     /** isSubtype in this type system is subset */
     @Override
     public boolean isSubtype(final AnnotationMirror subAnno, final AnnotationMirror superAnno) {
+
       if (AnnotationUtils.areSame(subAnno, BOTTOM)) {
         return true;
       } else if (AnnotationUtils.areSame(superAnno, BOTTOM)) {
@@ -447,6 +449,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       if (AnnotationUtils.areSame(superAnno, TOP)) {
         return true;
+      } else if (AnnotationUtils.areSame(subAnno, TOP)) {
+        return false;
       }
 
       if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
@@ -468,22 +472,27 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           String superValPredicate = String.join(" && ", superVals);
           return CalledMethodsPredicateEvaluator.implies(subPredicate, superValPredicate);
         }
-        return false;
       }
 
-      List<String> subVal =
-          AnnotationUtils.areSame(subAnno, TOP)
-              ? Collections.emptyList()
-              : getValueOfAnnotationWithStringArgument(subAnno);
+      if (AnnotationUtils.areSameByClass(subAnno, CalledMethods.class)) {
+        List<String> subVal =
+                AnnotationUtils.areSame(subAnno, TOP)
+                        ? Collections.emptyList()
+                        : getValueOfAnnotationWithStringArgument(subAnno);
 
-      if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
-        // superAnno is a CMP annotation, so we need to evaluate the predicate
-        String predicate = AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
-        return CalledMethodsPredicateEvaluator.evaluate(predicate, subVal);
-      } else {
-        // superAnno is a CM annotation, so compare the sets
-        return subVal.containsAll(getValueOfAnnotationWithStringArgument(superAnno));
+        if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
+          // superAnno is a CMP annotation, so we need to evaluate the predicate
+          String predicate = AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
+          return CalledMethodsPredicateEvaluator.evaluate(predicate, subVal);
+        } else if (AnnotationUtils.areSameByClass(superAnno, CalledMethods.class)) {
+          // superAnno is a CM annotation, so compare the sets
+          return subVal.containsAll(getValueOfAnnotationWithStringArgument(superAnno));
+        }
       }
+
+      // should never happen: all possible subtypes already handled
+      throw new BugInCF("ObjectConstructionAnnotatedTypeFactory: unreachable case in isSubtype. " +
+              "subanno: " + subAnno + ", superanno: " + superAnno);
     }
   }
 
