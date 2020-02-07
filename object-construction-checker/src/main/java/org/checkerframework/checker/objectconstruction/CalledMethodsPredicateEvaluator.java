@@ -46,7 +46,7 @@ public class CalledMethodsPredicateEvaluator {
       return SolverContextFactory.createSolverContext(
           config, log, notifier, SolverContextFactory.Solvers.SMTINTERPOL);
     } catch (InvalidConfigurationException e) {
-      return null;
+      throw new BugInCF("Could not initialize solver.");
     }
   }
 
@@ -71,6 +71,7 @@ public class CalledMethodsPredicateEvaluator {
 
     // setup solver
     SolverContext context = setupSolver();
+
     BooleanFormulaManager booleanFormulaManager =
         context.getFormulaManager().getBooleanFormulaManager();
 

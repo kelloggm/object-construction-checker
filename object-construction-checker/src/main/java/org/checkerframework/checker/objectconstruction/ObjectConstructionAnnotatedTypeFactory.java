@@ -449,9 +449,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       if (AnnotationUtils.areSame(superAnno, TOP)) {
         return true;
-      } else if (AnnotationUtils.areSame(subAnno, TOP)) {
-        return false;
       }
+      // Do not symmetrically check top here because some @CalledMethodsPredicate
+      // annotations involving ! can be satisfied by top.
 
       if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
         String subPredicate =
@@ -474,15 +474,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         }
       }
 
-      if (AnnotationUtils.areSameByClass(subAnno, CalledMethods.class)) {
+      if (AnnotationUtils.areSameByClass(subAnno, CalledMethods.class) || AnnotationUtils.areSame(subAnno, TOP)) {
+        // Treat top as @CalledMethods({}) so that predicates with ! are evaluated correctly.
         List<String> subVal =
-                AnnotationUtils.areSame(subAnno, TOP)
-                        ? Collections.emptyList()
-                        : getValueOfAnnotationWithStringArgument(subAnno);
+            AnnotationUtils.areSame(subAnno, TOP)
+                ? Collections.emptyList()
+                : getValueOfAnnotationWithStringArgument(subAnno);
 
         if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
           // superAnno is a CMP annotation, so we need to evaluate the predicate
-          String predicate = AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
+          String predicate =
+              AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
           return CalledMethodsPredicateEvaluator.evaluate(predicate, subVal);
         } else if (AnnotationUtils.areSameByClass(superAnno, CalledMethods.class)) {
           // superAnno is a CM annotation, so compare the sets
@@ -491,8 +493,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
 
       // should never happen: all possible subtypes already handled
-      throw new BugInCF("ObjectConstructionAnnotatedTypeFactory: unreachable case in isSubtype. " +
-              "subanno: " + subAnno + ", superanno: " + superAnno);
+      throw new BugInCF(
+          "ObjectConstructionAnnotatedTypeFactory: unreachable case in isSubtype. "
+              + "subanno: "
+              + subAnno
+              + ", superanno: "
+              + superAnno);
     }
   }
 
