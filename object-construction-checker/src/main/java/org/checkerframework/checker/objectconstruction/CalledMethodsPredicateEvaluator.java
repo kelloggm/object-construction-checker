@@ -22,7 +22,7 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 /**
- * This class parses and evaluates the arguments of {@link
+ * This class contains static methods that parse and evaluate the arguments of {@link
  * org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate} annotations, so that
  * they can be compared to each other and to {@link
  * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotations.
@@ -32,17 +32,10 @@ public class CalledMethodsPredicateEvaluator {
   /** The parser to use when converting formulae to ASTs. */
   private static final JavaParser parser = new JavaParser();
 
-  /**
-   * When parsing a formula to an AST, the parser requires a complete Java class. This is the code
-   * that surrounds the formula: to parse a formula phi, the parser must be passed the String
-   * PARSER_PREAMBLE + phi + PARSER_AFTERWARD.
-   */
-  private static final String PARSER_PREAMBLE = "class DUMMY { boolean DUMMY() { return ";
-
-  private static final String PARSER_AFTERWARD = "; } }";
-
-  /** No-op constructor. This class is not instantiable; use the static methods instead. */
-  private CalledMethodsPredicateEvaluator() {}
+  /** Do not use. This class is not instantiable; use the static methods instead. */
+  private CalledMethodsPredicateEvaluator() {
+    throw new Error("Do not instantiate");
+  }
 
   /** Construct a solver to use when comparing predicates. Each query should use a new solver. */
   private static SolverContext setupSolver() {
@@ -58,7 +51,7 @@ public class CalledMethodsPredicateEvaluator {
   }
 
   /**
-   * Return true iff the boolean formula "lhs -&gt; rhs" is valid, treating all variables as
+   * Return true iff the boolean formula "lhs &rarr; rhs" is valid, treating all variables as
    * uninterpreted.
    *
    * @param lhs a formula in Java format as a String containing only {@literal &}{@literal &}, ||,
@@ -82,9 +75,8 @@ public class CalledMethodsPredicateEvaluator {
         context.getFormulaManager().getBooleanFormulaManager();
 
     // parse the formulas into the solver's format
-    BooleanFormula lhsBool, rhsBool;
-    lhsBool = formulaStringToBooleanFormula(lhs, booleanFormulaManager);
-    rhsBool = formulaStringToBooleanFormula(rhs, booleanFormulaManager);
+    BooleanFormula lhsBool = formulaStringToBooleanFormula(lhs, booleanFormulaManager);
+    BooleanFormula rhsBool = formulaStringToBooleanFormula(rhs, booleanFormulaManager);
 
     BooleanFormula satQuery =
         booleanFormulaManager.not(booleanFormulaManager.implication(lhsBool, rhsBool));
@@ -111,13 +103,13 @@ public class CalledMethodsPredicateEvaluator {
   private static BooleanFormula formulaStringToBooleanFormula(
       String formula, BooleanFormulaManager booleanFormulaManager) {
 
-    String classWithFormula = PARSER_PREAMBLE + formula + PARSER_AFTERWARD;
+    String classWithFormula = "class DUMMY { boolean DUMMY() { return " + formula + "; } }";
 
     CompilationUnit ast = parser.parse(classWithFormula).getResult().orElse(null);
 
     if (ast == null) {
       throw new BugInCF(
-          "Encountered an unparseable formula while parsing an @CalledMethodsPredicate"
+          "Encountered an unparseable formula while parsing an @CalledMethodsPredicate "
               + "annotation, but ObjectConstructionVisitor failed to stop compilation. Unparseable formula: "
               + formula);
     }

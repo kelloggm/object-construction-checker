@@ -153,7 +153,7 @@ particular:
 `CalledMethodsPredicate(`P`) T1` &#8849; `CalledMethodsPredicate(`Q`) T2` iff T1 &#8849; T2
 and &#0172; (P &#8658; Q) is unsatisfiable.
 
-If either P or Q contain operators other than `&&` or `||`, the result of the comparison
+If either P or Q contains operators other than `&&` or `||`, the result of the comparison
 is always `false`.
 
 To determine whether `@CalledMethods(`*M*`)` &#8849; `@CalledMethodsPredicate(`*P*`)`,
