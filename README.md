@@ -151,10 +151,14 @@ whether the proposed subtype implies the proposed supertype. In
 particular:
 
 `CalledMethodsPredicate(`P`) T1` &#8849; `CalledMethodsPredicate(`Q`) T2` iff T1 &#8849; T2
-and &#0172; (P &#8658; Q) is unsatisfiable.
+and &#0172; (P &#8658; Q) is unsatisfiable. Subtyping will not be checked.
 
-If either P or Q contains operators other than `&&` or `||`, the result of the comparison
-is always `false`.
+If either P or Q contains operators other than `&&`, `||`, or `!`, the checker will 
+report an error indicating the offending formula.
+
+To determine whether `@CalledMethodsPredicate(`*P*`)` &#8849; `@CalledMethods(`*M*`)`,
+use the above procedure for checking subtyping between `@CalledMethodsPredicate`
+annotations, but replace Q with the conjunctions of the literals in M.
 
 To determine whether `@CalledMethods(`*M*`)` &#8849; `@CalledMethodsPredicate(`*P*`)`,
 use the following procedure:
