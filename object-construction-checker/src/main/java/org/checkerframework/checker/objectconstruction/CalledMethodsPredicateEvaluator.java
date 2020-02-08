@@ -177,7 +177,7 @@ public class CalledMethodsPredicateEvaluator {
       expression = expression.replaceAll(cmMethod, "true");
     }
 
-    expression = expression.replaceAll("((?!true)[_a-zA-Z][_a-zA-Z0-9]*)", "false");
+    expression = expression.replaceAll("(((?!true)\\b[_a-zA-Z][_a-zA-Z0-9]*\\b)*)", "false");
 
     // horrible hack but I can't figure out the right regex to make the above not replace "true"
     // with "tfalse"
