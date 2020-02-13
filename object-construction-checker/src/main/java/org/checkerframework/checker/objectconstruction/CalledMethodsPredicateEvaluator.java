@@ -179,10 +179,6 @@ public class CalledMethodsPredicateEvaluator {
 
     expression = expression.replaceAll("(?!true)\\b[_a-zA-Z][_a-zA-Z0-9]*\\b", "false");
 
-    // horrible hack but I can't figure out the right regex to make the above not replace "true"
-    // with "tfalse"
-    expression = expression.replaceAll("tfalse", "true");
-
     ExpressionParser parser = new SpelExpressionParser();
     Expression exp = parser.parseExpression(expression);
     return exp.getValue(Boolean.class);
