@@ -158,17 +158,17 @@ public class CalledMethodsPredicateEvaluator {
   }
 
   /**
-   * Evaluate the given expression if every String in {@code trueLiterals} is replaced by "true" in
+   * Evaluate the given expression if every String in {@code trueVariables} is replaced by "true" in
    * the boolean formula.
    *
    * @param expression a boolean formula in Java format, as a String
-   * @param trueLiterals the literals in the boolean expression to treat as "true"
-   * @return whether the expression evaluates to true in the context where only the literals in
-   *     trueLiterals are true, and all other literals are false
+   * @param trueVariables the variables in the boolean expression to treat as "true"
+   * @return whether the expression evaluates to true in the context where only the variables in
+   *     trueVariables are true, and all other variables are false
    */
-  public static boolean evaluate(String expression, Collection<String> trueLiterals) {
+  public static boolean evaluate(String expression, Collection<String> trueVariables) {
 
-    for (String cmMethod : trueLiterals) {
+    for (String cmMethod : trueVariables) {
       expression = expression.replaceAll(cmMethod, "true");
     }
 

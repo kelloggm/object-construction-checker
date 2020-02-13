@@ -451,7 +451,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         return true;
       }
       // Do not symmetrically check top here because some @CalledMethodsPredicate
-      // annotations involving ! can be satisfied by top.
+      // annotations involving ! are equivalent to top.
 
       if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
         String subPredicate =
