@@ -54,20 +54,18 @@ public class CalledMethodsPredicateEvaluator {
    * Return true iff the boolean formula "lhs &rarr; rhs" is valid, treating all variables as
    * uninterpreted.
    *
-   * @param lhs a formula in Java format as a String containing only {@literal &}{@literal &}, ||,
-   *     (), !, and literals
-   * @param rhs a formula in Java format as a String containing only {@literal &}{@literal &}, ||,
-   *     (), !, and literals
+   * @param lhs a Java boolean expression containing only variables, {@literal &}{@literal &}, ||,
+   *     !, and ()
+   * @param rhs a Java boolean expression containing only variables, {@literal &}{@literal &}, ||,
+   *     !, and ()
    * @return true iff lhs implies rhs
    * @throws UnsupportedOperationException if the input contains an unexpected kind of expression
    */
   public static boolean implies(final String lhs, final String rhs) {
 
-    /**
-     * General approach: parse each formula into an AST, then convert each AST into a boolean
-     * formula that can be passed to a solver, and then construct a query to check if "not (lhs ->
-     * rhs)" is unsatisfiable. The result is the result of that query.
-     */
+    // General approach: parse each formula into an AST, then convert each AST into a boolean
+    // formula that can be passed to a solver, and then construct a query to check if "not (lhs ->
+    // rhs)" is unsatisfiable. The result is the result of that query.
 
     // setup solver
     SolverContext context = setupSolver();
@@ -97,10 +95,7 @@ public class CalledMethodsPredicateEvaluator {
     }
   }
 
-  /**
-   * Converts a String representing a boolean expression into a boolean formula in the SMT solver's
-   * format.
-   */
+  /** Converts a Java boolean expression into a boolean formula in the SMT solver's format. */
   private static BooleanFormula formulaStringToBooleanFormula(
       String formula, BooleanFormulaManager booleanFormulaManager) {
 
