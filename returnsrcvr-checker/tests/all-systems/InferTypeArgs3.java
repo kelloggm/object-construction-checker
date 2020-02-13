@@ -4,7 +4,7 @@ import java.util.HashSet;
 class InferTypeArgs3 {
     @SuppressWarnings("cast.unsafe.constructor.invocation")
     void test() {
-        java.util.Arrays.asList(new Integer(1), "");
+        java.util.Arrays.asList(Integer.valueOf(1), "");
     }
 
     void foo() {
