@@ -6,6 +6,11 @@ buildscript {
     }
 }
 
+plugins {
+    id "com.diffplug.gradle.spotless" version "3.27.1" apply false
+}
+
+
 ext.versions = [
     checkerFramework: "3.1.1",
     autoValue       : "1.6.5",
@@ -19,4 +24,6 @@ subprojects { project ->
         jcenter()
         mavenLocal()
     }
+
+    project.apply plugin: "com.diffplug.gradle.spotless"
 }
