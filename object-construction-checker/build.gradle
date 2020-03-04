@@ -32,7 +32,7 @@ dependencies {
     implementation "org.springframework:spring-expression:5.2.4.RELEASE"
 
     // Use JUnit test framework
-    testImplementation "junit:junit:4.12"
+    testImplementation "junit:junit:4.13"
 
     // CF testing infrastructure
     testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"

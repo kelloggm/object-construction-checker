@@ -25,7 +25,7 @@ dependencies {
     api project(':returnsrcvr-qual')
 
     // Testing
-    testImplementation "junit:junit:4.12"
+    testImplementation "junit:junit:4.13"
     testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
 
     // AutoValue support
