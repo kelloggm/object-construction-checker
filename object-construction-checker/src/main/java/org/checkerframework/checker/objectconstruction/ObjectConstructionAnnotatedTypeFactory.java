@@ -57,7 +57,7 @@ import org.checkerframework.javacutil.TreeUtils;
 public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /** The top annotation. Package private to permit access from the Transfer class. */
-  final AnnotationMirror TOP;
+  public final AnnotationMirror TOP;
 
   /** The bottom annotation. Package private to permit access from the Transfer class. */
   final AnnotationMirror BOTTOM;

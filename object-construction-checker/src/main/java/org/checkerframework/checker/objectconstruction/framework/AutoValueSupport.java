@@ -7,12 +7,7 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import java.beans.Introspector;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.lang.model.element.AnnotationMirror;
@@ -25,12 +20,15 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.objectconstruction.ObjectConstructionAnnotatedTypeFactory;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.util.AnnotatedTypes;
+import org.checkerframework.framework.util.AnnotationMirrorMap;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.checkerframework.org.apache.bcel.classfile.ElementValue;
 
 /**
  * AutoValue Support for the Object Construction Checker, which adds CalledMethods annotation to the
@@ -58,11 +56,11 @@ public class AutoValueSupport implements FrameworkSupport {
     TypeMirror superclass = ((TypeElement) element.getEnclosingElement()).getSuperclass();
 
     if (!superclass.getKind().equals(TypeKind.NONE)
-        && FrameworkSupportUtils.hasAnnotation(
+            && FrameworkSupportUtils.hasAnnotation(
             TypesUtils.getTypeElement(superclass), AutoValue.Builder.class)
-        && element.getParameters().size() > 0) {
+            && element.getParameters().size() > 0) {
       handleToBuilderType(
-          type, superclass, TypesUtils.getTypeElement(superclass).getEnclosingElement());
+              type, superclass, TypesUtils.getTypeElement(superclass).getEnclosingElement());
     }
   }
 
@@ -73,13 +71,14 @@ public class AutoValueSupport implements FrameworkSupport {
 
     if (FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
       assert FrameworkSupportUtils.hasAnnotation(nextEnclosingElement, AutoValue.class)
-          : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
+              : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
       // it is a build method if it is an abstract method that returns the type with the @AutoValue
       // annotation
-      if (element.getModifiers().contains(Modifier.ABSTRACT)
-          && TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement)) {
+      if (/*element.getModifiers().contains(Modifier.ABSTRACT)
+          && */TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement)) {
         return true;
       }
+
     }
     return false;
   }
@@ -95,6 +94,7 @@ public class AutoValueSupport implements FrameworkSupport {
   @Override
   public void handlePossibleBuilderBuildMethod(AnnotatedExecutableType t) {
 
+
     ExecutableElement element = t.getElement();
 
     if (isBuilderBuildMethod(element)) {
@@ -103,10 +103,13 @@ public class AutoValueSupport implements FrameworkSupport {
       Element nextEnclosingElement = enclosingElement.getEnclosingElement();
       Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(enclosingElement);
       List<String> requiredProperties =
-          getAutoValueRequiredProperties(nextEnclosingElement, avBuilderSetterNames);
+              getAutoValueRequiredProperties(nextEnclosingElement, avBuilderSetterNames);
       AnnotationMirror newCalledMethodsAnno =
-          createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames);
-      t.getReceiverType().addAnnotation(newCalledMethodsAnno);
+              createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames);
+      AnnotationMirror buildAnnotations = t.getReceiverType().getAnnotationInHierarchy(atypeFactory.TOP);
+      if(buildAnnotations==null)
+        t.getReceiverType().addAnnotation(newCalledMethodsAnno);
+
     }
   }
 
@@ -125,7 +128,7 @@ public class AutoValueSupport implements FrameworkSupport {
       TypeMirror superclass = enclosingElement.getSuperclass();
 
       if (FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.class)
-          && element.getModifiers().contains(Modifier.ABSTRACT)) {
+              && element.getModifiers().contains(Modifier.ABSTRACT)) {
         handleToBuilderType(returnType, returnType.getUnderlyingType(), enclosingElement);
       }
 
@@ -148,13 +151,13 @@ public class AutoValueSupport implements FrameworkSupport {
    * @param classElement corresponding AutoValue class
    */
   private void handleToBuilderType(
-      AnnotatedTypeMirror type, TypeMirror builderType, Element classElement) {
+          AnnotatedTypeMirror type, TypeMirror builderType, Element classElement) {
     Element builderElement = TypesUtils.getTypeElement(builderType);
     Set<String> avBuilderSetterNames = getAutoValueBuilderSetterMethodNames(builderElement);
     List<String> requiredProperties =
-        getAutoValueRequiredProperties(classElement, avBuilderSetterNames);
+            getAutoValueRequiredProperties(classElement, avBuilderSetterNames);
     AnnotationMirror calledMethodsAnno =
-        createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames);
+            createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames);
     type.replaceAnnotation(calledMethodsAnno);
   }
 
@@ -167,17 +170,17 @@ public class AutoValueSupport implements FrameworkSupport {
    * @return the @CalledMethods annotation
    */
   private AnnotationMirror createCalledMethodsForAutoValueProperties(
-      final List<String> propertyNames, Set<String> avBuilderSetterNames) {
+          final List<String> propertyNames, Set<String> avBuilderSetterNames) {
     String[] calledMethodNames =
-        propertyNames.stream()
-            .map(prop -> autoValuePropToBuilderSetterName(prop, avBuilderSetterNames))
-            .filter(Objects::nonNull)
-            .toArray(String[]::new);
+            propertyNames.stream()
+                    .map(prop -> autoValuePropToBuilderSetterName(prop, avBuilderSetterNames))
+                    .filter(Objects::nonNull)
+                    .toArray(String[]::new);
     return atypeFactory.createCalledMethods(calledMethodNames);
   }
 
   private static String autoValuePropToBuilderSetterName(
-      String prop, Set<String> builderSetterNames) {
+          String prop, Set<String> builderSetterNames) {
     // we have two cases, depending on whether AutoValue strips JavaBean-style prefixes 'get' and
     // 'is'
     Set<String> possiblePropNames = new LinkedHashSet<>();
@@ -185,15 +188,15 @@ public class AutoValueSupport implements FrameworkSupport {
     if (prop.startsWith("get") && prop.length() > 3 && Character.isUpperCase(prop.charAt(3))) {
       possiblePropNames.add(Introspector.decapitalize(prop.substring(3)));
     } else if (prop.startsWith("is")
-        && prop.length() > 2
-        && Character.isUpperCase(prop.charAt(2))) {
+            && prop.length() > 2
+            && Character.isUpperCase(prop.charAt(2))) {
       possiblePropNames.add(Introspector.decapitalize(prop.substring(2)));
     }
 
     for (String propName : possiblePropNames) {
       // in each case, the setter may be the property name itself, or prefixed by 'set'
       ImmutableSet<String> setterNamesToTry =
-          ImmutableSet.of(propName, "set" + FrameworkSupportUtils.capitalize(propName));
+              ImmutableSet.of(propName, "set" + FrameworkSupportUtils.capitalize(propName));
       for (String setterName : setterNamesToTry) {
         if (builderSetterNames.contains(setterName)) {
           return setterName;
@@ -216,11 +219,11 @@ public class AutoValueSupport implements FrameworkSupport {
    * @return a list of required property names
    */
   private List<String> getAutoValueRequiredProperties(
-      final Element autoValueClassElement, Set<String> avBuilderSetterNames) {
+          final Element autoValueClassElement, Set<String> avBuilderSetterNames) {
     return getAllAbstractMethods(autoValueClassElement).stream()
-        .filter(member -> isAutoValueRequiredProperty(member, avBuilderSetterNames))
-        .map(e -> e.getSimpleName().toString())
-        .collect(Collectors.toList());
+            .filter(member -> isAutoValueRequiredProperty(member, avBuilderSetterNames))
+            .map(e -> e.getSimpleName().toString())
+            .collect(Collectors.toList());
   }
 
   /**
@@ -241,18 +244,18 @@ public class AutoValueSupport implements FrameworkSupport {
     }
     // shouldn't have a nullable return
     boolean hasNullable =
-        Stream.concat(
-                //	        		elements.getAllannotationMirrors()
-                atypeFactory.getElementUtils().getAllAnnotationMirrors(member).stream(),
-                returnType.getAnnotationMirrors().stream())
-            .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
+            Stream.concat(
+                    //	        		elements.getAllannotationMirrors()
+                    atypeFactory.getElementUtils().getAllAnnotationMirrors(member).stream(),
+                    returnType.getAnnotationMirrors().stream())
+                    .anyMatch(anm -> AnnotationUtils.annotationName(anm).endsWith(".Nullable"));
     if (hasNullable) {
       return false;
     }
     // if return type of foo() is a Guava Immutable type, not required if there is a
     // builder method fooBuilder()
     if (FrameworkSupportUtils.isGuavaImmutableType(returnType)
-        && allBuilderMethodNames.contains(name + "Builder")) {
+            && allBuilderMethodNames.contains(name + "Builder")) {
       return false;
     }
     // if it's an Optional, the Builder will automatically initialize it
@@ -270,15 +273,15 @@ public class AutoValueSupport implements FrameworkSupport {
    * overloads and other corner cases. They seem unlikely enough that we are skipping for now.
    */
   private static final ImmutableSet<String> IGNORED_METHOD_NAMES =
-      ImmutableSet.of("equals", "hashCode", "toString", "<init>", "toBuilder");
+          ImmutableSet.of("equals", "hashCode", "toString", "<init>", "toBuilder");
   /** Taken from AutoValue source code */
   private static final ImmutableSet<String> OPTIONAL_CLASS_NAMES =
-      ImmutableSet.of(
-          "com.google.common.base.Optional",
-          "java.util.Optional",
-          "java.util.OptionalDouble",
-          "java.util.OptionalInt",
-          "java.util.OptionalLong");
+          ImmutableSet.of(
+                  "com.google.common.base.Optional",
+                  "java.util.Optional",
+                  "java.util.OptionalDouble",
+                  "java.util.OptionalInt",
+                  "java.util.OptionalLong");
 
   /**
    * adapted from AutoValue source code
@@ -293,7 +296,7 @@ public class AutoValueSupport implements FrameworkSupport {
     DeclaredType declaredType = (DeclaredType) type;
     TypeElement typeElement = (TypeElement) declaredType.asElement();
     return OPTIONAL_CLASS_NAMES.contains(typeElement.getQualifiedName().toString())
-        && typeElement.getTypeParameters().size() == declaredType.getTypeArguments().size();
+            && typeElement.getTypeParameters().size() == declaredType.getTypeArguments().size();
   }
 
   /**
@@ -305,9 +308,9 @@ public class AutoValueSupport implements FrameworkSupport {
    */
   private Set<String> getAutoValueBuilderSetterMethodNames(Element builderElement) {
     return getAllAbstractMethods(builderElement).stream()
-        .filter(e -> isAutoValueBuilderSetter(e, builderElement))
-        .map(e -> e.getSimpleName().toString())
-        .collect(Collectors.toSet());
+            .filter(e -> isAutoValueBuilderSetter(e, builderElement))
+            .map(e -> e.getSimpleName().toString())
+            .collect(Collectors.toSet());
   }
 
   /**
@@ -322,17 +325,17 @@ public class AutoValueSupport implements FrameworkSupport {
     if (retType.getKind().equals(TypeKind.TYPEVAR)) {
       // instantiate the type variable for the Builder class
       retType =
-          AnnotatedTypes.asMemberOf(
-                  atypeFactory.getContext().getTypeUtils(),
-                  atypeFactory,
-                  atypeFactory.getAnnotatedType(builderElement),
-                  (ExecutableElement) member)
-              .getReturnType()
-              .getUnderlyingType();
+              AnnotatedTypes.asMemberOf(
+                      atypeFactory.getContext().getTypeUtils(),
+                      atypeFactory,
+                      atypeFactory.getAnnotatedType(builderElement),
+                      (ExecutableElement) member)
+                      .getReturnType()
+                      .getUnderlyingType();
     }
     // either the return type should be the builder itself, or it should be a Guava immutable type
     return FrameworkSupportUtils.isGuavaImmutableType(retType)
-        || builderElement.equals(TypesUtils.getTypeElement(retType));
+            || builderElement.equals(TypesUtils.getTypeElement(retType));
   }
 
   /**
@@ -363,9 +366,9 @@ public class AutoValueSupport implements FrameworkSupport {
         } else {
           // exclude any methods that this overrides
           overriddenMethods.addAll(
-              AnnotatedTypes.overriddenMethods(
-                      atypeFactory.getElementUtils(), atypeFactory, (ExecutableElement) member)
-                  .values());
+                  AnnotatedTypes.overriddenMethods(
+                          atypeFactory.getElementUtils(), atypeFactory, (ExecutableElement) member)
+                          .values());
         }
       }
     }
@@ -379,7 +382,7 @@ public class AutoValueSupport implements FrameworkSupport {
    */
   private List<Element> getAllSupertypes(Symbol symbol) {
     Types types =
-        Types.instance(((JavacProcessingEnvironment) atypeFactory.getProcessingEnv()).getContext());
+            Types.instance(((JavacProcessingEnvironment) atypeFactory.getProcessingEnv()).getContext());
     return types.closure(symbol.type).stream().map(t -> t.tsym).collect(Collectors.toList());
   }
 }

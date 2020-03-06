@@ -3,34 +3,31 @@ import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.nullness.qual.*;
 
 @AutoValue
-abstract class SetInsideBuild {
+abstract class SetInsideBuildWithCM {
     public abstract String name();
     public abstract int size();
     static Builder builder() {
-        return new AutoValue_SetInsideBuild.Builder();
+        return new AutoValue_SetInsideBuildWithCM.Builder();
     }
     @AutoValue.Builder
     abstract static class Builder {
         abstract Builder setName(String name);
         abstract Builder setSize(int value);
-        abstract SetInsideBuild autoBuild();
-        public SetInsideBuild build(@CalledMethods({"setName"}) Builder this) {
-
-            return this.setSize(4).autoBuild();
+        abstract SetInsideBuildWithCM autoBuild();
+        public SetInsideBuildWithCM build() {
+            return this.autoBuild();
         }
     }
-
-    public static void buildSomethingWrong() {
-        Builder b = builder();
-        //b.setGet("Frank");
-        // :: error: finalizer.invocation.invalid
-        b.build();
-    }
-
 
     public static void buildSomethingCorrect() {
         Builder b = builder();
         b.setName("Frank");
+        b.setSize(2);
+        b.build();
+    }
+    public static void buildSomethingWrong() {
+        Builder b = builder();
+        // :: error: finalizer.invocation.invalid
         b.build();
     }
 
