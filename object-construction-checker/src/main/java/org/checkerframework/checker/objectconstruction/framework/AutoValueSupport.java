@@ -7,7 +7,12 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import java.beans.Introspector;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.lang.model.element.AnnotationMirror;
@@ -71,9 +76,7 @@ public class AutoValueSupport implements FrameworkSupport {
           : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
       // it is a build method if it is an abstract method that returns the type with the @AutoValue
       // annotation
-      if (
-      /*element.getModifiers().contains(Modifier.ABSTRACT)
-      && */ TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement)) {
+      if (TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement)) {
         return true;
       }
     }
@@ -102,6 +105,7 @@ public class AutoValueSupport implements FrameworkSupport {
           getAutoValueRequiredProperties(nextEnclosingElement, avBuilderSetterNames);
       AnnotationMirror newCalledMethodsAnno =
           createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames);
+      // only add the new @CalledMethods annotation if there is not already a @CalledMethods annotation present
       AnnotationMirror possibleBuildAnnotations =
           t.getReceiverType()
               .getAnnotationInHierarchy(
