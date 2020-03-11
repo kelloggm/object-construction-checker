@@ -105,7 +105,8 @@ public class AutoValueSupport implements FrameworkSupport {
           getAutoValueRequiredProperties(nextEnclosingElement, avBuilderSetterNames);
       AnnotationMirror newCalledMethodsAnno =
           createCalledMethodsForAutoValueProperties(requiredProperties, avBuilderSetterNames);
-      // only add the new @CalledMethods annotation if there is not already a @CalledMethods annotation present
+      // only add the new @CalledMethods annotation if there is not already a @CalledMethods
+      // annotation present
       AnnotationMirror possibleBuildAnnotations =
           t.getReceiverType()
               .getAnnotationInHierarchy(
