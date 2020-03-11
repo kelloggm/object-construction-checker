@@ -74,8 +74,7 @@ public class AutoValueSupport implements FrameworkSupport {
     if (FrameworkSupportUtils.hasAnnotation(enclosingElement, AutoValue.Builder.class)) {
       assert FrameworkSupportUtils.hasAnnotation(nextEnclosingElement, AutoValue.class)
           : "class " + nextEnclosingElement.getSimpleName() + " is missing @AutoValue annotation";
-      // it is a build method if it is an abstract method that returns the type with the @AutoValue
-      // annotation
+      // it is a build method that returns the type with the @AutoValue annotation
       if (TypesUtils.getTypeElement(element.getReturnType()).equals(nextEnclosingElement)) {
         return true;
       }
@@ -111,7 +110,9 @@ public class AutoValueSupport implements FrameworkSupport {
           t.getReceiverType()
               .getAnnotationInHierarchy(
                   atypeFactory.getQualifierHierarchy().getTopAnnotation(newCalledMethodsAnno));
-      if (possibleBuildAnnotations == null) t.getReceiverType().addAnnotation(newCalledMethodsAnno);
+      if (possibleBuildAnnotations == null) {
+        t.getReceiverType().addAnnotation(newCalledMethodsAnno);
+      }
     }
   }
 
