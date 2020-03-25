@@ -29,7 +29,7 @@ dependencies {
     implementation project(":returnsrcvr-checker")
 
     // For the @CalledMethodsPredicate evaluation
-    implementation "org.springframework:spring-expression:5.2.4.RELEASE"
+    implementation "org.springframework:spring-expression:5.2.5.RELEASE"
 
     // Use JUnit test framework
     testImplementation "junit:junit:4.13"
