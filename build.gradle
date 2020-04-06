@@ -7,7 +7,7 @@ buildscript {
 }
 
 plugins {
-    id "com.diffplug.gradle.spotless" version "3.28.0" apply false
+    id "com.diffplug.gradle.spotless" version "3.28.1" apply false
 }
 
 
