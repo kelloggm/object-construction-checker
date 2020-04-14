@@ -71,6 +71,10 @@ If your project has subprojects or you need other customizations, see the docume
 
 The Object Construction Checker supports projects that use Lombok via the [io.freefair.lombok](https://plugins.gradle.org/plugin/io.freefair.lombok) Gradle plugin.  For such projects, the above instructions should work unmodified for running the checker.  However, note that to fix issues, you should edit your original source code, **not** the files in the checker's error messages.  The checker's error messages refer to Lombok's output, which is a variant of your source code that appears in a `delombok` directory.
 
+Note that the Gradle plugin does two things that allow Lombok projects to be checked.
+If either of these are not done, the checker will not issue any errors on Lombok code:
+* sets Lombok configuration option `lombok.addLombokGeneratedAnnotation = true`
+* delomboks the code before passing it to the checker
 
 ## Specifying your code
 
