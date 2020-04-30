@@ -29,7 +29,7 @@ dependencies {
     implementation project(":returnsrcvr-checker")
 
     // For the @CalledMethodsPredicate evaluation
-    implementation "org.springframework:spring-expression:5.2.4.RELEASE"
+    implementation "org.springframework:spring-expression:5.2.5.RELEASE"
 
     // Use JUnit test framework
     testImplementation "junit:junit:4.13"
@@ -58,7 +58,7 @@ dependencies {
 
 dependencyManagement {
     imports {
-        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.725"
+        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.761"
     }
 }
 

@@ -22,7 +22,7 @@ import org.junit.runners.Parameterized.Parameters;
  * run by this test runner.
  *
  * <p>This test runner depends on the Checker Framework's testing library, which is found in the
- * Maven artifact org.checkerframework:testlib.
+ * Maven artifact org.checkerframework:framework-test.
  */
 public class LombokTest extends CheckerFrameworkPerDirectoryTest {
   public LombokTest(List<File> testFiles) {
