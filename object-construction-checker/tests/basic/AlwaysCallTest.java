@@ -32,11 +32,11 @@ class AlwaysCallTest {
         return f;
     }
 
-    void makeFooFinilize3(){
-        Foo f = new Foo();
-        f.b();
-        f.a();
-    }
+//    void makeFooFinilize3(){
+//        Foo f = new Foo();
+//        f.b();
+//        f.a();
+//    }
 
 
     void test1() {
@@ -61,7 +61,7 @@ class AlwaysCallTest {
 
 
     void test6() {
-        makeFooFinilize2();
+        makeFooFinilize2();   // it reports an error
     }
 
     void test7() {

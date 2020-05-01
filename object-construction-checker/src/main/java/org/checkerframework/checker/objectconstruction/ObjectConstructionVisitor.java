@@ -3,6 +3,8 @@ package org.checkerframework.checker.objectconstruction;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.CompoundAssignmentTree;
+import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionStatementTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
@@ -13,6 +15,7 @@ import com.sun.source.util.TreePath;
 import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
@@ -60,20 +63,30 @@ public class ObjectConstructionVisitor
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
 
-    if (isExpressionStatementTree() && isGoingOutOfScope(node)) {
+    if (!isAssignedToLocal(this.getCurrentPath())) {
       ExecutableElement element = TreeUtils.elementFromUse(node);
+//      ExpressionTree receiver = getReceiver(node);
       TypeMirror returnType = element.getReturnType();
+//      if(receiver==null){
+//
+//      }else{
+//        ExecutableElement receiverElement = (ExecutableElement) TreeUtils.elementFromUse(receiver);
+//        returnType = receiverElement.getReturnType();
+//      }
+
       TypeElement eType = TypesUtils.getTypeElement(returnType);
-      AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
-      if (alwaysCallAnno != null) {
-        String alwaysCallAnnoVal =
-            AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
-        List<String> currentCalledMethods = getCalledMethodAnnotaion(node);
-        if (!currentCalledMethods.contains(alwaysCallAnnoVal)) {
+      if(eType!=null){
+        AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
+        if (alwaysCallAnno != null) {
+          String alwaysCallAnnoVal =
+                  AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
+          List<String> currentCalledMethods = getCalledMethodAnnotaion(node);
+          if (!currentCalledMethods.contains(alwaysCallAnnoVal)) {
             checker.report(
-                Result.failure(
-                    "calledMethod doesn't contain alwaysCall obligations", element.getSimpleName()),
-                node);
+                    Result.failure(
+                            "calledMethod doesn't contain alwaysCall obligations", element.getSimpleName()),
+                    node);
+          }
         }
       }
     }
@@ -91,7 +104,7 @@ public class ObjectConstructionVisitor
   }
 
   public List<String> getCalledMethodAnnotaion(MethodInvocationTree node){
-    AnnotationMirror calledMethodAnno = null;
+    AnnotationMirror calledMethodAnno;
     AnnotatedTypeMirror currentType = getTypeFactory().getAnnotatedType(node);
     if (currentType == null || !currentType.isAnnotatedInHierarchy(atypeFactory.TOP)) {
       calledMethodAnno = atypeFactory.TOP;
@@ -113,6 +126,16 @@ public class ObjectConstructionVisitor
     }
   }
 
+  public ExpressionTree getReceiver(MethodInvocationTree node){
+    ExpressionTree receiver = TreeUtils.getReceiverTree(node);
+    if(receiver == null)
+      return receiver;
+    while(TreeUtils.getReceiverTree(receiver)!=null){
+      receiver = TreeUtils.getReceiverTree(receiver);
+    }
+    return receiver;
+  }
+
   public boolean isGoingOutOfScope(MethodInvocationTree node){
     ExpressionTree receiver = TreeUtils.getReceiverTree(node);
     if(receiver == null)
@@ -124,6 +147,36 @@ public class ObjectConstructionVisitor
       return true;
     }else{
       return false;
+    }
+  }
+
+
+  public static boolean isAssignedToLocal(final TreePath treePath) {
+    TreePath parentPath = treePath.getParentPath();
+
+    if (parentPath == null) {
+      return false;
+    }
+
+    Tree parent = parentPath.getLeaf();
+    switch (parent.getKind()) {
+      case PARENTHESIZED:
+        return isAssignedToLocal(parentPath);
+      case CONDITIONAL_EXPRESSION:
+        ConditionalExpressionTree cet = (ConditionalExpressionTree) parent;
+        if (cet.getCondition() == treePath.getLeaf()) {
+          // The assignment context for the condition is simply boolean.
+          // No point in going on.
+          return false;
+        }
+        // Otherwise use the context of the ConditionalExpressionTree.
+        return isAssignedToLocal(parentPath);
+      case ASSIGNMENT: // check if the left hand is a local variable
+      case RETURN:
+      case VARIABLE:
+        return true;
+      default:
+        return false;
     }
   }
 
