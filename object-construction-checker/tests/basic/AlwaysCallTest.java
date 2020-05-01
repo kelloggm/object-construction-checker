@@ -28,6 +28,7 @@ class AlwaysCallTest {
 
     @CalledMethods({"b"}) Foo makeFooFinilize2(){
         Foo f = new Foo();
+        // won't pass yet as we don't yet handle it
         f.b();
         return f;
     }
@@ -40,10 +41,12 @@ class AlwaysCallTest {
 
 
     void test1() {
+        // won't pass yet due to dataflow issue
         makeFoo().a();
     }
 
     void test2() {
+        // won't pass yet due to dataflow issue
         makeFoo().b().a();
     }
 
@@ -68,4 +71,15 @@ class AlwaysCallTest {
         makeFoo().c();
     }
 
+    void testStoringInLocal() {
+        // won't detect error until we check for variables going out of scope
+        Foo foo = makeFoo();
+    }
+
+    Foo testField;
+
+    void testStoringInField() {
+        // we should get an error here
+        testField = makeFoo();
+    }
 }

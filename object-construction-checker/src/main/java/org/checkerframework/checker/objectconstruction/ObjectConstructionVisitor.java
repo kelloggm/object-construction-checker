@@ -1,27 +1,19 @@
 package org.checkerframework.checker.objectconstruction;
 
 import com.sun.source.tree.AnnotationTree;
-import com.sun.source.tree.BlockTree;
-import com.sun.source.tree.ClassTree;
-import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionStatementTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
@@ -33,8 +25,6 @@ import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 import org.springframework.expression.spel.SpelParseException;
-
-import static org.checkerframework.javacutil.TreeUtils.*;
 
 public class ObjectConstructionVisitor
     extends BaseTypeVisitor<ObjectConstructionAnnotatedTypeFactory> {
@@ -80,7 +70,7 @@ public class ObjectConstructionVisitor
         if (alwaysCallAnno != null) {
           String alwaysCallAnnoVal =
                   AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
-          List<String> currentCalledMethods = getCalledMethodAnnotaion(node);
+          List<String> currentCalledMethods = getCalledMethodAnnotation(node);
           if (!currentCalledMethods.contains(alwaysCallAnnoVal)) {
             checker.report(
                     Result.failure(
@@ -103,7 +93,7 @@ public class ObjectConstructionVisitor
     return super.visitMethodInvocation(node, p);
   }
 
-  public List<String> getCalledMethodAnnotaion(MethodInvocationTree node){
+  public List<String> getCalledMethodAnnotation(MethodInvocationTree node){
     AnnotationMirror calledMethodAnno;
     AnnotatedTypeMirror currentType = getTypeFactory().getAnnotatedType(node);
     if (currentType == null || !currentType.isAnnotatedInHierarchy(atypeFactory.TOP)) {
