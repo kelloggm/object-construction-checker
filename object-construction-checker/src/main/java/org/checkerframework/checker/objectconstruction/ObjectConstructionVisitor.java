@@ -1,27 +1,37 @@
 package org.checkerframework.checker.objectconstruction;
 
 import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.BlockTree;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.ExpressionStatementTree;
+import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
-import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.source.Result;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 import org.springframework.expression.spel.SpelParseException;
+
+import static org.checkerframework.javacutil.TreeUtils.*;
 
 public class ObjectConstructionVisitor
     extends BaseTypeVisitor<ObjectConstructionAnnotatedTypeFactory> {
@@ -50,9 +60,7 @@ public class ObjectConstructionVisitor
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
 
-    TreePath currentPath = this.getCurrentPath();
-    Tree parentNode = currentPath.getParentPath().getLeaf();
-    if (parentNode instanceof ExpressionStatementTree) { // getAssignmentContex
+    if (isExpressionStatementTree() && isGoingOutOfScope(node)) {
       ExecutableElement element = TreeUtils.elementFromUse(node);
       TypeMirror returnType = element.getReturnType();
       TypeElement eType = TypesUtils.getTypeElement(returnType);
@@ -60,26 +68,12 @@ public class ObjectConstructionVisitor
       if (alwaysCallAnno != null) {
         String alwaysCallAnnoVal =
             AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
-        ;
-        AnnotationMirror calledMethodAnno = null;
-        for (AnnotationMirror annotationMirror : returnType.getAnnotationMirrors()) {
-          if (AnnotationUtils.areSameByClass(annotationMirror, CalledMethods.class)) {
-            calledMethodAnno = annotationMirror;
-            break;
-          }
-        }
-        if (calledMethodAnno != null) {
-          List<String> calledMethodAnnoVal =
-              AnnotationUtils.getElementValueArray(calledMethodAnno, "value", String.class, false);
-          if (!calledMethodAnnoVal.contains(alwaysCallAnnoVal)) {
+        List<String> currentCalledMethods = getCalledMethodAnnotaion(node);
+        if (!currentCalledMethods.contains(alwaysCallAnnoVal)) {
             checker.report(
                 Result.failure(
                     "calledMethod doesn't contain alwaysCall obligations", element.getSimpleName()),
                 node);
-          }
-        } else {
-          checker.report(
-              Result.failure("calledMethod doesn't exists", element.getSimpleName()), node);
         }
       }
     }
@@ -95,4 +89,45 @@ public class ObjectConstructionVisitor
     }
     return super.visitMethodInvocation(node, p);
   }
+
+  public List<String> getCalledMethodAnnotaion(MethodInvocationTree node){
+    AnnotationMirror calledMethodAnno = null;
+    AnnotatedTypeMirror currentType = getTypeFactory().getAnnotatedType(node);
+    if (currentType == null || !currentType.isAnnotatedInHierarchy(atypeFactory.TOP)) {
+      calledMethodAnno = atypeFactory.TOP;
+    } else {
+      calledMethodAnno = currentType.getAnnotationInHierarchy(atypeFactory.TOP);
+    }
+    List<String> currentCalledMethods =
+            ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(calledMethodAnno);
+    return currentCalledMethods;
+  }
+
+  public boolean isExpressionStatementTree(){
+    TreePath currentPath = this.getCurrentPath();
+    Tree parentNode = currentPath.getParentPath().getLeaf();
+    if (parentNode instanceof ExpressionStatementTree){
+      return true;
+    }else{
+      return false;
+    }
+  }
+
+  public boolean isGoingOutOfScope(MethodInvocationTree node){
+    ExpressionTree receiver = TreeUtils.getReceiverTree(node);
+    if(receiver == null)
+      return true;
+    while(TreeUtils.getReceiverTree(receiver)!=null){
+      receiver = TreeUtils.getReceiverTree(receiver);
+    }
+    if(receiver instanceof MethodInvocationTree){
+      return true;
+    }else{
+      return false;
+    }
+  }
+
 }
+
+
+
