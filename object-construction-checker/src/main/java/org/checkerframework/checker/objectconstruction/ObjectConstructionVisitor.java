@@ -6,7 +6,6 @@ import java.util.Collections;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.tools.Diagnostic;
-
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -33,7 +32,8 @@ public class ObjectConstructionVisitor
       try {
         new CalledMethodsPredicateEvaluator(Collections.emptyList()).evaluate(predicate);
       } catch (SpelParseException e) {
-        checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "predicate.invalid", e.getMessage()));
+        checker.report(
+            node, new DiagMessage(Diagnostic.Kind.ERROR, "predicate.invalid", e.getMessage()));
         return null;
       }
     }
