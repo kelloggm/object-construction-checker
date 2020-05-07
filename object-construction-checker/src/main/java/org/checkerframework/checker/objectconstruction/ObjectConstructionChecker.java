@@ -85,9 +85,7 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
    */
   @Override
   public void report(final Result r, final Object src) {
-
     Result theResult = r;
-
     String errKey = r.getMessageKeys().iterator().next();
     if ("method.invocation.invalid".equals(errKey) && r.isFailure()) {
       Object[] args = r.getDiagMessages().iterator().next().getArgs();

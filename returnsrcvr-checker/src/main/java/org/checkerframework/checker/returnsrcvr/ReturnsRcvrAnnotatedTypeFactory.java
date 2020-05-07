@@ -61,7 +61,7 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @Override
   protected TypeAnnotator createTypeAnnotator() {
-    return new ListTypeAnnotator(super.createTypeAnnotator(), new ReturnsRcvrTypeAnnotator(this));
+    return new ListTypeAnnotator(new ReturnsRcvrTypeAnnotator(this), super.createTypeAnnotator());
   }
 
   private class ReturnsRcvrTypeAnnotator extends TypeAnnotator {
@@ -79,7 +79,9 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       if (retAnnotation != null && AnnotationUtils.areSame(retAnnotation, THIS_ANNOT)) {
         // add @This to the receiver type
         AnnotatedTypeMirror.AnnotatedDeclaredType receiverType = t.getReceiverType();
-        receiverType.replaceAnnotation(THIS_ANNOT);
+        if (!receiverType.isAnnotatedInHierarchy(THIS_ANNOT)) {
+          receiverType.addAnnotation(THIS_ANNOT);
+        }
       }
 
       // skip constructors
@@ -89,9 +91,14 @@ public class ReturnsRcvrAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
           // see if the method in the framework should return this
           if (frameworkSupport.knownToReturnThis(t)) {
             // add @This annotation
-            returnType.replaceAnnotation(THIS_ANNOT);
+            if (!returnType.isAnnotatedInHierarchy(THIS_ANNOT)) {
+              // add @This annotation
+              returnType.addAnnotation(THIS_ANNOT);
+            }
             AnnotatedTypeMirror.AnnotatedDeclaredType receiverType = t.getReceiverType();
-            receiverType.replaceAnnotation(THIS_ANNOT);
+            if (!receiverType.isAnnotatedInHierarchy(THIS_ANNOT)) {
+              receiverType.addAnnotation(THIS_ANNOT);
+            }
             break;
           }
         }
