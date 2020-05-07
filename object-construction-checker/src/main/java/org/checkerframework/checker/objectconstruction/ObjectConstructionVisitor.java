@@ -5,11 +5,13 @@ import com.sun.source.tree.MethodInvocationTree;
 import java.util.Collections;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.tools.Diagnostic;
+
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
-import org.checkerframework.framework.source.Result;
+import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.springframework.expression.spel.SpelParseException;
@@ -31,7 +33,7 @@ public class ObjectConstructionVisitor
       try {
         new CalledMethodsPredicateEvaluator(Collections.emptyList()).evaluate(predicate);
       } catch (SpelParseException e) {
-        checker.report(Result.failure("predicate.invalid", e.getMessage()), node);
+        checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "predicate.invalid", e.getMessage()));
         return null;
       }
     }

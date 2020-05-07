@@ -5,10 +5,11 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Properties;
 import java.util.Set;
+
+import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueChecker;
-import org.checkerframework.framework.source.Result;
 import org.checkerframework.framework.source.SupportedOptions;
 import org.checkerframework.framework.source.SuppressWarningsKeys;
 
@@ -79,20 +80,46 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     return result;
   }
 
-  /**
-   * Adds special reporting for method.invocation.invalid errors to turn them into
-   * finalizer.invocation.invalid errors.
-   */
+//  /**
+//   * Adds special reporting for method.invocation.invalid errors to turn them into
+//   * finalizer.invocation.invalid errors.
+//   */
+//  @Override
+//  public void report(final Result r, final Object src) {
+//    Result theResult = r;
+//    String errKey = r.getMessageKeys().iterator().next();
+//    if ("method.invocation.invalid".equals(errKey) && r.isFailure()) {
+//      Object[] args = r.getDiagMessages().iterator().next().getArgs();
+//      String actualReceiverAnnoString = (String) args[1];
+//      String requiredReceiverAnnoString = (String) args[2];
+//      if (actualReceiverAnnoString.contains("@CalledMethods(")
+//          || actualReceiverAnnoString.contains("@CalledMethodsTop")) {
+//        Set<String> actualCalledMethods = parseCalledMethods(actualReceiverAnnoString);
+//        if (requiredReceiverAnnoString.contains("@CalledMethods(")) {
+//          Set<String> requiredCalledMethods = parseCalledMethods(requiredReceiverAnnoString);
+//          requiredCalledMethods.removeAll(actualCalledMethods);
+//          StringBuilder missingMethods = new StringBuilder();
+//          for (String s : requiredCalledMethods) {
+//            missingMethods.append(s);
+//            missingMethods.append("() ");
+//          }
+//          theResult = Result.failure("finalizer.invocation.invalid", missingMethods.toString());
+//        }
+//      }
+//    }
+//    super.report(theResult, src);
+//  }
+
   @Override
-  public void report(final Result r, final Object src) {
-    Result theResult = r;
-    String errKey = r.getMessageKeys().iterator().next();
-    if ("method.invocation.invalid".equals(errKey) && r.isFailure()) {
-      Object[] args = r.getDiagMessages().iterator().next().getArgs();
+  public void reportError(Object source, @CompilerMessageKey String messageKey, Object... args) {
+
+
+    String errKey = messageKey;
+    if ("method.invocation.invalid".equals(errKey)) {
       String actualReceiverAnnoString = (String) args[1];
       String requiredReceiverAnnoString = (String) args[2];
       if (actualReceiverAnnoString.contains("@CalledMethods(")
-          || actualReceiverAnnoString.contains("@CalledMethodsTop")) {
+              || actualReceiverAnnoString.contains("@CalledMethodsTop")) {
         Set<String> actualCalledMethods = parseCalledMethods(actualReceiverAnnoString);
         if (requiredReceiverAnnoString.contains("@CalledMethods(")) {
           Set<String> requiredCalledMethods = parseCalledMethods(requiredReceiverAnnoString);
@@ -102,11 +129,13 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
             missingMethods.append(s);
             missingMethods.append("() ");
           }
-          theResult = Result.failure("finalizer.invocation.invalid", missingMethods.toString());
+          messageKey = "finalizer.invocation.invalid";
+          args = new String[]{missingMethods.toString()};
         }
       }
     }
-    super.report(theResult, src);
+
+    super.reportError(source, messageKey, args);
   }
 
   /**
@@ -115,8 +144,8 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
    * itself here for checkers that aren't part of the CF itself.
    */
   @Override
-  public Properties getMessages() {
-    Properties messages = super.getMessages();
+  public Properties getMessagesProperties() {
+    Properties messages = super.getMessagesProperties();
     messages.setProperty(
         "finalizer.invocation.invalid",
         "This finalizer cannot be invoked, because the following methods have not been called: %s\n");
