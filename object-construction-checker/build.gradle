@@ -26,7 +26,6 @@ dependencies {
     // If / when other code depends on this checker, we will likely want to make these
     // api dependencies
     implementation project(":object-construction-qual")
-    implementation project(":returnsrcvr-checker")
 
     // For the @CalledMethodsPredicate evaluation
     implementation "org.springframework:spring-expression:5.2.6.RELEASE"

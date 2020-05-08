@@ -6,7 +6,6 @@ import java.util.LinkedHashSet;
 import java.util.Properties;
 import java.util.Set;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
-import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
 import org.checkerframework.common.value.ValueChecker;
@@ -20,9 +19,9 @@ import org.checkerframework.framework.source.SuppressWarningsKeys;
  */
 @SuppressWarningsKeys({"builder", "object.construction", "objectconstruction"})
 @SupportedOptions({
-  ObjectConstructionChecker.USE_VALUE_CHECKER,
-  ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
-  //  ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS,
+        ObjectConstructionChecker.USE_VALUE_CHECKER,
+        ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
+        ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
 })
 public class ObjectConstructionChecker extends BaseTypeChecker {
 
@@ -30,12 +29,17 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String COUNT_FRAMEWORK_BUILD_CALLS = "countFrameworkBuildCalls";
 
+  public static final String DISABLED_FRAMEWORK_SUPPORTS = "disableFrameworkSupports";
+
+  public static final String LOMBOK_SUPPORT = "LOMBOK";
+
+  public static final String AUTOVALUE_SUPPORT = "AUTOVALUE";
+
   @Override
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
     LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
         super.getImmediateSubcheckerClasses();
-        checkers.add(ReturnsRcvrChecker.class);
-//    checkers.add(ReturnsReceiverChecker.class);
+    checkers.add(ReturnsReceiverChecker.class);
 
     // BaseTypeChecker#hasOption calls this method (so that all subcheckers' options are
     // considered),

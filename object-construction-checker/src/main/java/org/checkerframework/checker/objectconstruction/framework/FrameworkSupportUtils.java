@@ -1,8 +1,11 @@
 package org.checkerframework.checker.objectconstruction.framework;
 
 import java.lang.annotation.Annotation;
+import java.util.EnumSet;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
+
+import org.checkerframework.checker.objectconstruction.ObjectConstructionChecker;
 import org.checkerframework.javacutil.AnnotationUtils;
 
 public class FrameworkSupportUtils {
@@ -38,5 +41,28 @@ public class FrameworkSupportUtils {
   public static boolean hasAnnotation(Element element, String annotName) {
     return element.getAnnotationMirrors().stream()
         .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
+  }
+
+  public enum Framework {
+    AUTO_VALUE,
+    LOMBOK;
+  }
+
+  public static EnumSet<Framework> getFrameworkSet(String option) {
+    EnumSet<Framework> frameworkSet = EnumSet.allOf(Framework.class);
+
+    if (option != null) {
+      for (String disabledFrameworkSupport : option.split("\\s?,\\s?")) {
+        switch (disabledFrameworkSupport.toUpperCase()) {
+          case ObjectConstructionChecker.AUTOVALUE_SUPPORT:
+            frameworkSet.remove(Framework.AUTO_VALUE);
+            break;
+          case ObjectConstructionChecker.LOMBOK_SUPPORT:
+            frameworkSet.remove(Framework.LOMBOK);
+            break;
+        }
+      }
+    }
+    return frameworkSet;
   }
 }
