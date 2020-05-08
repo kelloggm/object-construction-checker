@@ -34,8 +34,8 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
     LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
         super.getImmediateSubcheckerClasses();
-//        checkers.add(ReturnsRcvrChecker.class);
-    checkers.add(ReturnsReceiverChecker.class);
+        checkers.add(ReturnsRcvrChecker.class);
+//    checkers.add(ReturnsReceiverChecker.class);
 
     // BaseTypeChecker#hasOption calls this method (so that all subcheckers' options are
     // considered),
