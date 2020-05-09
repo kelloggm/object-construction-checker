@@ -170,7 +170,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         || hasOldReturnsReceiverAnnotation(tree);
   }
 
-  /** Continue to trust but not check the old */
+  /**
+   * Continue to trust but not check the old {@link
+   * org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver} annotation, for
+   * backwards-compatibility.
+   */
   private boolean hasOldReturnsReceiverAnnotation(MethodInvocationTree tree) {
     return this.getDeclAnnotation(TreeUtils.elementFromUse(tree), ReturnsReceiver.class) != null;
   }
