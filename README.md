@@ -137,8 +137,7 @@ This is helpful when type-checking fluent APIs.
 The fully-qualified names of the annotations are:\
 `org.checkerframework.checker.objectconstruction.qual.CalledMethods`\
 `org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate`\
-`org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethods`\
-`org.checkerframework.checker.returnsrcvr.qual.This`
+`org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethods`
 
 
 ### Type hierarchy (subtyping)
