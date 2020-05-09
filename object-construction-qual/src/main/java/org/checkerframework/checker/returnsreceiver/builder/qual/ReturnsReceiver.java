@@ -8,8 +8,7 @@ import java.lang.annotation.Target;
 
 /**
  * This declaration annotation indicates that the method on which it is written returns exactly the
- * receiver object.
- * should not be used in new code, because it is TRUSTED, NOT CHECKED.
+ * receiver object. should not be used in new code, because it is TRUSTED, NOT CHECKED.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
