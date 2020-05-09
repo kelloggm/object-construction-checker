@@ -1,7 +1,7 @@
 // This is a test for the old @ReturnsReceiver annotation, which is inherited.
 // No one should ever write that annotation, but Lombok generates it as of version 1.18.10.
 
-import org.checkerframework.checker.builder.qual.ReturnsReceiver;
+import org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.objectconstruction.qual.*;
 
 class OldInherited {

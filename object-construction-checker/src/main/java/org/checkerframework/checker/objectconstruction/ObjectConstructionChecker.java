@@ -19,9 +19,9 @@ import org.checkerframework.framework.source.SuppressWarningsKeys;
  */
 @SuppressWarningsKeys({"builder", "object.construction", "objectconstruction"})
 @SupportedOptions({
-        ObjectConstructionChecker.USE_VALUE_CHECKER,
-        ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
-        ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
+  ObjectConstructionChecker.USE_VALUE_CHECKER,
+  ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
+  ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
 })
 public class ObjectConstructionChecker extends BaseTypeChecker {
 

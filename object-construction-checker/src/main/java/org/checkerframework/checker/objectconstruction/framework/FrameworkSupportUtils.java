@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 import java.util.EnumSet;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
-
 import org.checkerframework.checker.objectconstruction.ObjectConstructionChecker;
 import org.checkerframework.javacutil.AnnotationUtils;
 
