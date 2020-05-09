@@ -29,6 +29,7 @@ import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop;
+import org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverAnnotatedTypeFactory;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
 import org.checkerframework.common.returnsreceiver.qual.This;
@@ -166,17 +167,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
     AnnotatedTypeMirror rrType =
         ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
-    return (rrType != null && rrType.hasAnnotation(This.class));
+    return (rrType != null && rrType.hasAnnotation(This.class))|| hasOldReturnsReceiverAnnotation(tree);
   }
 
-//  /**
-//   * Continue to trust but not check the old {@link
-//   * org.checkerframework.checker.builder.qual.ReturnsReceiver} annotation, for
-//   * backwards-compatibility.
-//   */
-//  private boolean hasOldReturnsReceiverAnnotation(MethodInvocationTree tree) {
-//    return this.getDeclAnnotation(TreeUtils.elementFromUse(tree), ReturnsReceiver.class) != null;
-//  }
+  /**
+   * Continue to trust but not check the old
+   */
+  private boolean hasOldReturnsReceiverAnnotation(MethodInvocationTree tree) {
+    return this.getDeclAnnotation(TreeUtils.elementFromUse(tree), ReturnsReceiver.class) != null;
+  }
 
   /**
    * Given a tree, returns the method that the tree should be considered as calling. Returns
