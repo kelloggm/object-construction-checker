@@ -10,3 +10,5 @@ build
 
 # Ignore the out directory created when running tests
 out
+
+.DS_Store
