@@ -85,6 +85,10 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     return result;
   }
 
+  /**
+   * Adds special reporting for method.invocation.invalid errors to turn them into
+   * finalizer.invocation.invalid errors.
+   */
   @Override
   public void reportError(Object source, @CompilerMessageKey String messageKey, Object... args) {
     String errKey = messageKey;
