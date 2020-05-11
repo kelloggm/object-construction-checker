@@ -3,7 +3,7 @@
 // classes with the same names.
 
 import org.checkerframework.checker.objectconstruction.qual.*;
-import org.checkerframework.checker.returnsrcvr.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
 
 class SpecialNames {
     @This SpecialNames withFilters() { return this; }

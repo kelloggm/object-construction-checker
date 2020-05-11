@@ -1,5 +1,5 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
-import org.checkerframework.checker.returnsrcvr.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
 
 import java.util.Arrays;
 import java.util.List;
