@@ -170,7 +170,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         || hasOldReturnsReceiverAnnotation(tree);
   }
 
-  // org.checkerframework.checker.builder.qual.ReturnsReceiver
   /**
    * Continue to trust but not check the old {@link
    * org.checkerframework.checker.builder.qual.ReturnsReceiver} annotation, for
