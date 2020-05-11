@@ -19,6 +19,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
@@ -28,7 +29,6 @@ import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop;
-import org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverAnnotatedTypeFactory;
@@ -170,9 +170,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         || hasOldReturnsReceiverAnnotation(tree);
   }
 
+  // org.checkerframework.checker.builder.qual.ReturnsReceiver
   /**
    * Continue to trust but not check the old {@link
-   * org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver} annotation, for
+   * org.checkerframework.checker.builder.qual.ReturnsReceiver} annotation, for
    * backwards-compatibility.
    */
   private boolean hasOldReturnsReceiverAnnotation(MethodInvocationTree tree) {

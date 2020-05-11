@@ -74,33 +74,33 @@ class CheckerFrameworkBuilder {
         @java.lang.SuppressWarnings("all")
         CheckerFrameworkBuilderBuilder() {
         }
-        @org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver
+        @org.checkerframework.checker.builder.qual.ReturnsReceiver
         @java.lang.SuppressWarnings("all")
         public CheckerFrameworkBuilder.CheckerFrameworkBuilderBuilder x(CheckerFrameworkBuilder.@org.checkerframework.checker.builder.qual.NotCalledMethods("x") CheckerFrameworkBuilderBuilder this, final int x) {
             this.x$value = x;
             x$set = true;
             return this;
         }
-        @org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver
+        @org.checkerframework.checker.builder.qual.ReturnsReceiver
         @java.lang.SuppressWarnings("all")
         public CheckerFrameworkBuilder.CheckerFrameworkBuilderBuilder y(CheckerFrameworkBuilder.@org.checkerframework.checker.builder.qual.NotCalledMethods("y") CheckerFrameworkBuilderBuilder this, final int y) {
             this.y = y;
             return this;
         }
-        @org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver
+        @org.checkerframework.checker.builder.qual.ReturnsReceiver
         @java.lang.SuppressWarnings("all")
         public CheckerFrameworkBuilder.CheckerFrameworkBuilderBuilder z(CheckerFrameworkBuilder.@org.checkerframework.checker.builder.qual.NotCalledMethods("z") CheckerFrameworkBuilderBuilder this, final int z) {
             this.z = z;
             return this;
         }
-        @org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver
+        @org.checkerframework.checker.builder.qual.ReturnsReceiver
         @java.lang.SuppressWarnings("all")
         public CheckerFrameworkBuilder.CheckerFrameworkBuilderBuilder name(final String name) {
             if (this.names == null) this.names = new java.util.ArrayList<String>();
             this.names.add(name);
             return this;
         }
-        @org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver
+        @org.checkerframework.checker.builder.qual.ReturnsReceiver
         @java.lang.SuppressWarnings("all")
         public CheckerFrameworkBuilder.CheckerFrameworkBuilderBuilder names(final java.util.Collection<? extends String> names) {
             if (names == null) {
@@ -110,7 +110,7 @@ class CheckerFrameworkBuilder {
             this.names.addAll(names);
             return this;
         }
-        @org.checkerframework.checker.returnsreceiver.builder.qual.ReturnsReceiver
+        @org.checkerframework.checker.builder.qual.ReturnsReceiver
         @java.lang.SuppressWarnings("all")
         public CheckerFrameworkBuilder.CheckerFrameworkBuilderBuilder clearNames() {
             if (this.names != null) this.names.clear();

@@ -116,9 +116,7 @@ public class LombokSupport implements FrameworkSupport {
     List<String> requiredProperties = getLombokRequiredProperties(classElement);
     AnnotationMirror calledMethodsAnno =
         atypeFactory.createCalledMethods(requiredProperties.toArray(new String[0]));
-    if (!type.isAnnotatedInHierarchy(calledMethodsAnno)) {
-      type.addAnnotation(calledMethodsAnno);
-    }
+    type.replaceAnnotation(calledMethodsAnno);
   }
 
   /**
