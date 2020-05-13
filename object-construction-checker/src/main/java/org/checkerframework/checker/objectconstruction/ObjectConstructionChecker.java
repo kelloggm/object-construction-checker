@@ -1,11 +1,7 @@
 package org.checkerframework.checker.objectconstruction;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Properties;
-import java.util.Set;
-import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
 import org.checkerframework.common.value.ValueChecker;
@@ -48,70 +44,6 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
       checkers.add(ValueChecker.class);
     }
     return checkers;
-  }
-
-  /**
-   * Parses the String representation of an @CalledMethods annotation into a Set containing all of
-   * the actual arguments to the annotation.
-   *
-   * <p>Also parses @CalledMethodsTop into the empty set.
-   */
-  private Set<String> parseCalledMethods(String calledMethodsString) {
-    if (calledMethodsString.contains("@CalledMethodsTop")) {
-      return Collections.emptySet();
-    }
-
-    String withoutCMAnno = calledMethodsString.trim().substring("@CalledMethods(".length());
-    String withoutBaseType = withoutCMAnno.substring(0, withoutCMAnno.lastIndexOf(' '));
-    String withoutLastParen = withoutBaseType.substring(0, withoutBaseType.length() - 1);
-    String withoutBraces;
-    if (withoutLastParen.startsWith("{")) {
-      withoutBraces = withoutLastParen.substring(1, withoutLastParen.length() - 1);
-    } else {
-      withoutBraces = withoutLastParen;
-    }
-
-    String[] withQuotes = withoutBraces.split(", ");
-    Set<String> result = new HashSet<>();
-    for (String s : withQuotes) {
-      if (s.startsWith("\"")) {
-        s = s.substring(1);
-      }
-      if (s.endsWith("\"")) {
-        s = s.substring(0, s.length() - 1);
-      }
-      result.add(s);
-    }
-    return result;
-  }
-
-  /**
-   * Adds special reporting for method.invocation.invalid errors to turn them into
-   * finalizer.invocation.invalid errors.
-   */
-  @Override
-  public void reportError(Object source, @CompilerMessageKey String messageKey, Object... args) {
-    String errKey = messageKey;
-    if ("method.invocation.invalid".equals(errKey)) {
-      String actualReceiverAnnoString = (String) args[1];
-      String requiredReceiverAnnoString = (String) args[2];
-      if (actualReceiverAnnoString.contains("@CalledMethods(")
-          || actualReceiverAnnoString.contains("@CalledMethodsTop")) {
-        Set<String> actualCalledMethods = parseCalledMethods(actualReceiverAnnoString);
-        if (requiredReceiverAnnoString.contains("@CalledMethods(")) {
-          Set<String> requiredCalledMethods = parseCalledMethods(requiredReceiverAnnoString);
-          requiredCalledMethods.removeAll(actualCalledMethods);
-          StringBuilder missingMethods = new StringBuilder();
-          for (String s : requiredCalledMethods) {
-            missingMethods.append(s);
-            missingMethods.append("() ");
-          }
-          messageKey = "finalizer.invocation.invalid";
-          args = new String[] {missingMethods.toString()};
-        }
-      }
-    }
-    super.reportError(source, messageKey, args);
   }
 
   /**
