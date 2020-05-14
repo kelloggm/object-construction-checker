@@ -40,7 +40,7 @@ If your project uses Lombok, also see the further Lombok-specific instructions b
   ```groovy
   plugins {
       ...
-      id "org.checkerframework" version "0.4.0"
+      id "org.checkerframework" version "0.5.1"
   }
   ```
 
