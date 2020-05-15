@@ -84,7 +84,8 @@ public class ObjectConstructionVisitor
 
   @Override
   public Void visitMethod(MethodTree node, Void o) {
-    
+
+    TreePath path = this.getCurrentPath();
     if (methodVariables.get(node) == null) {
       methodVariables.put(node, new ArrayList<>());
     }
@@ -106,11 +107,12 @@ public class ObjectConstructionVisitor
 
       }
     }
-    //    if(node!=null){
-    //      LocalVariablesVisitor localvarvisitor = new LocalVariablesVisitor();
-    ////    localvarvisitor.setRoot(node);
-    ////      node.accept(localvarvisitor, o);
-    //    }
+
+//          LocalVariablesVisitor localvarvisitor = new LocalVariablesVisitor();
+//        localvarvisitor.setRoot(node);
+    //      node.accept(localvarvisitor, o);
+
+
     //    exitStore.get
     //
     // ((CFStore)((AbstractMap.SimpleEntry)atypeFactory.regularExitStores.entrySet().toArray()[2]).getValue()).localVariableValues
@@ -220,6 +222,7 @@ public class ObjectConstructionVisitor
     if (!exist) {
       checker.report(
           Result.failure(
+                  "missing.alwayscall",
               "Method "
                   + allwaysCallAnooValue
                   + "() has not been called on local variable "

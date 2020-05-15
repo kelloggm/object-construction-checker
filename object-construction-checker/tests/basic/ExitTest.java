@@ -18,7 +18,7 @@ class ExitTest {
         return new Foo();
     }
 
-    Foo makeFoo2(){
+    @CalledMethods({"a"}) Foo makeFoo2(){
         Foo f =  new Foo();
         f.a();
         return f;
@@ -44,8 +44,21 @@ class ExitTest {
     }
 
     void test1() {
-        Foo foo = makeFoo2();  // won't pass yet
+        Foo foo = makeFoo2();
     }
+
+    void test2(Foo f){
+        Runnable r = new Runnable(){
+            void run(){
+                Foo f;
+            }
+        };
+    }
+
+    void test3(Foo f){
+
+    }
+
 
 
 //    Foo testField;
