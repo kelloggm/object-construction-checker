@@ -6,7 +6,7 @@ public class Issue20<E> {
 
     private boolean enableProtoAnnotations;
 
-    @SuppressWarnings({"unchecked", "returnsrcvr"})
+    @SuppressWarnings({"unchecked"})
     private <T, O extends Message, E extends ProtoElement> T getProtoExtension(
             E element, GeneratedExtension<O, T> extension) {
         // Use this method as the chokepoint for all field annotations processing, so we can

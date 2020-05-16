@@ -14,14 +14,21 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+
+import java.util.HashSet;
+
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
+import javax.tools.Diagnostic;
+
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -30,6 +37,9 @@ import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.source.Result;
+
+import org.checkerframework.common.value.ValueCheckerUtils;
+import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -56,7 +66,8 @@ public class ObjectConstructionVisitor
       try {
         new CalledMethodsPredicateEvaluator(Collections.emptyList()).evaluate(predicate);
       } catch (SpelParseException e) {
-        checker.report(Result.failure("predicate.invalid", e.getMessage()), node);
+        checker.report(
+            node, new DiagMessage(Diagnostic.Kind.ERROR, "predicate.invalid", e.getMessage()));
         return null;
       }
     }
@@ -107,7 +118,6 @@ public class ObjectConstructionVisitor
 
       }
     }
-
 //          LocalVariablesVisitor localvarvisitor = new LocalVariablesVisitor();
 //        localvarvisitor.setRoot(node);
     //      node.accept(localvarvisitor, o);
@@ -125,21 +135,45 @@ public class ObjectConstructionVisitor
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
 
     if (!isAssignedToLocal(this.getCurrentPath())) {
-      ExecutableElement element = TreeUtils.elementFromUse(node);
-      TypeMirror returnType = element.getReturnType();
+      ExecutableElement exeElement = TreeUtils.elementFromUse(node);
+      TypeMirror returnType = exeElement.getReturnType();
       TypeElement eType = TypesUtils.getTypeElement(returnType);
 
       if (hasAlwaysCall(eType)) {
         AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
         String alwaysCallAnnoVal =
-            AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
+                AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
         List<String> currentCalledMethods = getCalledMethodAnnotation(node);
 
         if (!currentCalledMethods.contains(alwaysCallAnnoVal)) {
           checker.report(
-              Result.failure(
-                  "calledMethod doesn't contain alwaysCall obligations", element.getSimpleName()),
-              node);
+                  Result.failure(
+                          "calledMethod doesn't contain alwaysCall obligations", exeElement.getSimpleName()),
+                  node);
+
+          AnnotationMirror calledMethodAnno = null;
+          for (AnnotationMirror annotationMirror : returnType.getAnnotationMirrors()) {
+            if (AnnotationUtils.areSameByClass(annotationMirror, CalledMethods.class)) {
+              calledMethodAnno = annotationMirror;
+              break;
+            }
+          }
+          if (calledMethodAnno != null) {
+            List<String> calledMethodAnnoVal =
+                    AnnotationUtils.getElementValueArray(calledMethodAnno, "value", String.class, false);
+            if (!calledMethodAnnoVal.contains(alwaysCallAnnoVal)) {
+              //TODO
+//            checker.report(
+//                Result.failure(
+//                    "calledMethod doesn't contain alwaysCall obligations", element.getSimpleName()),
+//                node);
+            }
+          } else {
+            //TODO
+//          checker.report(
+//              Result.failure("calledMethod doesn't exists", element.getSimpleName()), node);
+
+          }
         }
       }
     }
@@ -155,6 +189,7 @@ public class ObjectConstructionVisitor
     }
     return super.visitMethodInvocation(node, p);
   }
+
 
   public List<String> getCalledMethodAnnotation(MethodInvocationTree node) {
     AnnotationMirror calledMethodAnno;
@@ -200,13 +235,13 @@ public class ObjectConstructionVisitor
   }
 
   public boolean hasAlwaysCall(TypeElement type) {
-
     if (type != null && atypeFactory.getDeclAnnotation(type, AlwaysCall.class) != null) {
       return true;
     } else {
       return false;
     }
   }
+
 
   public void alwaysCallCheckAtRegularExitPoint(List<String> annoValues, Element element) {
     boolean exist = false;
@@ -220,15 +255,16 @@ public class ObjectConstructionVisitor
     }
 
     if (!exist) {
-      checker.report(
-          Result.failure(
-                  "missing.alwayscall",
-              "Method "
-                  + allwaysCallAnooValue
-                  + "() has not been called on local variable "
-                  + element.getSimpleName(),
-              element.getSimpleName()),
-          element);
+      //TODO
+//      checker.report(
+//          Result.failure(
+//                  "missing.alwayscall",
+//              "Method "
+//                  + allwaysCallAnooValue
+//                  + "() has not been called on local variable "
+//                  + element.getSimpleName(),
+//              element.getSimpleName()),
+//          element);
     }
   }
 
@@ -286,5 +322,37 @@ public class ObjectConstructionVisitor
   //        }
   //      }
   //    }
+
+
+  /**
+   * Adds special reporting for method.invocation.invalid errors to turn them into
+   * finalizer.invocation.invalid errors.
+   */
+  @Override
+  protected void reportMethodInvocabilityError(
+      MethodInvocationTree node, AnnotatedTypeMirror found, AnnotatedTypeMirror expected) {
+
+    AnnotationMirror expectedCM = expected.getAnnotation(CalledMethods.class);
+    if (expectedCM != null) {
+      AnnotationMirror foundCM = found.getAnnotation(CalledMethods.class);
+      Set<String> foundMethods =
+          foundCM == null
+              ? Collections.emptySet()
+              : new HashSet<>(ValueCheckerUtils.getValueOfAnnotationWithStringArgument(foundCM));
+      List<String> expectedMethods =
+          ValueCheckerUtils.getValueOfAnnotationWithStringArgument(expectedCM);
+      StringBuilder missingMethods = new StringBuilder();
+      for (String expectedMethod : expectedMethods) {
+        if (!foundMethods.contains(expectedMethod)) {
+          missingMethods.append(expectedMethod);
+          missingMethods.append("() ");
+        }
+      }
+
+      checker.reportError(node, "finalizer.invocation.invalid", missingMethods.toString());
+    } else {
+      super.reportMethodInvocabilityError(node, found, expected);
+    }
+  }
 
 }

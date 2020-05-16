@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * of that method.
  *
  * <p>This annotation has been replaced by {@link
- * org.checkerframework.checker.returnsrcvr.qual.This}. It is retained only for
+ * org.checkerframework.common.returnsreceiver.qual.This}. It is retained only for
  * backwards-compatibility, including with Lombok's checkerframework = true lombok.config flag. It
  * should not be used in new code, because it is TRUSTED, NOT CHECKED.
  */

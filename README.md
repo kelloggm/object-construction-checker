@@ -40,7 +40,7 @@ If your project uses Lombok, also see the further Lombok-specific instructions b
   ```groovy
   plugins {
       ...
-      id "org.checkerframework" version "0.4.0"
+      id "org.checkerframework" version "0.5.1"
   }
   ```
 
@@ -60,8 +60,8 @@ If your project has subprojects or you need other customizations, see the docume
       extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
   }
   dependencies {
-      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.8'
-      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.8'
+      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.9'
+      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.9'
   }
   ```
 
@@ -137,8 +137,7 @@ This is helpful when type-checking fluent APIs.
 The fully-qualified names of the annotations are:\
 `org.checkerframework.checker.objectconstruction.qual.CalledMethods`\
 `org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate`\
-`org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethods`\
-`org.checkerframework.checker.returnsrcvr.qual.This`
+`org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethods`
 
 
 ### Type hierarchy (subtyping)

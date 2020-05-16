@@ -20,16 +20,15 @@ configurations {
 dependencies {
 
     implementation "org.checkerframework:checker:${versions.checkerFramework}"
-    implementation "com.google.guava:guava:28.2-jre"
+    implementation "com.google.guava:guava:29.0-jre"
     compileOnly "com.google.errorprone:javac:9+181-r4173-1"
 
     // If / when other code depends on this checker, we will likely want to make these
     // api dependencies
     implementation project(":object-construction-qual")
-    implementation project(":returnsrcvr-checker")
 
     // For the @CalledMethodsPredicate evaluation
-    implementation "org.springframework:spring-expression:5.2.5.RELEASE"
+    implementation "org.springframework:spring-expression:5.2.6.RELEASE"
 
     // Use JUnit test framework
     testImplementation "junit:junit:4.13"
@@ -58,7 +57,7 @@ dependencies {
 
 dependencyManagement {
     imports {
-        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.761"
+        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.779"
     }
 }
 
