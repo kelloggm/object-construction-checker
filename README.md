@@ -27,7 +27,7 @@ the builder.
 You must use either Maven or Gradle as your build system.
 
 For Gradle, you must use version 4.6 or later.
-Using 4.5 or later will result in an error `Could not find method
+Using 4.5 or earlier will result in an error `Could not find method
 annotationProcessor() ...`.
 
 
