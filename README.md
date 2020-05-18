@@ -24,7 +24,11 @@ the builder.
 
 ## Requirements
 
-You must use either Maven or Gradle as your build system.
+You can use any build system supported by the 
+[Checker Framework](https://checkerframework.org/manual/#external-tools).
+The following example uses Gradle, which is the recommended build system.
+If you are checking code that uses Lombok, there are [additional requirements](#for-lombok-users).
+Lombok support is only maintained for Gradle projects.
 
 For Gradle, you must use version 4.6 or later.
 Using 4.5 or earlier will result in an error `Could not find method
@@ -32,8 +36,6 @@ annotationProcessor() ...`.
 
 
 ## Using the checker
-
-If your project uses Lombok, also see the further Lombok-specific instructions below.
 
 1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file:
 
@@ -76,6 +78,9 @@ If either of these are not done, the checker will not issue any errors on Lombok
 * sets Lombok configuration option `lombok.addLombokGeneratedAnnotation = true`
 * delomboks the code before passing it to the checker
 
+If you use Lombok with another build system, you must configure it to do these tasks before
+running the Object Construction Checker.
+
 ## Specifying your code
 
 The Object Construction Checker works as follows:
@@ -111,7 +116,7 @@ Then the receiver for any call to `build()` must have had `setX` and `setY` call
 </dd>
 
 <dt><code>@CalledMethodsPredicate(<em>logical-expression</em>)</code></dt>
-<dd>specifies the required method calls using [Java boolean syntax](https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html).
+<dd>specifies the required method calls using <a href="https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html">Java boolean syntax</a>.
 
 For example, the annotation `@CalledMethodsPredicate("x && y || z")` on a type represents
 objects such that:
@@ -121,7 +126,7 @@ objects such that:
 
 <dt><code>@EnsureCalledMethods(<em>expression, method-list</em>)</code></dt>
 <dd>specifies a post-condition on a method, indicating the methods it guarantees to be called on some
-input expression.  The expression is specified [as documented in the Checker Framework manual](https://checkerframework.org/manual/#java-expressions-as-arguments).
+input expression.  The expression is specified <a href="https://checkerframework.org/manual/#java-expressions-as-arguments">as documented in the Checker Framework manual</a>.
 
 
 For example, the annotation `@EnsuresCalledMethods(value = "#1", methods = {"x","y"})` on a method
@@ -130,7 +135,8 @@ For example, the annotation `@EnsuresCalledMethods(value = "#1", methods = {"x",
 
 <dt><code>@This</code></dt>
 <dd>may only be written on a method return type, and means that the method returns its receiver.
-This is helpful when type-checking fluent APIs.
+This is helpful when type-checking fluent APIs. This annotation is documented in the 
+<a href="https://checkerframework.org/manual/#returns-receiver-checker">Checker Framework manual</a>.
 </dd>
 </dl>
 
