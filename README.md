@@ -26,7 +26,7 @@ the builder.
 
 You can use any build system supported by the 
 [Checker Framework](https://checkerframework.org/manual/#external-tools).
-The following example uses Gradle, which is the recommended build system.
+
 If you are checking code that uses Lombok, there are [additional requirements](#for-lombok-users).
 Lombok support is only maintained for Gradle projects.
 
@@ -37,35 +37,35 @@ annotationProcessor() ...`.
 
 ## Using the checker
 
+The following example uses Gradle.
+
 1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file:
 
-  ```groovy
-  plugins {
-      ...
-      id "org.checkerframework" version "0.5.1"
-  }
-  ```
-
-Note that the Gradle plugin is updated frequently.  We recommend you use the latest version shown [here](https://plugins.gradle.org/plugin/org.checkerframework).
+    ```groovy
+    plugins {
+	...
+	id "org.checkerframework" version "0.5.1"
+    }
+    ```
 
 2. For a vanilla Gradle project, add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present).
 If your project has subprojects or you need other customizations, see the documentation for the
 [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) plugin.
 
-  ```groovy
-  repositories {
-      mavenCentral()
-  }
-  checkerFramework {
-      skipVersionCheck = true
-      checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
-      extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
-  }
-  dependencies {
-      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.9'
-      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.9'
-  }
-  ```
+    ```groovy
+    repositories {
+	mavenCentral()
+    }
+    checkerFramework {
+	skipVersionCheck = true
+	checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
+	extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
+    }
+    dependencies {
+	checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.9'
+	implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.9'
+    }
+    ```
 
 3. Build your project normally, such as by running `./gradlew build`.  The checker will report an error if any required properties have not been set.
 
