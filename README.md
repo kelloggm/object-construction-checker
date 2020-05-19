@@ -234,8 +234,8 @@ Minor notes/caveats on these rules:
 Lombok will set them to empty collections if the appropriate setter is not called.
 * If you manually provide defaults to a Lombok builder (for example, by defining the builder yourself
 and assigning a default value to the builder's field), the checker will treat that field as defaulted
-*most of the time*. In particular, it will not treat it as defaulted across module boundaries (because
-the checker needs access to the source code to determine that the defaulting is occurring).
+*most of the time*. In particular, it will not treat it as defaulted if it is defined in bytecode rather
+than in source code.
 
 ## More information
 
