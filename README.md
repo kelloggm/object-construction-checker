@@ -57,7 +57,6 @@ If your project has subprojects or you need other customizations, see the docume
         mavenCentral()
     }
     checkerFramework {
-        skipVersionCheck = true
         checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
         extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
     }
