@@ -1,5 +1,4 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
-import org.checkerframework.checker.returnsrcvr.qual.*;
 
 
 class ExitTest {
@@ -7,7 +6,7 @@ class ExitTest {
     @AlwaysCall("a")
     class Foo {
         void a() {}
-        @This Foo b() {
+        Foo b() {
             return this;
         }
         void c() {}
@@ -31,29 +30,32 @@ class ExitTest {
     }
 
     void makeFooFinilize2(){
-        Foo m;  // report an error
+        // :: error: missing.alwayscall
+        Foo m;
         m = new Foo();
-        Foo f = new Foo();  // report an error
+        // :: error: missing.alwayscall
+        Foo f = new Foo();
         String s = "name";
         f.b();
 
     }
 
     void testStoringInLocal() {
-        Foo foo = makeFoo();  // report an error
+        // :: error: missing.alwayscall
+        Foo foo = makeFoo();
     }
 
     void test1() {
         Foo foo = makeFoo2();
     }
 
-    void test2(Foo f){
-        Runnable r = new Runnable(){
-            void run(){
-                Foo f;
-            }
-        };
-    }
+//    void test2(Foo f){
+//        Runnable r = new Runnable(){
+//            void run(){
+//                Foo f;
+//            }
+//        };
+//    }
 
     void test3(Foo f){
 

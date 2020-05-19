@@ -12,12 +12,9 @@ import com.sun.source.util.TreePath;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
-
-import java.util.HashSet;
-
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -25,20 +22,17 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.analysis.Store;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
-import org.checkerframework.framework.source.Result;
-
-import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -86,7 +80,7 @@ public class ObjectConstructionVisitor
       TypeElement eType = TypesUtils.getTypeElement(type);
       LocalVariableNode localVariableNode = new LocalVariableNode(node);
 
-      if (hasAlwaysCall(eType) && methodVariables.get(enclosingTree)!=null) {
+      if (hasAlwaysCall(eType) && methodVariables.get(enclosingTree) != null) {
         methodVariables.get(enclosingTree).add(localVariableNode);
       }
     }
@@ -115,13 +109,11 @@ public class ObjectConstructionVisitor
           List<String> annoValues = getValueOfAnnotationWithStringArgument(annoMirror);
           alwaysCallCheckAtRegularExitPoint(annoValues, element);
         }
-
       }
     }
-//          LocalVariablesVisitor localvarvisitor = new LocalVariablesVisitor();
-//        localvarvisitor.setRoot(node);
+    //          LocalVariablesVisitor localvarvisitor = new LocalVariablesVisitor();
+    //        localvarvisitor.setRoot(node);
     //      node.accept(localvarvisitor, o);
-
 
     //    exitStore.get
     //
@@ -142,38 +134,12 @@ public class ObjectConstructionVisitor
       if (hasAlwaysCall(eType)) {
         AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
         String alwaysCallAnnoVal =
-                AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
+            AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
         List<String> currentCalledMethods = getCalledMethodAnnotation(node);
 
         if (!currentCalledMethods.contains(alwaysCallAnnoVal)) {
-          checker.report(
-                  Result.failure(
-                          "calledMethod doesn't contain alwaysCall obligations", exeElement.getSimpleName()),
-                  node);
-
-          AnnotationMirror calledMethodAnno = null;
-          for (AnnotationMirror annotationMirror : returnType.getAnnotationMirrors()) {
-            if (AnnotationUtils.areSameByClass(annotationMirror, CalledMethods.class)) {
-              calledMethodAnno = annotationMirror;
-              break;
-            }
-          }
-          if (calledMethodAnno != null) {
-            List<String> calledMethodAnnoVal =
-                    AnnotationUtils.getElementValueArray(calledMethodAnno, "value", String.class, false);
-            if (!calledMethodAnnoVal.contains(alwaysCallAnnoVal)) {
-              //TODO
-//            checker.report(
-//                Result.failure(
-//                    "calledMethod doesn't contain alwaysCall obligations", element.getSimpleName()),
-//                node);
-            }
-          } else {
-            //TODO
-//          checker.report(
-//              Result.failure("calledMethod doesn't exists", element.getSimpleName()), node);
-
-          }
+          String error = " " + alwaysCallAnnoVal + " has not been called";
+          checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", error));
         }
       }
     }
@@ -189,7 +155,6 @@ public class ObjectConstructionVisitor
     }
     return super.visitMethodInvocation(node, p);
   }
-
 
   public List<String> getCalledMethodAnnotation(MethodInvocationTree node) {
     AnnotationMirror calledMethodAnno;
@@ -242,7 +207,6 @@ public class ObjectConstructionVisitor
     }
   }
 
-
   public void alwaysCallCheckAtRegularExitPoint(List<String> annoValues, Element element) {
     boolean exist = false;
     String allwaysCallAnooValue = getAlwaysCallValue(element);
@@ -255,25 +219,17 @@ public class ObjectConstructionVisitor
     }
 
     if (!exist) {
-      //TODO
-//      checker.report(
-//          Result.failure(
-//                  "missing.alwayscall",
-//              "Method "
-//                  + allwaysCallAnooValue
-//                  + "() has not been called on local variable "
-//                  + element.getSimpleName(),
-//              element.getSimpleName()),
-//          element);
+      String error = " " + allwaysCallAnooValue + " has not been called";
+      checker.report(element, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", error));
     }
   }
 
-  public String getAlwaysCallValue(Element element){
+  public String getAlwaysCallValue(Element element) {
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
     AnnotationMirror allwaysCallAnoo = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
     String allwaysCallAnooValue =
-            AnnotationUtils.getElementValue(allwaysCallAnoo, "value", String.class, false);
+        AnnotationUtils.getElementValue(allwaysCallAnoo, "value", String.class, false);
     return allwaysCallAnooValue;
   }
 
@@ -323,7 +279,6 @@ public class ObjectConstructionVisitor
   //      }
   //    }
 
-
   /**
    * Adds special reporting for method.invocation.invalid errors to turn them into
    * finalizer.invocation.invalid errors.
@@ -354,5 +309,7 @@ public class ObjectConstructionVisitor
       super.reportMethodInvocabilityError(node, found, expected);
     }
   }
+
+
 
 }

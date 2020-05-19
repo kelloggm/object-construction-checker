@@ -1,5 +1,4 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
-import org.checkerframework.checker.returnsrcvr.qual.*;
 
 /* The simplest inference test case Martin could think of */
 
@@ -8,7 +7,7 @@ class AlwaysCallTest {
     @AlwaysCall("a")
     class Foo {
         void a() {}
-        @This Foo b() {
+        Foo b() {
             return this;
         }
         void c() {}
@@ -27,6 +26,7 @@ class AlwaysCallTest {
     }
 
     @CalledMethods({"b"}) Foo makeFooFinilize2(){
+        // :: error: missing.alwayscall
         Foo f = new Foo();
         // won't pass yet as we don't yet handle it
         f.b();
@@ -42,20 +42,24 @@ class AlwaysCallTest {
 
     void test1() {
         // won't pass yet due to dataflow issue
+        // :: error: missing.alwayscall
         makeFoo().a();
     }
 
     void test2() {
         // won't pass yet due to dataflow issue
+        // :: error: missing.alwayscall
         makeFoo().b().a();
     }
 
     void test3() {
-        makeFoo().b(); // it reports an error
+        // :: error: missing.alwayscall
+        makeFoo().b();
     }
 
     void test4() {
-        makeFoo();   // it reports an error
+        // :: error: missing.alwayscall
+        makeFoo();
     }
 
     void test5() {
@@ -64,15 +68,17 @@ class AlwaysCallTest {
 
 
     void test6() {
-        makeFooFinilize2();   // it reports an error
+        // :: error: missing.alwayscall
+        makeFooFinilize2();
     }
 
     void test7() {
+        // :: error: missing.alwayscall
         makeFoo().c();
     }
 
     void testStoringInLocal() {
-        // won't detect error until we check for variables going out of scope
+        // :: error: missing.alwayscall
         Foo foo = makeFoo();
     }
 
