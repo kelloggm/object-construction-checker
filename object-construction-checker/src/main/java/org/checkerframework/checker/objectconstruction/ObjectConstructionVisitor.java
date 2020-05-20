@@ -9,12 +9,11 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
+import com.sun.source.util.TreePathScanner;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -42,12 +41,10 @@ import org.springframework.expression.spel.SpelParseException;
 
 public class ObjectConstructionVisitor
     extends BaseTypeVisitor<ObjectConstructionAnnotatedTypeFactory> {
-  private Map<MethodTree, List<LocalVariableNode>> methodVariables;
 
   /** @param checker the type-checker associated with this visitor */
   public ObjectConstructionVisitor(final BaseTypeChecker checker) {
     super(checker);
-    methodVariables = new HashMap<>();
   }
 
   /** Checks each @CalledMethodsPredicate annotation to make sure the predicate is well-formed. */
@@ -69,58 +66,14 @@ public class ObjectConstructionVisitor
   }
 
   @Override
-  public Void visitVariable(VariableTree node, Void o) {
-    TreePath path = this.getCurrentPath();
-    Tree enclosingTree = TreeUtils.enclosingOfKind(path, Tree.Kind.METHOD);
-
-    if (enclosingTree != null && enclosingTree.getKind() == Tree.Kind.METHOD) {
-
-      Element element = TreeUtils.elementFromDeclaration(node);
-      TypeMirror type = element.asType();
-      TypeElement eType = TypesUtils.getTypeElement(type);
-      LocalVariableNode localVariableNode = new LocalVariableNode(node);
-
-      if (hasAlwaysCall(eType) && methodVariables.get(enclosingTree) != null) {
-        methodVariables.get(enclosingTree).add(localVariableNode);
-      }
-    }
-    return super.visitVariable(node, o);
-  }
-
-  @Override
   public Void visitMethod(MethodTree node, Void o) {
 
-    TreePath path = this.getCurrentPath();
-    if (methodVariables.get(node) == null) {
-      methodVariables.put(node, new ArrayList<>());
-    }
-    Void v = super.visitMethod(node, o);
+    LocalVariablesVisitor localVarVisitor = new LocalVariablesVisitor(node);
 
-    for (LocalVariableNode localVariableNode : methodVariables.get(node)) {
+    localVarVisitor.scan(this.getCurrentPath(), o);
+    localVarVisitor.checksForExitPoints();
 
-      Element element = localVariableNode.getElement();
-      Store regularExitStore = atypeFactory.getRegularExitStore(node);
-      CFValue cfValue = ((CFStore) regularExitStore).getValue(localVariableNode);
-
-      if (cfValue != null) {
-        Set<AnnotationMirror> annotationMirrors = cfValue.getAnnotations();
-
-        for (AnnotationMirror annoMirror : annotationMirrors) {
-          List<String> annoValues = getValueOfAnnotationWithStringArgument(annoMirror);
-          alwaysCallCheckAtRegularExitPoint(annoValues, element);
-        }
-      }
-    }
-    //          LocalVariablesVisitor localvarvisitor = new LocalVariablesVisitor();
-    //        localvarvisitor.setRoot(node);
-    //      node.accept(localvarvisitor, o);
-
-    //    exitStore.get
-    //
-    // ((CFStore)((AbstractMap.SimpleEntry)atypeFactory.regularExitStores.entrySet().toArray()[2]).getValue()).localVariableValues
-    //    LocalVariableNode lvn = ((CFStore)regularExitStore).getValue();
-
-    return v;
+    return super.visitMethod(node, o);
   }
 
   @Override
@@ -156,7 +109,7 @@ public class ObjectConstructionVisitor
     return super.visitMethodInvocation(node, p);
   }
 
-  public List<String> getCalledMethodAnnotation(MethodInvocationTree node) {
+  private List<String> getCalledMethodAnnotation(MethodInvocationTree node) {
     AnnotationMirror calledMethodAnno;
     AnnotatedTypeMirror currentType = getTypeFactory().getAnnotatedType(node);
 
@@ -166,11 +119,10 @@ public class ObjectConstructionVisitor
       calledMethodAnno = currentType.getAnnotationInHierarchy(atypeFactory.TOP);
     }
 
-    List<String> currentCalledMethods = getValueOfAnnotationWithStringArgument(calledMethodAnno);
-    return currentCalledMethods;
+    return getValueOfAnnotationWithStringArgument(calledMethodAnno);
   }
 
-  public static boolean isAssignedToLocal(final TreePath treePath) {
+  private static boolean isAssignedToLocal(final TreePath treePath) {
     TreePath parentPath = treePath.getParentPath();
 
     if (parentPath == null) {
@@ -199,85 +151,26 @@ public class ObjectConstructionVisitor
     }
   }
 
-  public boolean hasAlwaysCall(TypeElement type) {
-    if (type != null && atypeFactory.getDeclAnnotation(type, AlwaysCall.class) != null) {
-      return true;
-    } else {
+  private boolean hasAlwaysCall(TypeElement type) {
+    if (type == null) {
       return false;
+    } else {
+      return (atypeFactory.getDeclAnnotation(type, AlwaysCall.class) != null);
     }
   }
 
-  public void alwaysCallCheckAtRegularExitPoint(List<String> annoValues, Element element) {
-    boolean exist = false;
-    String allwaysCallAnooValue = getAlwaysCallValue(element);
+  private String getAlwaysCallValue(Element element) {
 
-    for (String annoValue : annoValues) {
-      if (annoValue.equals(allwaysCallAnooValue)) {
-        exist = true;
-        break;
-      }
-    }
-
-    if (!exist) {
-      String error = " " + allwaysCallAnooValue + " has not been called";
-      checker.report(element, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", error));
-    }
-  }
-
-  public String getAlwaysCallValue(Element element) {
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
-    AnnotationMirror allwaysCallAnoo = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
-    String allwaysCallAnooValue =
-        AnnotationUtils.getElementValue(allwaysCallAnoo, "value", String.class, false);
-    return allwaysCallAnooValue;
-  }
+    AnnotationMirror alwaysCallAnnotation = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
 
-  //    private class LocalVariablesVisitor extends TreePathScanner {
-  //
-  //    List<Element> methodVariables= new ArrayList<>();
-  //
-  //      public LocalVariablesVisitor(){
-  //
-  //
-  //      }
-  //
-  //      @Override
-  //      public Object visitVariable(VariableTree node, Object o) {
-  //        TreePath path = this.getCurrentPath();
-  //        Tree enclosingTree = TreeUtils.enclosingOfKind(path, Tree.Kind.METHOD);
-  //
-  //        if (enclosingTree != null && enclosingTree.getKind() == Tree.Kind.METHOD) {
-  //          Element element = TreeUtils.elementFromDeclaration(node);
-  //          TypeMirror type = element.asType();
-  //
-  //          TypeElement eType = TypesUtils.getTypeElement(type);
-  //
-  //          if (hasAlwaysCall(eType)) {
-  //            methodVariables.add(element);
-  //          }
-  //        }
-  //        return super.visitVariable(node, o);
-  //      }
-  //
-  //      public void addVariable(MethodTree methodtree, VariableTree variableTree){
-  //
-  //      }
-  //
-  //
-  //
-  //      public void getAllVariable(){
-  //
-  //      }
-  //
-  //      public boolean hasAlwaysCall(TypeElement type) {
-  //        if (type != null && atypeFactory.getDeclAnnotation(type, AlwaysCall.class) != null) {
-  //          return true;
-  //        } else {
-  //          return false;
-  //        }
-  //      }
-  //    }
+    if (alwaysCallAnnotation != null) {
+      return AnnotationUtils.getElementValue(alwaysCallAnnotation, "value", String.class, false);
+    } else {
+      return null;
+    }
+  }
 
   /**
    * Adds special reporting for method.invocation.invalid errors to turn them into
@@ -310,6 +203,109 @@ public class ObjectConstructionVisitor
     }
   }
 
+  /** This class is needed to visit all local variables of each method. */
+  private class LocalVariablesVisitor extends TreePathScanner {
 
+    // Keeps a list of all local variable nodes that have @AlwaysCall annotation
+    List<LocalVariableNode> methodVariablesList;
+    MethodTree node;
 
+    private LocalVariablesVisitor(MethodTree node) {
+      this.node = node;
+      methodVariablesList = new ArrayList<>();
+    }
+
+    /**
+     * Creates a local variable node and add it to the methodVariablesList, if the variable is not
+     * formal parameter and its type has alwaysCall annotation.
+     */
+    @Override
+    public Object visitVariable(VariableTree node, Object o) {
+
+      Element element = TreeUtils.elementFromDeclaration(node);
+      TypeMirror type = element.asType();
+      TypeElement eType = TypesUtils.getTypeElement(type);
+
+      if (hasAlwaysCall(eType) && !isFormalParameter(node)) {
+        LocalVariableNode localVariableNode = new LocalVariableNode(node);
+        methodVariablesList.add(localVariableNode);
+      }
+
+      return super.visitVariable(node, o);
+    }
+
+    /** Checks local variables at method exit points that can be regular or exceptional */
+    private void checksForExitPoints() {
+      checkStoreAtRegularExitPoint();
+      checkStoreAtExceptionalExitPoint();
+    }
+
+    /**
+     * Iterates over methodVariablesList and the finds abstract value of each local variable node at
+     * the regular exit point. Then, by passing local variable nodes and their abstract values to
+     * the reportAlwaysCallExitPointsErrors method, it checks if required functions are called on
+     * each local variable node or not.
+     */
+    private void checkStoreAtRegularExitPoint() {
+      Store regularExitStore = atypeFactory.getRegularExitStore(node);
+
+      for (LocalVariableNode localVariableNode : methodVariablesList) {
+
+        if (regularExitStore != null) {
+          CFValue cfValue = ((CFStore) regularExitStore).getValue(localVariableNode);
+          reportAlwaysCallExitPointsErrors(localVariableNode, cfValue);
+        }
+      }
+    }
+
+    private void checkStoreAtExceptionalExitPoint() {
+      Store exceptionalExitStore = atypeFactory.getExceptionalExitStore(node);
+
+      for (LocalVariableNode localVariableNode : methodVariablesList) {
+
+        if (exceptionalExitStore != null) {
+          CFValue cfValue = ((CFStore) exceptionalExitStore).getValue(localVariableNode);
+          reportAlwaysCallExitPointsErrors(localVariableNode, cfValue);
+        }
+      }
+    }
+
+    /**
+     * Given a local variable node and its abstract value at exit points, reports an error if
+     * required functions are called before the exit points.
+     *
+     * @param localVariableNode a local variable node that has @AlwaysCall annotation on its type
+     * @param cfValue the abstract value of the localVariableNode at exit points
+     */
+    private void reportAlwaysCallExitPointsErrors(
+        LocalVariableNode localVariableNode, CFValue cfValue) {
+      Element element = localVariableNode.getElement();
+      String alwaysCallValue = getAlwaysCallValue(element);
+
+      // cfValue is null when a method returns the local variable at exit point
+      if (cfValue != null) {
+        Set<AnnotationMirror> annotationMirrors = cfValue.getAnnotations();
+
+        for (AnnotationMirror annotationMirror : annotationMirrors) {
+          List<String> annotationValues = getValueOfAnnotationWithStringArgument(annotationMirror);
+
+          if (!annotationValues.contains(alwaysCallValue)) {
+            String error = " " + alwaysCallValue + " has not been called";
+            checker.report(
+                element, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", error));
+          }
+        }
+      }
+    }
+
+    private boolean isFormalParameter(VariableTree var) {
+      List<VariableTree> formalParams = (List<VariableTree>) node.getParameters();
+
+      if (formalParams.contains(var)) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
 }

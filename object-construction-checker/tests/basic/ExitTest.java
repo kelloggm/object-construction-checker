@@ -1,12 +1,12 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
-
+import org.checkerframework.common.returnsreceiver.qual.*;
 
 class ExitTest {
 
     @AlwaysCall("a")
     class Foo {
         void a() {}
-        Foo b() {
+        @This Foo b() {
             return this;
         }
         void c() {}

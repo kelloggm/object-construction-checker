@@ -1,13 +1,13 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
 
-/* The simplest inference test case Martin could think of */
 
 class AlwaysCallTest {
 
     @AlwaysCall("a")
     class Foo {
         void a() {}
-        Foo b() {
+        @This Foo b() {
             return this;
         }
         void c() {}
@@ -42,7 +42,6 @@ class AlwaysCallTest {
 
     void test1() {
         // won't pass yet due to dataflow issue
-        // :: error: missing.alwayscall
         makeFoo().a();
     }
 
