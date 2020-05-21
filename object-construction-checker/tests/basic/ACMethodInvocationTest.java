@@ -2,7 +2,7 @@ import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 
-class AlwaysCallTest {
+class ACMethodInvocationTest {
 
     @AlwaysCall("a")
     class Foo {

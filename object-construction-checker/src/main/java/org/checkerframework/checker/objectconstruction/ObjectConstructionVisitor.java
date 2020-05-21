@@ -249,11 +249,15 @@ public class ObjectConstructionVisitor
     private void checkStoreAtRegularExitPoint() {
       Store regularExitStore = atypeFactory.getRegularExitStore(node);
 
-      for (LocalVariableNode localVariableNode : methodVariablesList) {
+      if (regularExitStore != null) {
 
-        if (regularExitStore != null) {
+        for (LocalVariableNode localVariableNode : methodVariablesList) {
           CFValue cfValue = ((CFStore) regularExitStore).getValue(localVariableNode);
-          reportAlwaysCallExitPointsErrors(localVariableNode, cfValue);
+
+          // cfValue is null when a method returns the local variable at exit point
+          if (cfValue != null) {
+            reportAlwaysCallExitPointsErrors(localVariableNode, cfValue);
+          }
         }
       }
     }
@@ -261,11 +265,14 @@ public class ObjectConstructionVisitor
     private void checkStoreAtExceptionalExitPoint() {
       Store exceptionalExitStore = atypeFactory.getExceptionalExitStore(node);
 
-      for (LocalVariableNode localVariableNode : methodVariablesList) {
+      if (exceptionalExitStore != null) {
 
-        if (exceptionalExitStore != null) {
+        for (LocalVariableNode localVariableNode : methodVariablesList) {
           CFValue cfValue = ((CFStore) exceptionalExitStore).getValue(localVariableNode);
-          reportAlwaysCallExitPointsErrors(localVariableNode, cfValue);
+
+          if (cfValue != null) {
+            reportAlwaysCallExitPointsErrors(localVariableNode, cfValue);
+          }
         }
       }
     }
@@ -279,33 +286,23 @@ public class ObjectConstructionVisitor
      */
     private void reportAlwaysCallExitPointsErrors(
         LocalVariableNode localVariableNode, CFValue cfValue) {
+
       Element element = localVariableNode.getElement();
       String alwaysCallValue = getAlwaysCallValue(element);
+      Set<AnnotationMirror> annotationMirrors = cfValue.getAnnotations();
 
-      // cfValue is null when a method returns the local variable at exit point
-      if (cfValue != null) {
-        Set<AnnotationMirror> annotationMirrors = cfValue.getAnnotations();
+      for (AnnotationMirror annotationMirror : annotationMirrors) {
+        List<String> annotationValues = getValueOfAnnotationWithStringArgument(annotationMirror);
 
-        for (AnnotationMirror annotationMirror : annotationMirrors) {
-          List<String> annotationValues = getValueOfAnnotationWithStringArgument(annotationMirror);
-
-          if (!annotationValues.contains(alwaysCallValue)) {
-            String error = " " + alwaysCallValue + " has not been called";
-            checker.report(
-                element, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", error));
-          }
+        if (!annotationValues.contains(alwaysCallValue)) {
+          String error = " " + alwaysCallValue + " has not been called";
+          checker.report(element, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", error));
         }
       }
     }
 
     private boolean isFormalParameter(VariableTree var) {
-      List<VariableTree> formalParams = (List<VariableTree>) node.getParameters();
-
-      if (formalParams.contains(var)) {
-        return true;
-      } else {
-        return false;
-      }
+      return (node.getParameters().contains(var));
     }
   }
 }
