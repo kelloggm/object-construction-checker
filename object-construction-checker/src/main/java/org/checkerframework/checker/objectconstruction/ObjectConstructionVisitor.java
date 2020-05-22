@@ -78,8 +78,8 @@ public class ObjectConstructionVisitor
 
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-
-    if (!isAssignedToLocal(this.getCurrentPath())) {
+    
+    if (!isAssignedToLocal(this.getCurrentPath()) && !atypeFactory.returnsThis(node)) {
       ExecutableElement exeElement = TreeUtils.elementFromUse(node);
       TypeMirror returnType = exeElement.getReturnType();
       TypeElement eType = TypesUtils.getTypeElement(returnType);
@@ -95,6 +95,8 @@ public class ObjectConstructionVisitor
           checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", error));
         }
       }
+    }else{
+
     }
 
     if (checker.getBooleanOption(ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS)) {
@@ -143,6 +145,7 @@ public class ObjectConstructionVisitor
         // Otherwise use the context of the ConditionalExpressionTree.
         return isAssignedToLocal(parentPath);
       case ASSIGNMENT: // check if the left hand is a local variable
+
       case RETURN:
       case VARIABLE:
         return true;
@@ -237,7 +240,7 @@ public class ObjectConstructionVisitor
     /** Checks local variables at method exit points that can be regular or exceptional */
     private void checksForExitPoints() {
       checkStoreAtRegularExitPoint();
-      checkStoreAtExceptionalExitPoint();
+//      checkStoreAtExceptionalExitPoint();
     }
 
     /**

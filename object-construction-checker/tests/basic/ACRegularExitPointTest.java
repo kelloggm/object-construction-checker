@@ -71,7 +71,7 @@ class ACRegularExitPointTest {
         Runnable r = new Runnable(){
             public void run(){
                 // :: error: missing.alwayscall
-                Foo f = new Foo();
+                Foo g = new Foo();
             };
         };
         r.run();
@@ -80,24 +80,29 @@ class ACRegularExitPointTest {
     void test5(Foo f){
         Runnable r = new Runnable(){
             public void run(){
-                Foo f = makeFoo();
-                f.a();
+                Foo g = makeFoo();
+                g.a();
             };
         };
         r.run();
     }
 
-    void test6(){
 
-        //TODO
-        // won't pass yet
+
+    // ???????
+    void nestedFunc2(){
+
         Foo f = makeFoo();
-        Function<Foo, Foo> func = fn ->{
-            fn.a();
+
+        Function<Foo, Foo> innerfunc = st ->{
+            st.a();
+            Foo fn = makeFoo();
             return fn;
         };
 
-        func.apply(f);
+        // :: error: missing.alwayscall
+        innerfunc.apply(f);
+
     }
 
 

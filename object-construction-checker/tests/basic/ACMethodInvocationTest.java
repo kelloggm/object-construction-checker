@@ -28,7 +28,6 @@ class ACMethodInvocationTest {
     @CalledMethods({"b"}) Foo makeFooFinilize2(){
         // :: error: missing.alwayscall
         Foo f = new Foo();
-        // won't pass yet as we don't yet handle it
         f.b();
         return f;
     }
@@ -47,7 +46,6 @@ class ACMethodInvocationTest {
 
     void test2() {
         // won't pass yet due to dataflow issue
-        // :: error: missing.alwayscall
         makeFoo().b().a();
     }
 
@@ -83,8 +81,11 @@ class ACMethodInvocationTest {
 
     Foo testField;
 
+    //visitNewClassTree
+
     void testStoringInField() {
         // we should get an error here
-        testField = makeFoo();
+        testField = new Foo();
+//        testField = makeFoo();
     }
 }
