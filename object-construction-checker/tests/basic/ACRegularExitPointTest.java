@@ -24,10 +24,11 @@ class ACRegularExitPointTest {
         return f;
     }
 
+
+
     void makeFooFinilize(){
         Foo f = new Foo();
         f.a();
-
     }
 
     void makeFooFinilize2(){
@@ -36,9 +37,6 @@ class ACRegularExitPointTest {
         m = new Foo();
         // :: error: missing.alwayscall
         Foo f = new Foo();
-        String s = "name";
-        //TODO
-        // won't pass yet
         f.b();
 
     }
@@ -77,6 +75,7 @@ class ACRegularExitPointTest {
         r.run();
     }
 
+
     void test5(Foo f){
         Runnable r = new Runnable(){
             public void run(){
@@ -88,15 +87,15 @@ class ACRegularExitPointTest {
     }
 
 
-
     // ???????
     void nestedFunc2(){
 
         Foo f = makeFoo();
-
+        f.a();
         Function<Foo, Foo> innerfunc = st ->{
             st.a();
             Foo fn = makeFoo();
+//            fn.a();
             return fn;
         };
 
@@ -106,14 +105,23 @@ class ACRegularExitPointTest {
     }
 
 
+    // return; is not counted in getReturnStatementStores so I changed it to return Foo
+    Foo fooExitStoreCheck(boolean b) {
+        if (b) {
+            Foo f1 = new Foo();
+            f1.a();
+            return f1;
+        } else {
+            Foo f2 = new Foo();
+            return f2;
+        }
+    }
+
+
     void test7(){
         // :: error: missing.alwayscall
-        Foo f = makeFoo();
-        if(true){
-            f.a();
-        }else{
-            f.c();
-        }
+        Foo f;
+        f = makeFoo();
     }
 
 }

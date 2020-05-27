@@ -80,12 +80,12 @@ class ACMethodInvocationTest {
     }
 
     Foo testField;
-
-    //visitNewClassTree
+    Foo testField2;
 
     void testStoringInField() {
-        // we should get an error here
-        testField = new Foo();
-//        testField = makeFoo();
+        // :: error: missing.alwayscall
+        testField2 = new Foo();
+        // :: error: missing.alwayscall
+        testField = makeFoo();
     }
 }

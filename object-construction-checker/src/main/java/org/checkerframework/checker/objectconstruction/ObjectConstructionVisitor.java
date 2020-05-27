@@ -1,15 +1,21 @@
 package org.checkerframework.checker.objectconstruction;
 
+import static javax.lang.model.element.ElementKind.FIELD;
+import static javax.lang.model.element.ElementKind.LOCAL_VARIABLE;
+import static javax.lang.model.type.TypeKind.VOID;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument;
 
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ConditionalExpressionTree;
+import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.TreePathScanner;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -21,6 +27,9 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
+
+import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.tree.JCTree;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
@@ -28,16 +37,30 @@ import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredica
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.common.value.ValueCheckerUtils;
+import org.checkerframework.dataflow.analysis.AbstractValue;
 import org.checkerframework.dataflow.analysis.Store;
+import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.ReturnNode;
+import org.checkerframework.framework.flow.CFAbstractValue;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.source.DiagMessage;
+import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.checkerframework.org.objectweb.asmx.tree.analysis.Value;
 import org.springframework.expression.spel.SpelParseException;
+
+
+
+
+
+
+
 
 public class ObjectConstructionVisitor
     extends BaseTypeVisitor<ObjectConstructionAnnotatedTypeFactory> {
@@ -67,7 +90,8 @@ public class ObjectConstructionVisitor
 
   @Override
   public Void visitMethod(MethodTree node, Void o) {
-
+//    node.toString().contains("fooExitStoreCheck")
+//    List<Pair<ReturnNode, TransferResult<CFValue, CFStore>>> ss = atypeFactory.getReturnStatementStores(node);
     LocalVariablesVisitor localVarVisitor = new LocalVariablesVisitor(node);
 
     localVarVisitor.scan(this.getCurrentPath(), o);
@@ -78,13 +102,18 @@ public class ObjectConstructionVisitor
 
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-    
+
     if (!isAssignedToLocal(this.getCurrentPath()) && !atypeFactory.returnsThis(node)) {
       ExecutableElement exeElement = TreeUtils.elementFromUse(node);
       TypeMirror returnType = exeElement.getReturnType();
-      TypeElement eType = TypesUtils.getTypeElement(returnType);
 
-      if (hasAlwaysCall(eType)) {
+//
+//
+//      AnnotatedTypeMirror methodATm = atypeFactory.getAnnotatedType(exeElement);
+//      AnnotatedTypeMirror rType =
+//              ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
+      if (hasAlwaysCall(returnType)) {
+        TypeElement eType = TypesUtils.getTypeElement(returnType);
         AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
         String alwaysCallAnnoVal =
             AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
@@ -95,8 +124,6 @@ public class ObjectConstructionVisitor
           checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", error));
         }
       }
-    }else{
-
     }
 
     if (checker.getBooleanOption(ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS)) {
@@ -110,6 +137,24 @@ public class ObjectConstructionVisitor
     }
     return super.visitMethodInvocation(node, p);
   }
+
+  @Override
+  public Void visitNewClass(NewClassTree node, Void p) {
+
+    if(!isAssignedToLocal(this.getCurrentPath())){
+
+      AnnotatedTypeFactory.ParameterizedExecutableType ptype = atypeFactory.constructorFromUse(node);
+      AnnotatedTypeMirror.AnnotatedExecutableType constructor = ptype.executableType;
+      ExecutableElement ee = constructor.getElement();
+      TypeMirror type = ((Symbol.ClassSymbol)((Symbol.MethodSymbol)ee).owner).type;
+
+      if (hasAlwaysCall(type))
+//      String error = " " + alwaysCallValue + " has not been called";
+        checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", " "));
+    }
+    return super.visitNewClass(node, p);
+  }
+
 
   private List<String> getCalledMethodAnnotation(MethodInvocationTree node) {
     AnnotationMirror calledMethodAnno;
@@ -145,6 +190,8 @@ public class ObjectConstructionVisitor
         // Otherwise use the context of the ConditionalExpressionTree.
         return isAssignedToLocal(parentPath);
       case ASSIGNMENT: // check if the left hand is a local variable
+        final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
+        return (((JCTree.JCIdent)lhs).sym.getKind() == LOCAL_VARIABLE);
 
       case RETURN:
       case VARIABLE:
@@ -154,11 +201,12 @@ public class ObjectConstructionVisitor
     }
   }
 
-  private boolean hasAlwaysCall(TypeElement type) {
-    if (type == null) {
+  private boolean hasAlwaysCall(TypeMirror type) {
+    TypeElement eType = TypesUtils.getTypeElement(type);
+    if (eType == null) {
       return false;
     } else {
-      return (atypeFactory.getDeclAnnotation(type, AlwaysCall.class) != null);
+      return (atypeFactory.getDeclAnnotation(eType, AlwaysCall.class) != null);
     }
   }
 
@@ -227,9 +275,8 @@ public class ObjectConstructionVisitor
 
       Element element = TreeUtils.elementFromDeclaration(node);
       TypeMirror type = element.asType();
-      TypeElement eType = TypesUtils.getTypeElement(type);
 
-      if (hasAlwaysCall(eType) && !isFormalParameter(node)) {
+      if (hasAlwaysCall(type) && !isFormalParameter(node)) {
         LocalVariableNode localVariableNode = new LocalVariableNode(node);
         methodVariablesList.add(localVariableNode);
       }
@@ -240,7 +287,7 @@ public class ObjectConstructionVisitor
     /** Checks local variables at method exit points that can be regular or exceptional */
     private void checksForExitPoints() {
       checkStoreAtRegularExitPoint();
-//      checkStoreAtExceptionalExitPoint();
+      checkStoreAtExceptionalExitPoint();
     }
 
     /**
@@ -257,7 +304,6 @@ public class ObjectConstructionVisitor
         for (LocalVariableNode localVariableNode : methodVariablesList) {
           CFValue cfValue = ((CFStore) regularExitStore).getValue(localVariableNode);
 
-          // cfValue is null when a method returns the local variable at exit point
           if (cfValue != null) {
             reportAlwaysCallExitPointsErrors(localVariableNode, cfValue);
           }

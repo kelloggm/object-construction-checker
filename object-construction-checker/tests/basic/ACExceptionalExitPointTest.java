@@ -25,19 +25,28 @@ class ACExceptionalExitPointTest {
     }
 
 
-    void test1() {
-        Foo fw = makeFoo();
-        throw new RuntimeException();
+    //TODO
+//    void test1() {
+//        Foo fw = makeFoo();
+//        throw new RuntimeException();
+//    }
+
+
+
+    Foo returnMakeFoo(){
+        return makeFoo();
     }
 
 
-    void exceptionalExit() {
-        Foo fw = new Foo();
-        fw.a();
-        throw new RuntimeException();
-    }
 
 
 
+
+    //TODO
+//    void exceptionalExit() {
+//        Foo fw = new Foo();
+//        fw.a();
+//        throw new RuntimeException();
+//    }
 
 }
