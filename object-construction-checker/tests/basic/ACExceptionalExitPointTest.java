@@ -43,10 +43,11 @@ class ACExceptionalExitPointTest {
 
 
     //TODO
-//    void exceptionalExit() {
-//        Foo fw = new Foo();
-//        fw.a();
-//        throw new RuntimeException();
-//    }
+    void exceptionalExit() {
+        Foo fw1 = new Foo();
+        Foo fw = new Foo();
+        fw.a();
+        throw new RuntimeException();
+    }
 
 }

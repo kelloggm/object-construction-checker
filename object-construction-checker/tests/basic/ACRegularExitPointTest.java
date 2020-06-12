@@ -10,7 +10,7 @@ class ACRegularExitPointTest {
         @This Foo b() {
             return this;
         }
-        void c() {}
+        void c(@CalledMethods({"a"}) Foo this) {}
     }
 
 
@@ -106,15 +106,75 @@ class ACRegularExitPointTest {
 
 
     // return; is not counted in getReturnStatementStores so I changed it to return Foo
-    Foo fooExitStoreCheck(boolean b) {
+    void fooExitStoreCheck(boolean b) {
         if (b) {
             Foo f1 = new Foo();
             f1.a();
+//            return;
+        } else {
+            // :: error: missing.alwayscall
+            Foo f2 = new Foo();
+//            return;
+        }
+
+    }
+
+    Foo fooExitStoreCheck2(boolean b) {
+        // :: error: missing.alwayscall
+        Foo f1 = new Foo();
+        if (b) {
+            f1.a();
             return f1;
         } else {
+            // :: error: missing.alwayscall
             Foo f2 = new Foo();
             return f2;
         }
+    }
+
+
+    // localVariableValues : {b}
+    void fooExitStoreCheck3(boolean b) {
+        Foo f1, f2;
+        if (b) {
+            f1 = new Foo();
+            f1.a();
+        } else {
+            f2 = new Foo();
+        }
+    }
+
+    // localVariableValues : {b, f1, f2}
+    // Annotations : {TOP, {a}, TOP}
+    void fooExitStoreCheck4(boolean b) {
+        Foo f1 = null, f2 = null;
+        if (b) {
+            f1 = new Foo();
+            f1.a();
+        } else {
+            f2 = new Foo();
+        }
+    }
+
+    // localVariableValues : {b, f1, f2}
+    // Annotations : {TOP, TOP, TOP}
+    void fooExitStoreCheck5(boolean b) {
+        Foo f1 = new Foo(), f2 = new Foo();
+        if (b) {
+            f1.a();
+        }
+    }
+
+
+    void fooExitStoreCheck6(boolean b) {
+        Foo f1 = null, f2 = null;
+        if (b) {
+            f1 = new Foo();
+            f1.a();
+        } else {
+            f2 = new Foo();
+        }
+        f1.c();
     }
 
 
@@ -123,5 +183,11 @@ class ACRegularExitPointTest {
         Foo f;
         f = makeFoo();
     }
+
+
+    void test8() { Foo f = null; }
+
+
+    void test9() { Foo f = new Foo(); }
 
 }

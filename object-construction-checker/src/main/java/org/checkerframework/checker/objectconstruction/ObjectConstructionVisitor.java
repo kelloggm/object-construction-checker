@@ -18,8 +18,10 @@ import com.sun.source.util.TreePathScanner;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -38,6 +40,8 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.analysis.AbstractValue;
+import org.checkerframework.dataflow.analysis.FlowExpressions;
+import org.checkerframework.dataflow.analysis.RegularTransferResult;
 import org.checkerframework.dataflow.analysis.Store;
 import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
@@ -90,13 +94,12 @@ public class ObjectConstructionVisitor
 
   @Override
   public Void visitMethod(MethodTree node, Void o) {
-//    node.toString().contains("fooExitStoreCheck")
-//    List<Pair<ReturnNode, TransferResult<CFValue, CFStore>>> ss = atypeFactory.getReturnStatementStores(node);
-    LocalVariablesVisitor localVarVisitor = new LocalVariablesVisitor(node);
 
-    localVarVisitor.scan(this.getCurrentPath(), o);
-    localVarVisitor.checksForExitPoints();
-
+    if(node.getBody()!=null) {
+      LocalVariablesVisitor localVarVisitor = new LocalVariablesVisitor(node);
+      localVarVisitor.scan(this.getCurrentPath(), o);
+      localVarVisitor.checksForExitPoints();
+    }
     return super.visitMethod(node, o);
   }
 
@@ -112,6 +115,7 @@ public class ObjectConstructionVisitor
 //      AnnotatedTypeMirror methodATm = atypeFactory.getAnnotatedType(exeElement);
 //      AnnotatedTypeMirror rType =
 //              ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
+
       if (hasAlwaysCall(returnType)) {
         TypeElement eType = TypesUtils.getTypeElement(returnType);
         AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
@@ -260,10 +264,12 @@ public class ObjectConstructionVisitor
     // Keeps a list of all local variable nodes that have @AlwaysCall annotation
     List<LocalVariableNode> methodVariablesList;
     MethodTree node;
+    List<Pair<ReturnNode, TransferResult<CFValue, CFStore>>> returnStatementStore;
 
     private LocalVariablesVisitor(MethodTree node) {
       this.node = node;
       methodVariablesList = new ArrayList<>();
+
     }
 
     /**
@@ -286,9 +292,33 @@ public class ObjectConstructionVisitor
 
     /** Checks local variables at method exit points that can be regular or exceptional */
     private void checksForExitPoints() {
+      checkReturnStatementStore();
+
       checkStoreAtRegularExitPoint();
-      checkStoreAtExceptionalExitPoint();
+//      checkStoreAtExceptionalExitPoint();
     }
+
+
+
+    private void checkReturnStatementStore(){
+      returnStatementStore = atypeFactory.getReturnStatementStores(node);
+
+      for (Pair<ReturnNode, TransferResult<CFValue, CFStore>> exitStore : returnStatementStore){
+
+        if (exitStore.second.getRegularStore()!=null){
+          CFStore result = exitStore.second.getRegularStore();
+
+          for (LocalVariableNode localvariableNode: methodVariablesList){
+            if (result.getValue(localvariableNode) != null){
+
+              CFValue cfValue = result.getValue(localvariableNode);
+              reportAlwaysCallExitPointsErrors(localvariableNode, cfValue);
+            }
+          }
+        }
+      }
+    }
+
 
     /**
      * Iterates over methodVariablesList and the finds abstract value of each local variable node at
