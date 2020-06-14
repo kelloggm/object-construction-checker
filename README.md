@@ -161,7 +161,7 @@ checking whether the proposed subtype implies the proposed supertype. In
 particular:
 
 `CalledMethodsPredicate(`P`) T1` &#8849; `CalledMethodsPredicate(`Q`) T2` iff T1 &#8849; T2
-and &#0172; (P &#8658; Q) is unsatisfiable. Subtyping will not be checked.
+and "not (P &rArr; Q)" is unsatisfiable. Subtyping will not be checked.
 
 If either P or Q contains operators other than `&&`, `||`, or `!`, the checker will 
 report an error indicating the offending formula.
