@@ -54,10 +54,8 @@ public class CalledMethodsPredicateEvaluator {
    * Return true iff the boolean formula "lhs &rarr; rhs" is valid, treating all variables as
    * uninterpreted.
    *
-   * @param lhs a Java boolean expression containing only variables, {@literal &}{@literal &}, ||,
-   *     !, and ()
-   * @param rhs a Java boolean expression containing only variables, {@literal &}{@literal &}, ||,
-   *     !, and ()
+   * @param lhs a Java boolean expression containing only variables, {@literal &&}, ||, !, and ()
+   * @param rhs a Java boolean expression containing only variables, {@literal &&}, ||, !, and ()
    * @return true iff lhs implies rhs
    * @throws UnsupportedOperationException if the input contains an unexpected kind of expression
    */
@@ -67,7 +65,7 @@ public class CalledMethodsPredicateEvaluator {
     // formula that can be passed to a solver, and then construct a query to check if "not (lhs ->
     // rhs)" is unsatisfiable. The result is the result of that query.
 
-    // setup solver
+    // set up solver
     SolverContext context = setupSolver();
 
     BooleanFormulaManager booleanFormulaManager =
@@ -116,7 +114,7 @@ public class CalledMethodsPredicateEvaluator {
   }
 
   /**
-   * Convert between Javaparser expression and boolean formula via recursive descent.
+   * Convert from Javaparser expression to sosy_lab boolean formula (the SMT solver's format).
    *
    * @throws UnsupportedOperationException if an unexpected expression is encountered
    */
@@ -169,7 +167,7 @@ public class CalledMethodsPredicateEvaluator {
   public static boolean evaluate(String expression, Collection<String> trueVariables) {
 
     for (String cmMethod : trueVariables) {
-      expression = expression.replaceAll(cmMethod, "true");
+      expression = expression.replaceAll("\\b" + cmMethod + "\\b", "true");
     }
 
     expression = expression.replaceAll("(?!true)\\b[_a-zA-Z][_a-zA-Z0-9]*\\b", "false");
