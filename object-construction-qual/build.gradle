@@ -2,7 +2,6 @@ plugins {
     // Apply the java plugin to add support for Java
     id 'java-library'
 
-    id "com.diffplug.gradle.spotless" version "3.23.0"
 }
 
 sourceCompatibility = 1.8
@@ -10,7 +9,6 @@ sourceCompatibility = 1.8
 dependencies {
     // re-export these dependencies so clients don't need to explicitly import them
     api "org.checkerframework:checker-qual:${versions.checkerFramework}"
-    api project(':returnsrcvr-qual')
 }
 
 tasks.withType(JavaCompile).all {

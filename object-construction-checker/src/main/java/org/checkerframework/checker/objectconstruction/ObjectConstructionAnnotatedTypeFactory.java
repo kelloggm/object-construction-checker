@@ -20,20 +20,20 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
-import org.checkerframework.checker.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
+import org.checkerframework.checker.objectconstruction.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.objectconstruction.framework.LombokSupport;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop;
-import org.checkerframework.checker.returnsrcvr.ReturnsRcvrAnnotatedTypeFactory;
-import org.checkerframework.checker.returnsrcvr.ReturnsRcvrChecker;
-import org.checkerframework.checker.returnsrcvr.qual.This;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.common.returnsreceiver.ReturnsReceiverAnnotatedTypeFactory;
+import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
+import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.ValueAnnotatedTypeFactory;
 import org.checkerframework.common.value.ValueChecker;
 import org.checkerframework.common.value.qual.StringVal;
@@ -93,10 +93,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     super(checker);
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
-
     EnumSet<FrameworkSupportUtils.Framework> frameworkSet =
         FrameworkSupportUtils.getFrameworkSet(
-            checker.getOption(ReturnsRcvrChecker.DISABLED_FRAMEWORK_SUPPORTS));
+            checker.getOption(ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS));
     frameworkSupports = new ArrayList<FrameworkSupport>();
 
     for (FrameworkSupportUtils.Framework framework : frameworkSet) {
@@ -152,8 +151,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return new ObjectConstructionQualifierHierarchy(factory);
   }
 
-  private ReturnsRcvrAnnotatedTypeFactory getReturnsRcvrAnnotatedTypeFactory() {
-    return getTypeFactoryOfSubchecker(ReturnsRcvrChecker.class);
+  private ReturnsReceiverAnnotatedTypeFactory getReturnsRcvrAnnotatedTypeFactory() {
+    return getTypeFactoryOfSubchecker(ReturnsReceiverChecker.class);
   }
 
   /**
@@ -163,7 +162,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
    */
   boolean returnsThis(final MethodInvocationTree tree) {
-    ReturnsRcvrAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
+    ReturnsReceiverAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
     ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
     AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
     AnnotatedTypeMirror rrType =

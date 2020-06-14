@@ -6,9 +6,8 @@ plugins {
     // listed here: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-project-gradle.html,
     // because the build fails when we use the Gradle 5+ way, saying that it can't find ec2.
     // I believe that this is because we need the AWS SDK during testing, but not during the build.
-    id 'io.spring.dependency-management' version '1.0.7.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
 
-    id "com.diffplug.gradle.spotless" version "3.23.0"
 }
 
 sourceCompatibility = 1.8
@@ -21,23 +20,22 @@ configurations {
 dependencies {
 
     implementation "org.checkerframework:checker:${versions.checkerFramework}"
-    implementation "com.google.guava:guava:28.0-jre"
+    implementation "com.google.guava:guava:29.0-jre"
     compileOnly "com.google.errorprone:javac:9+181-r4173-1"
 
     // If / when other code depends on this checker, we will likely want to make these
     // api dependencies
     implementation project(":object-construction-qual")
-    implementation project(":returnsrcvr-checker")
 
     // For the @CalledMethodsPredicate evaluation
-    implementation "org.springframework:spring-expression:5.1.7.RELEASE"
+    implementation "org.springframework:spring-expression:5.2.6.RELEASE"
 
     // For subtyping between @CalledMethodsPredicate annotations
     implementation 'org.sosy-lab:java-smt:3.2.0'
     implementation 'com.github.javaparser:javaparser-core:3.15.11'
 
     // Use JUnit test framework
-    testImplementation "junit:junit:4.12"
+    testImplementation "junit:junit:4.13"
 
     // CF testing infrastructure
     testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
@@ -51,7 +49,7 @@ dependencies {
     implementation "com.google.auto.value:auto-value-annotations:${versions.autoValue}"
     testCompile "com.google.auto.value:auto-value-annotations:${versions.autoValue}"
     testCompile "com.google.auto.value:auto-value:${versions.autoValue}"
-    testCompile "com.ryanharter.auto.value:auto-value-parcel:0.2.7"
+    testCompile "com.ryanharter.auto.value:auto-value-parcel:0.2.8"
 
     // For Lombok Builders
     testCompile "org.projectlombok:lombok:${versions.lombok}"
@@ -63,7 +61,7 @@ dependencies {
 
 dependencyManagement {
     imports {
-        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.228"
+        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.796"
     }
 }
 
