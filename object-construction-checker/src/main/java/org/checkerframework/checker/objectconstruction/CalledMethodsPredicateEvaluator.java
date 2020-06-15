@@ -1,10 +1,8 @@
 package org.checkerframework.checker.objectconstruction;
 
-import com.github.javaparser.JavaParser;
-import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.UnaryExpr;
-import com.github.javaparser.ast.stmt.BlockStmt;
 import java.util.Collection;
 import org.checkerframework.javacutil.BugInCF;
 import org.sosy_lab.common.ShutdownManager;
@@ -29,12 +27,9 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
  */
 public class CalledMethodsPredicateEvaluator {
 
-  /** The parser to use when converting formulae to ASTs. */
-  private static final JavaParser parser = new JavaParser();
-
   /** Do not use. This class is not instantiable; use the static methods instead. */
   private CalledMethodsPredicateEvaluator() {
-    throw new Error("Do not instantiate");
+    throw new BugInCF("Do not instantiate CalledMethodsPredicateEvaluator.");
   }
 
   /** Construct a solver to use when comparing predicates. Each query should use a new solver. */
@@ -93,29 +88,26 @@ public class CalledMethodsPredicateEvaluator {
     }
   }
 
-  /** Converts a Java boolean expression into a boolean formula in the SMT solver's format. */
+  /**
+   * Converts a Java boolean expression into a boolean formula in the SMT solver's format.
+   *
+   * @param formula a Java boolean expression containing only variables, {@literal &&}, ||, !, and
+   *     ()
+   * @param booleanFormulaManager the solver's interface to boolean formulas
+   * @return the boolean formula, in the solver's format, corresponding to the input formula
+   */
   private static BooleanFormula formulaStringToBooleanFormula(
       String formula, BooleanFormulaManager booleanFormulaManager) {
-
-    String classWithFormula = "class DUMMY { boolean DUMMY() { return " + formula + "; } }";
-
-    CompilationUnit ast = parser.parse(classWithFormula).getResult().orElse(null);
-
-    if (ast == null) {
-      throw new BugInCF("Unparseable formula: " + formula);
-    }
-
-    BlockStmt theBlock = ast.getType(0).getMembers().get(0).asMethodDeclaration().getBody().get();
-
-    com.github.javaparser.ast.expr.Expression theExpression =
-        theBlock.getStatements().get(0).asReturnStmt().getExpression().get();
-
-    return expressionToBooleanFormula(theExpression, booleanFormulaManager);
+    com.github.javaparser.ast.expr.Expression result = StaticJavaParser.parseExpression(formula);
+    return expressionToBooleanFormula(result, booleanFormulaManager);
   }
 
   /**
    * Convert from Javaparser expression to sosy_lab boolean formula (the SMT solver's format).
    *
+   * @param theExpression a Javaparser expression representing a boolean formula containing only
+   *     variables, {@literal &&}, ||, !, and ()
+   * @param booleanFormulaManager the solver's interface to boolean formulas
    * @throws UnsupportedOperationException if an unexpected expression is encountered
    */
   private static BooleanFormula expressionToBooleanFormula(
