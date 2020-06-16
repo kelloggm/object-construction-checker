@@ -36,7 +36,7 @@ public class ObjectConstructionVisitor
       String predicate = AnnotationUtils.getElementValue(anno, "value", String.class, false);
 
       try {
-        new CalledMethodsPredicateEvaluator(Collections.emptyList()).evaluate(predicate);
+        CalledMethodsPredicateEvaluator.evaluate(predicate, Collections.emptyList());
       } catch (SpelParseException e) {
         checker.report(
             node, new DiagMessage(Diagnostic.Kind.ERROR, "predicate.invalid", e.getMessage()));

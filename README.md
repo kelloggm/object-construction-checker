@@ -156,10 +156,19 @@ subtyping.  Then
 
 `@CalledMethods(`*set1*`) T1` &#8849; `@CalledMethods(`*set2*`) T2` iff  *set1 &supe; set2* and T1 &#8849; T2.
 
-No `@CalledMethodsPredicate` annotation is ever a subtype of another, or of
-any `@CalledMethods` annotation.  (This imprecise behavior is a limitation
-of the Object Construction Checker.)  For this reason, programmers usually only
-write `@CalledMethodsPredicate` annotations on formal parameters.
+Subtyping between two `@CalledMethodsPredicate` annotations is determined by
+checking whether the proposed subtype implies the proposed supertype. In
+particular:
+
+`CalledMethodsPredicate(`P`) T1` &#8849; `CalledMethodsPredicate(`Q`) T2` iff T1 &#8849; T2
+and "not (P &rArr; Q)" is unsatisfiable. Subtyping will not be checked.
+
+If either P or Q contains operators other than `&&`, `||`, or `!`, the checker will 
+report an error indicating the offending formula.
+
+To determine whether `@CalledMethodsPredicate(`*P*`)` &#8849; `@CalledMethods(`*M*`)`,
+use the above procedure for checking subtyping between `@CalledMethodsPredicate`
+annotations, but replace Q with the conjunctions of the literals in M.
 
 To determine whether `@CalledMethods(`*M*`)` &#8849; `@CalledMethodsPredicate(`*P*`)`,
 use the following procedure:
