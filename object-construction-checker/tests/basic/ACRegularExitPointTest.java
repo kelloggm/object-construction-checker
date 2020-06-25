@@ -1,11 +1,17 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import java.util.function.Function;
+import java.io.IOException;
 
 class ACRegularExitPointTest {
 
     @AlwaysCall("a")
     class Foo {
+
+//        Foo() throws IOException {
+//
+//        }
+
         void a() {}
         @This Foo b() {
             return this;
@@ -23,7 +29,6 @@ class ACRegularExitPointTest {
         f.a();
         return f;
     }
-
 
 
     void makeFooFinilize(){
@@ -87,19 +92,18 @@ class ACRegularExitPointTest {
     }
 
 
-    // ???????
     void nestedFunc2(){
 
         Foo f = makeFoo();
         f.a();
-        Function<Foo, Foo> innerfunc = st ->{
-            st.a();
-            Foo fn = makeFoo();
-//            fn.a();
-            return fn;
+        Function<Foo, @CalledMethods({"a"}) Foo> innerfunc = st ->{
+            // :: error: missing.alwayscall
+            Foo fn1 = new Foo();
+            Foo fn2 = makeFoo();
+            fn2.a();
+            return fn2;
         };
 
-        // :: error: missing.alwayscall
         innerfunc.apply(f);
 
     }
@@ -119,17 +123,29 @@ class ACRegularExitPointTest {
 
     }
 
-    Foo fooExitStoreCheck2(boolean b) {
+    Foo fooExitStoreCheck2(boolean b, boolean c) {
         // :: error: missing.alwayscall
-        Foo f1 = new Foo();
+        Foo f1 = makeFoo();
+        Foo f3 = new Foo();
+
         if (b) {
-            f1.a();
-            return f1;
-        } else {
+//            f1.a();
+            Foo f2 = new Foo();
+            if(c){
+                f3.a();
+            }else{
+                f3.b();
+            }
+            String h = "";
+//            return f1;
+        }else {
             // :: error: missing.alwayscall
             Foo f2 = new Foo();
-            return f2;
+//            return f4;
+            String s = "";
         }
+
+        return f3;
     }
 
 
@@ -187,7 +203,18 @@ class ACRegularExitPointTest {
 
     void test8() { Foo f = null; }
 
+//    void test9E() {
+//        try{
+//            Foo f = new Foo();
+//        }catch (IOException exception){
+//
+//        }
+//
+//    }
 
-    void test9() { Foo f = new Foo(); }
+//    void test10E() throws IOException{
+//        Foo f = new Foo();
+//    }
+
 
 }

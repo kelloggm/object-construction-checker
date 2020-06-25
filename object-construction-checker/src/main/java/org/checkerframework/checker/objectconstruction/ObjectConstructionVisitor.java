@@ -1,11 +1,13 @@
 package org.checkerframework.checker.objectconstruction;
 
+import static com.sun.source.tree.Tree.Kind.LAMBDA_EXPRESSION;
 import static javax.lang.model.element.ElementKind.FIELD;
 import static javax.lang.model.element.ElementKind.LOCAL_VARIABLE;
 import static javax.lang.model.type.TypeKind.VOID;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument;
 
 import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
@@ -20,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +35,7 @@ import javax.tools.Diagnostic;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.tree.JCTree;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
@@ -44,7 +48,11 @@ import org.checkerframework.dataflow.analysis.FlowExpressions;
 import org.checkerframework.dataflow.analysis.RegularTransferResult;
 import org.checkerframework.dataflow.analysis.Store;
 import org.checkerframework.dataflow.analysis.TransferResult;
+import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.cfg.block.Block;
+import org.checkerframework.dataflow.cfg.block.SpecialBlock;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.framework.flow.CFAbstractValue;
 import org.checkerframework.framework.flow.CFStore;
@@ -96,6 +104,23 @@ public class ObjectConstructionVisitor
   public Void visitMethod(MethodTree node, Void o) {
 
     if(node.getBody()!=null) {
+      ControlFlowGraph cfg = atypeFactory.getAnalysis().getControlFlowGraph();
+
+      Set<Node> nodeSet = cfg.getNodesCorrespondingToTree(node);
+      SpecialBlock entryBlock = cfg.getEntryBlock();
+      @Nullable Block successor = entryBlock.getSuccessor();
+      Store.FlowRule flowRule = entryBlock.getFlowRule();
+
+      Set<Block> allBlocks = cfg.getAllBlocks();
+
+      List<Block> depthFirstOrderedBlocks = cfg.getDepthFirstOrderedBlocks();
+
+      BlockTree nodeBody = node.getBody();
+
+      IdentityHashMap<Tree, Set<Node>> treeLookup = cfg.getTreeLookup();
+
+//
+      String string = " ";
       LocalVariablesVisitor localVarVisitor = new LocalVariablesVisitor(node);
       localVarVisitor.scan(this.getCurrentPath(), o);
       localVarVisitor.checksForExitPoints();
@@ -107,14 +132,8 @@ public class ObjectConstructionVisitor
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
 
     if (!isAssignedToLocal(this.getCurrentPath()) && !atypeFactory.returnsThis(node)) {
-      ExecutableElement exeElement = TreeUtils.elementFromUse(node);
-      TypeMirror returnType = exeElement.getReturnType();
-
-//
-//
-//      AnnotatedTypeMirror methodATm = atypeFactory.getAnnotatedType(exeElement);
-//      AnnotatedTypeMirror rType =
-//              ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
+//      ExecutableElement exeElement = TreeUtils.elementFromUse(node);
+      TypeMirror returnType = TreeUtils.typeOf(node);
 
       if (hasAlwaysCall(returnType)) {
         TypeElement eType = TypesUtils.getTypeElement(returnType);
@@ -153,7 +172,6 @@ public class ObjectConstructionVisitor
       TypeMirror type = ((Symbol.ClassSymbol)((Symbol.MethodSymbol)ee).owner).type;
 
       if (hasAlwaysCall(type))
-//      String error = " " + alwaysCallValue + " has not been called";
         checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", " "));
     }
     return super.visitNewClass(node, p);
@@ -258,6 +276,8 @@ public class ObjectConstructionVisitor
     }
   }
 
+
+
   /** This class is needed to visit all local variables of each method. */
   private class LocalVariablesVisitor extends TreePathScanner {
 
@@ -269,7 +289,6 @@ public class ObjectConstructionVisitor
     private LocalVariablesVisitor(MethodTree node) {
       this.node = node;
       methodVariablesList = new ArrayList<>();
-
     }
 
     /**

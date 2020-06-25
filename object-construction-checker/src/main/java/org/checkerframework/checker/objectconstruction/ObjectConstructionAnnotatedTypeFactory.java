@@ -5,13 +5,18 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -19,12 +24,14 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupportUtils;
 import org.checkerframework.checker.objectconstruction.framework.LombokSupport;
+import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
@@ -37,6 +44,18 @@ import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.ValueAnnotatedTypeFactory;
 import org.checkerframework.common.value.ValueChecker;
 import org.checkerframework.common.value.qual.StringVal;
+import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.cfg.UnderlyingAST;
+import org.checkerframework.dataflow.cfg.block.Block;
+import org.checkerframework.dataflow.cfg.block.BlockImpl;
+import org.checkerframework.dataflow.cfg.block.ConditionalBlock;
+import org.checkerframework.dataflow.cfg.block.RegularBlockImpl;
+import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
+import org.checkerframework.dataflow.cfg.node.AssignmentNode;
+import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.Node;
+import org.checkerframework.dataflow.cfg.node.ReturnNode;
+import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
@@ -49,6 +68,9 @@ import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
+import org.checkerframework.org.plumelib.bcelutil.InstructionListUtils;
+
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -277,6 +299,229 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
     return null;
   }
+
+  @Override
+  public void postAnalyze(ControlFlowGraph cfg){
+
+    new TraverseCFG(cfg);
+
+// ((UnderlyingAST.CFGMethod) underlyingAST).method.getName().toString().contains("fooExitStoreCheck2")
+
+  }
+
+
+
+
+  private class TraverseCFG{
+    public ControlFlowGraph methodCFG;
+
+    Set<LocalVariableNode> reportErr = new HashSet<>();
+
+    protected TraverseCFG(ControlFlowGraph cfg) {
+
+      this.methodCFG = cfg;
+      UnderlyingAST ast = cfg.getUnderlyingAST();
+      List<Block> dfsOrder = getBlocksInReversePostOrders();
+      traverse(dfsOrder);
+    }
+
+    public void traverse(List<Block> dfsOrder){
+      Map<Block, List<LocalVariableNode>> blocksMapToReachableLocals = new HashMap<>();
+      UnderlyingAST ast = methodCFG.getUnderlyingAST();
+      String s = "";
+      for (int i = 0; i < dfsOrder.size(); i++){
+
+        Block cur = dfsOrder.get(i);
+        switch (cur.getType()){
+
+          case SPECIAL_BLOCK:
+            Set<BlockImpl> sPreds = ((BlockImpl) cur).getPredecessors();
+
+            if(sPreds.size()==0){
+              List<LocalVariableNode> entryLocals = new ArrayList<>();
+              blocksMapToReachableLocals.put(cur, (entryLocals));
+            }else{
+              //TODO exit blocks
+            }
+
+            break;
+
+          case REGULAR_BLOCK:
+            Set<BlockImpl> rPreds = ((BlockImpl) cur).getPredecessors();
+            List<LocalVariableNode> curLocalVariableNodes = getLocalVariablesOfRegularBlock((RegularBlockImpl) cur);
+
+            if(rPreds.size()==1){
+              List<LocalVariableNode> predLocalVariableNodes = blocksMapToReachableLocals.get(rPreds.iterator().next());
+              for (LocalVariableNode n: curLocalVariableNodes){
+
+                if(!predLocalVariableNodes.contains(n)){
+                  predLocalVariableNodes.add(n);
+                } else{ // Reassigning a local variable
+                  // TODO AlwaysCall checks
+                }
+
+              }
+              blocksMapToReachableLocals.put(cur, predLocalVariableNodes);
+            }else{
+              List<LocalVariableNode> predsLocalVaribaleNodes = mergeMultiPredsLocalVaribaleNodes(dfsOrder, rPreds, blocksMapToReachableLocals);
+
+              for (LocalVariableNode n: curLocalVariableNodes){
+
+                if(!predsLocalVaribaleNodes.contains(n)){
+                  predsLocalVaribaleNodes.add(n);
+                } else{ // Reassigning a local variable
+                  // TODO AlwaysCall checks
+                }
+
+              }
+
+              blocksMapToReachableLocals.put(cur, predsLocalVaribaleNodes);
+            }
+
+            break;
+
+          case EXCEPTION_BLOCK:
+          case CONDITIONAL_BLOCK:
+            Set<BlockImpl> cPred = ((BlockImpl) cur).getPredecessors();
+
+            // Conditional and Exceptional blocks have always one predecessor!
+            List<LocalVariableNode> PredLocals = blocksMapToReachableLocals.get(cPred.iterator().next());
+            blocksMapToReachableLocals.put(cur, (PredLocals));
+
+            break;
+
+            default:
+
+        }
+
+      }
+
+    }
+
+
+    private void checkAlwaysCallConditionForReassigning(LocalVariableNode){
+
+    }
+
+    private List<LocalVariableNode> mergeMultiPredsLocalVaribaleNodes(List<Block> dfsorder, Set<BlockImpl> preds, Map<Block, List<LocalVariableNode>> blocksMapToReachableLocals){
+      List<LocalVariableNode> mergeResult = new ArrayList<>();
+
+      for(BlockImpl block: preds){
+        List<LocalVariableNode> predLocals = blocksMapToReachableLocals.get(block);
+        if(predLocals==null){   // TODO its because of loops! check more carefully
+          continue;
+        }
+        for(LocalVariableNode node: predLocals){
+          if(!mergeResult.contains(node)){
+            mergeResult.add(node);
+          }
+        }
+      }
+
+      return mergeResult;
+    }
+
+    //((UnderlyingAST.CFGMethod) methodCFG.getUnderlyingAST()).method.getName().toString().contains("fooExitStoreCheck2")
+
+
+    private List<LocalVariableNode> getLocalVariablesOfRegularBlock(RegularBlockImpl b){
+
+      List<Node> nodes = b.getContents();
+      List<LocalVariableNode> localVariableNodes = new ArrayList<>();
+
+      for (Node n: nodes){
+
+        if(n.getTree()!=null && n instanceof AssignmentNode){
+          Node lhs = ((AssignmentNode) n).getTarget();
+          Node rhs = ((AssignmentNode) n).getExpression();
+
+          if(lhs instanceof LocalVariableNode && rhs != null){
+            // Add if it has AlwaysCall
+            if(hasAlwaysCall(lhs.getType())){
+              localVariableNodes.add((LocalVariableNode) lhs);
+            }
+          }
+        }
+
+      }
+
+      return localVariableNodes;
+    }
+
+    private boolean hasAlwaysCall(TypeMirror type) {
+      TypeElement eType = TypesUtils.getTypeElement(type);
+      if (eType == null) {
+        return false;
+      } else {
+        return (getDeclAnnotation(eType, AlwaysCall.class) != null);
+      }
+    }
+
+
+    private List<Block> getBlocksInReversePostOrders(){
+//      makeList
+
+      List<Block> result = new ArrayList();
+      Set<Block> visited = new HashSet();
+      Deque<Block> worklist = new ArrayDeque();
+      worklist.add(methodCFG.getEntryBlock());
+
+      while(!worklist.isEmpty()) {
+        Block cur = worklist.getLast();
+
+        if (visited.contains(cur)) {
+          result.add(cur);
+          worklist.removeLast();
+        } else {
+          visited.add(cur);
+          Deque<Block> successors = this.getSuccessors(cur);
+
+
+          successors.removeAll(visited);
+          worklist.addAll(successors);
+        }
+      }
+
+      Collections.reverse(result);
+      return Collections.unmodifiableList(result);
+    }
+
+    private Deque<Block> getSuccessors(Block cur) {
+      Deque<Block> succs = new ArrayDeque();
+      if (cur.getType() == Block.BlockType.CONDITIONAL_BLOCK) {
+        ConditionalBlock ccur = (ConditionalBlock) cur;
+        succs.add(ccur.getThenSuccessor());
+        succs.add(ccur.getElseSuccessor());
+      } else {
+        assert cur instanceof SingleSuccessorBlock;
+
+        Block b = ((SingleSuccessorBlock) cur).getSuccessor();
+        if (b != null) {
+          succs.add(b);
+        }
+      }
+
+//      if (cur.getType() == Block.BlockType.EXCEPTION_BLOCK) {
+//        ExceptionBlock ecur = (ExceptionBlock) cur;
+//        Map<TypeMirror, Set<Block>> esucc = ecur.getExceptionalSuccessors();
+//
+//        Collection<Set<Block>> esucc2 = ecur.getExceptionalSuccessors().values();
+//
+//
+//        Iterator var4 = ecur.getExceptionalSuccessors().values().iterator();
+//
+//        String s ="";
+//        while (var4.hasNext()) {
+//          Set<Block> exceptionSuccSet = (Set) var4.next();
+//          succs.addAll(exceptionSuccSet);
+//        }
+//      }
+
+      return succs;
+    }
+
+  }
+
 
   /**
    * This tree annotator is needed to create types for fluent builders that have @This annotations.
@@ -524,6 +769,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       return atm;
     }
     return null;
+  }
+
+  public CFAnalysis getAnalysis(){
+    final CFAnalysis an = this.analysis;
+    return an;
   }
 
   Collection<FrameworkSupport> getFrameworkSupports() {
