@@ -43,7 +43,6 @@ class ACRegularExitPointTest {
         // :: error: missing.alwayscall
         Foo f = new Foo();
         f.b();
-
     }
 
     void testStoringInLocal() {
@@ -109,16 +108,14 @@ class ACRegularExitPointTest {
     }
 
 
-    // return; is not counted in getReturnStatementStores so I changed it to return Foo
     void fooExitStoreCheck(boolean b) {
         if (b) {
             Foo f1 = new Foo();
             f1.a();
-//            return;
         } else {
             // :: error: missing.alwayscall
             Foo f2 = new Foo();
-//            return;
+
         }
 
     }
@@ -126,31 +123,29 @@ class ACRegularExitPointTest {
     Foo fooExitStoreCheck2(boolean b, boolean c) {
         // :: error: missing.alwayscall
         Foo f1 = makeFoo();
+        // :: error: missing.alwayscall
         Foo f3 = new Foo();
 
         if (b) {
-//            f1.a();
+            // :: error: missing.alwayscall
             Foo f2 = new Foo();
             if(c){
                 f3.a();
             }else{
                 f3.b();
             }
-            String h = "";
-//            return f1;
+            return f1;
         }else {
             // :: error: missing.alwayscall
             Foo f2 = new Foo();
-//            return f4;
-            String s = "";
         }
-
         return f3;
     }
 
 
     // localVariableValues : {b}
     void fooExitStoreCheck3(boolean b) {
+        // :: error: missing.alwayscall
         Foo f1, f2;
         if (b) {
             f1 = new Foo();
@@ -163,10 +158,12 @@ class ACRegularExitPointTest {
     // localVariableValues : {b, f1, f2}
     // Annotations : {TOP, {a}, TOP}
     void fooExitStoreCheck4(boolean b) {
-        Foo f1 = null, f2 = null;
+        // :: error: missing.alwayscall
+        Foo f2 = new Foo();
+        Foo f11 = null;
         if (b) {
-            f1 = new Foo();
-            f1.a();
+            f11 = new Foo();
+            f11.a();
         } else {
             f2 = new Foo();
         }
