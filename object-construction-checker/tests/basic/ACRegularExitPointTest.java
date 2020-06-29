@@ -173,10 +173,11 @@ class ACRegularExitPointTest {
         }
     }
 
-    // localVariableValues : {b, f1, f2}
-    // Annotations : {TOP, TOP, TOP}
     void fooExitStoreCheck5(boolean b) {
-        Foo f1 = new Foo(), f2 = new Foo();
+        // :: error: missing.alwayscall
+        Foo f1 = new Foo();
+        // :: error: missing.alwayscall
+        Foo f2 = new Foo();
         if (b) {
             f1.a();
         }
@@ -184,7 +185,9 @@ class ACRegularExitPointTest {
 
 
     void fooExitStoreCheck6(boolean b) {
-        Foo f1 = null, f2 = null;
+        Foo f1 = null;
+        // :: error: missing.alwayscall
+        Foo f2 = null;
         if (b) {
             f1 = new Foo();
             f1.a();
