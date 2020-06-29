@@ -14,6 +14,7 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -50,10 +51,13 @@ import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.BlockImpl;
 import org.checkerframework.dataflow.cfg.block.ConditionalBlock;
+import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.block.RegularBlockImpl;
 import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
+import org.checkerframework.dataflow.cfg.block.SpecialBlock;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.NullLiteralNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
@@ -347,19 +351,55 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           break;
 
         case EXCEPTION_BLOCK:
+          Set<BlockImpl> ePred = ((BlockImpl) cur).getPredecessors();
+
+          // Conditional and Exceptional blocks have always one predecessor!
+          Set<LocalVariableNode> ePredLocals = new HashSet<>(blocksMapToReachableLocals.get(ePred.iterator().next()));
+          blocksMapToReachableLocals.put(cur, (ePredLocals));
+          exceptionBlockAnalysis((ExceptionBlock) cur, blocksMapToReachableLocals.get(cur), cfg);
+
+          break;
         case CONDITIONAL_BLOCK:
+
           Set<BlockImpl> cPred = ((BlockImpl) cur).getPredecessors();
 
           // Conditional and Exceptional blocks have always one predecessor!
           Set<LocalVariableNode> cPredLocals =
-              blocksMapToReachableLocals.get(cPred.iterator().next());
+                  new HashSet<>(blocksMapToReachableLocals.get(cPred.iterator().next()));
           blocksMapToReachableLocals.put(cur, (cPredLocals));
+
+          Block successor = ((ConditionalBlock) cur).getElseSuccessor();
+          if(successor instanceof SpecialBlock){
+            TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(successor);
+            CFStore succRegularStore = succTransferInput.getRegularStore();
+
+            for (LocalVariableNode node : blocksMapToReachableLocals.get(cur)) {
+              if (succRegularStore.getValue(node) == null) {
+                checker.report(
+                        node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
+              } else{
+                CFValue cfValueOfNode = succRegularStore.getValue(node);
+                if (cfValueOfNode == null) {
+                  checker.report(
+                          node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
+
+                } else {
+                  reportAlwaysCallExitPointsErrors(node, succRegularStore.getValue(node));
+                }
+              }
+            }
+          }
+
           break;
 
         default:
       }
+
     }
+    String s = "";
   }
+
+
 
   private String getAlwaysCallValue(Element element) {
 
@@ -417,11 +457,40 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return mergeResult;
   }
 
+
+
+  private void exceptionBlockAnalysis(
+          ExceptionBlock cur,
+          Set<LocalVariableNode> predLocalVariableNodes,
+          ControlFlowGraph controlFlowGraph){
+    Block successor = cur.getSuccessor();
+    if(successor!=null && successor instanceof SpecialBlock){
+      TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(successor);
+      CFStore succRegularStore = succTransferInput.getRegularStore();
+
+      for (LocalVariableNode node : predLocalVariableNodes) {
+        if (succRegularStore.getValue(node) == null) {
+          checker.report(
+                  node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
+        } else{
+          CFValue cfValueOfNode = succRegularStore.getValue(node);
+          if (cfValueOfNode == null) {
+            checker.report(
+                    node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
+
+          } else {
+            reportAlwaysCallExitPointsErrors(node, succRegularStore.getValue(node));
+          }
+        }
+      }
+    }
+  }
+
   private Set<LocalVariableNode> regularBlockAnalysis(
       RegularBlockImpl cur,
       Set<LocalVariableNode> predLocalVariableNodes,
       ControlFlowGraph controlFlowGraph) {
-
+    Set<LocalVariableNode> preds = new HashSet<>(predLocalVariableNodes);
     List<Node> nodes = (cur).getContents();
     for (Node node : nodes) {
       if (node instanceof AssignmentNode) {
@@ -430,28 +499,34 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
         if (lhs instanceof LocalVariableNode && hasAlwaysCall(lhs.getType())) {
 
-          if (predLocalVariableNodes.contains(lhs)) {
+          if (preds.contains(lhs)) {
             CFStore storeBefore = getStoreBefore(node);
             reportAlwaysCallExitPointsErrors(
                 (LocalVariableNode) lhs, storeBefore.getValue((LocalVariableNode) lhs));
 
             if (rhs instanceof NullLiteralNode) {
-              predLocalVariableNodes.remove(lhs);
+              preds.remove(lhs);
             }
 
           } else if (!(rhs instanceof NullLiteralNode)) {
-            predLocalVariableNodes.add((LocalVariableNode) lhs);
+            preds.add((LocalVariableNode) lhs);
           }
 
           // Ownership Transfer
-          if (rhs instanceof LocalVariableNode && predLocalVariableNodes.contains(rhs)) {
-            predLocalVariableNodes.remove(rhs);
+          if (rhs instanceof LocalVariableNode && preds.contains(rhs)) {
+            preds.remove(rhs);
+          }
+
+          if(rhs instanceof MethodInvocationNode){
+//            CFStore s = getStoreAfter(node.);
+            String khar = "";
           }
         }
       }
     }
 
     CFStore storeAfter = getStoreAfter(nodes.get(nodes.size() - 1));
+//    CFStore hashMap =  getStoreAfter();
 
     BlockImpl successor = cur.getRegularSuccessor();
     TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(successor);
@@ -459,7 +534,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     Node returnNode =
         (nodes.get(nodes.size() - 1) instanceof ReturnNode) ? nodes.get(nodes.size() - 1) : null;
 
-    for (LocalVariableNode node : predLocalVariableNodes) {
+    for (LocalVariableNode node : preds) {
       if (returnNode != node
           && ((succRegularStore.getValue(node) == null)
               || successor.getType() == Block.BlockType.SPECIAL_BLOCK)) {
@@ -474,7 +549,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
     }
 
-    return predLocalVariableNodes;
+    return preds;
   }
 
   private boolean hasAlwaysCall(TypeMirror type) {
