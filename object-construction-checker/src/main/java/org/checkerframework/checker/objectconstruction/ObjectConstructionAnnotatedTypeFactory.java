@@ -527,22 +527,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
     }
 
-    //      if (cur.getType() == Block.BlockType.EXCEPTION_BLOCK) {
-    //        ExceptionBlock ecur = (ExceptionBlock) cur;
-    //        Map<TypeMirror, Set<Block>> esucc = ecur.getExceptionalSuccessors();
-    //
-    //        Collection<Set<Block>> esucc2 = ecur.getExceptionalSuccessors().values();
-    //
-    //
-    //        Iterator var4 = ecur.getExceptionalSuccessors().values().iterator();
-    //
-    //        String s ="";
-    //        while (var4.hasNext()) {
-    //          Set<Block> exceptionSuccSet = (Set) var4.next();
-    //          succs.addAll(exceptionSuccSet);
-    //        }
-    //      }
-
     return succs;
   }
   /**
