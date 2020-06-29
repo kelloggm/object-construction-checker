@@ -125,19 +125,23 @@ class ACRegularExitPointTest {
         Foo f1 = makeFoo();
         // :: error: missing.alwayscall
         Foo f3 = new Foo();
+        // :: error: missing.alwayscall
+        Foo f4 = new Foo();
 
         if (b) {
             // :: error: missing.alwayscall
             Foo f2 = new Foo();
             if(c){
-                f3.a();
+                f4.a();
             }else{
-                f3.b();
+                f4.b();
             }
             return f1;
         }else {
             // :: error: missing.alwayscall
             Foo f2 = new Foo();
+            f2 = new Foo();
+            f2.a();
         }
         return f3;
     }

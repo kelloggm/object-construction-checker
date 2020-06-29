@@ -341,7 +341,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
 
           predLocalVariableNodes =
-              getLocalVariablesOfRegularBlock((RegularBlockImpl) cur, predLocalVariableNodes, cfg);
+              regularBlockAnalysis((RegularBlockImpl) cur, predLocalVariableNodes, cfg);
 
           blocksMapToReachableLocals.put(cur, predLocalVariableNodes);
           break;
@@ -417,7 +417,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return mergeResult;
   }
 
-  private Set<LocalVariableNode> getLocalVariablesOfRegularBlock(
+  private Set<LocalVariableNode> regularBlockAnalysis(
       RegularBlockImpl cur,
       Set<LocalVariableNode> predLocalVariableNodes,
       ControlFlowGraph controlFlowGraph) {
