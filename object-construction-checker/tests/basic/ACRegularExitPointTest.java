@@ -53,6 +53,7 @@ class ACRegularExitPointTest {
 
     void test110() {
         Foo foo = makeFoo2();
+
     }
 
     void test2(Foo f){

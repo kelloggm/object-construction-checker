@@ -14,7 +14,6 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -335,6 +334,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         case REGULAR_BLOCK:
           Set<BlockImpl> rPreds = ((BlockImpl) cur).getPredecessors();
           Set<LocalVariableNode> predLocalVariableNodes;
+
           if (rPreds.size() == 1) {
             predLocalVariableNodes =
                 new HashSet<>(blocksMapToReachableLocals.get(rPreds.iterator().next()));
@@ -354,39 +354,31 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           Set<BlockImpl> ePred = ((BlockImpl) cur).getPredecessors();
 
           // Conditional and Exceptional blocks have always one predecessor!
-          Set<LocalVariableNode> ePredLocals = new HashSet<>(blocksMapToReachableLocals.get(ePred.iterator().next()));
+          Set<LocalVariableNode> ePredLocals =
+              new HashSet<>(blocksMapToReachableLocals.get(ePred.iterator().next()));
           blocksMapToReachableLocals.put(cur, (ePredLocals));
+
           exceptionBlockAnalysis((ExceptionBlock) cur, blocksMapToReachableLocals.get(cur), cfg);
 
           break;
         case CONDITIONAL_BLOCK:
-
           Set<BlockImpl> cPred = ((BlockImpl) cur).getPredecessors();
 
           // Conditional and Exceptional blocks have always one predecessor!
           Set<LocalVariableNode> cPredLocals =
-                  new HashSet<>(blocksMapToReachableLocals.get(cPred.iterator().next()));
+              new HashSet<>(blocksMapToReachableLocals.get(cPred.iterator().next()));
           blocksMapToReachableLocals.put(cur, (cPredLocals));
 
-          Block successor = ((ConditionalBlock) cur).getElseSuccessor();
-          if(successor instanceof SpecialBlock){
-            TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(successor);
+          Block elseSuccessor = ((ConditionalBlock) cur).getElseSuccessor();
+
+          if (elseSuccessor instanceof SpecialBlock) {
+            TransferInput<CFValue, CFStore> succTransferInput =
+                getAnalysis().getInput(elseSuccessor);
             CFStore succRegularStore = succTransferInput.getRegularStore();
 
             for (LocalVariableNode node : blocksMapToReachableLocals.get(cur)) {
-              if (succRegularStore.getValue(node) == null) {
-                checker.report(
-                        node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
-              } else{
-                CFValue cfValueOfNode = succRegularStore.getValue(node);
-                if (cfValueOfNode == null) {
-                  checker.report(
-                          node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
 
-                } else {
-                  reportAlwaysCallExitPointsErrors(node, succRegularStore.getValue(node));
-                }
-              }
+              reportAlwaysCallExitPointsErrors(node, succRegularStore);
             }
           }
 
@@ -394,12 +386,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
         default:
       }
-
     }
     String s = "";
   }
-
-
 
   private String getAlwaysCallValue(Element element) {
 
@@ -415,11 +404,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   private void reportAlwaysCallExitPointsErrors(
-      LocalVariableNode localVariableNode, CFValue cfValue) {
+      LocalVariableNode localVariableNode, CFStore store) {
+    CFValue cfValue = store.getValue(localVariableNode);
+
     if (cfValue == null) {
       checker.report(
           localVariableNode.getElement(),
           new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
+
     } else {
       Element element = localVariableNode.getElement();
       String alwaysCallValue = getAlwaysCallValue(element);
@@ -457,29 +449,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return mergeResult;
   }
 
-
-
   private void exceptionBlockAnalysis(
-          ExceptionBlock cur,
-          Set<LocalVariableNode> predLocalVariableNodes,
-          ControlFlowGraph cfg){
+      ExceptionBlock cur, Set<LocalVariableNode> predLocalVariableNodes, ControlFlowGraph cfg) {
     Block successor = cur.getSuccessor();
-    if(successor!=null && successor instanceof SpecialBlock){
-      CFStore storeAfter = getStoreAfter(cur.getNode());
-      for (LocalVariableNode node : predLocalVariableNodes) {
-        if (storeAfter.getValue(node) == null) {
-          checker.report(
-                  node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
-        } else{
-          CFValue cfValueOfNode = storeAfter.getValue(node);
-          if (cfValueOfNode == null) {
-            checker.report(
-                    node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
 
-          } else {
-            reportAlwaysCallExitPointsErrors(node, storeAfter.getValue(node));
-          }
-        }
+    if ((successor != null) && (successor instanceof SpecialBlock)) {
+      CFStore storeAfter = getStoreAfter(cur.getNode());
+
+      for (LocalVariableNode node : predLocalVariableNodes) {
+        reportAlwaysCallExitPointsErrors(node, storeAfter);
       }
     }
   }
@@ -490,7 +468,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       ControlFlowGraph controlFlowGraph) {
     Set<LocalVariableNode> preds = new HashSet<>(predLocalVariableNodes);
     List<Node> nodes = (cur).getContents();
+
     for (Node node : nodes) {
+
       if (node instanceof AssignmentNode) {
         Node lhs = ((AssignmentNode) node).getTarget();
         Node rhs = ((AssignmentNode) node).getExpression();
@@ -499,8 +479,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
           if (preds.contains(lhs)) {
             CFStore storeBefore = getStoreBefore(node);
-            reportAlwaysCallExitPointsErrors(
-                (LocalVariableNode) lhs, storeBefore.getValue((LocalVariableNode) lhs));
+            reportAlwaysCallExitPointsErrors((LocalVariableNode) lhs, storeBefore);
 
             if (rhs instanceof NullLiteralNode) {
               preds.remove(lhs);
@@ -515,15 +494,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             preds.remove(rhs);
           }
 
-          if(rhs instanceof MethodInvocationNode){
-//            CFStore s = getStoreAfter(node.);
+          if (rhs instanceof MethodInvocationNode) {
+            //            CFStore s = getStoreAfter(node.);
           }
         }
       }
     }
 
     CFStore storeAfter = getStoreAfter(nodes.get(nodes.size() - 1));
-//    CFStore hashMap =  getStoreAfter();
+    //    CFStore hashMap =  getStoreAfter();
 
     BlockImpl successor = cur.getRegularSuccessor();
     TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(successor);
@@ -535,14 +514,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       if (returnNode != node
           && ((succRegularStore.getValue(node) == null)
               || successor.getType() == Block.BlockType.SPECIAL_BLOCK)) {
-        CFValue cfValueOfNode = storeAfter.getValue(node);
-        if (cfValueOfNode == null) {
-          checker.report(
-              node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
 
-        } else {
-          reportAlwaysCallExitPointsErrors(node, storeAfter.getValue(node));
-        }
+        reportAlwaysCallExitPointsErrors(node, storeAfter);
       }
     }
 
@@ -551,11 +524,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   private boolean hasAlwaysCall(TypeMirror type) {
     TypeElement eType = TypesUtils.getTypeElement(type);
-    if (eType == null) {
-      return false;
-    } else {
-      return (getDeclAnnotation(eType, AlwaysCall.class) != null);
-    }
+
+    return ((eType != null) && (getDeclAnnotation(eType, AlwaysCall.class) != null));
   }
 
   private List<Block> getBlocksInReversePostOrders(ControlFlowGraph methodCFG) {
@@ -571,6 +541,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       if (visited.contains(cur)) {
         result.add(cur);
         worklist.removeLast();
+
       } else {
         visited.add(cur);
         Deque<Block> successors = this.getSuccessors(cur);
@@ -586,10 +557,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   private Deque<Block> getSuccessors(Block cur) {
     Deque<Block> succs = new ArrayDeque();
+
     if (cur.getType() == Block.BlockType.CONDITIONAL_BLOCK) {
+
       ConditionalBlock ccur = (ConditionalBlock) cur;
       succs.add(ccur.getThenSuccessor());
       succs.add(ccur.getElseSuccessor());
+
     } else {
       assert cur instanceof SingleSuccessorBlock;
 
