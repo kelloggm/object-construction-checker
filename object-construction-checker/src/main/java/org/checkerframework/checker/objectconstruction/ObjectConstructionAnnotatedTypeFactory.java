@@ -465,9 +465,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private Set<LocalVariableNode> regularBlockAnalysis(
       RegularBlockImpl cur,
       Set<LocalVariableNode> predLocalVariableNodes,
-      ControlFlowGraph controlFlowGraph) {
+      ControlFlowGraph cfg) {
     Set<LocalVariableNode> preds = new HashSet<>(predLocalVariableNodes);
-    List<Node> nodes = (cur).getContents();
+    List<Node> nodes = cur.getContents();
 
     for (Node node : nodes) {
 
@@ -495,6 +495,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
 
           if (rhs instanceof MethodInvocationNode) {
+            String s = "";
             //            CFStore s = getStoreAfter(node.);
           }
         }
@@ -507,15 +508,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     BlockImpl successor = cur.getRegularSuccessor();
     TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(successor);
     CFStore succRegularStore = succTransferInput.getRegularStore();
+
+    Node last = nodes.get(nodes.size() - 1);
     Node returnNode =
-        (nodes.get(nodes.size() - 1) instanceof ReturnNode) ? nodes.get(nodes.size() - 1) : null;
+        (last instanceof ReturnNode) ? last : null;
 
     for (LocalVariableNode node : preds) {
       if (returnNode != node
-          && ((succRegularStore.getValue(node) == null)
-              || successor.getType() == Block.BlockType.SPECIAL_BLOCK)) {
-
+          && (succRegularStore.getValue(node) == null)){
         reportAlwaysCallExitPointsErrors(node, storeAfter);
+      } else if (returnNode != node && successor.getType() == Block.BlockType.SPECIAL_BLOCK){
+        reportAlwaysCallExitPointsErrors(node, succRegularStore);
       }
     }
 
