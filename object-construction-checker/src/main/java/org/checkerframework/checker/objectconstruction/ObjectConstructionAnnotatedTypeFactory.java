@@ -462,24 +462,22 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private void exceptionBlockAnalysis(
           ExceptionBlock cur,
           Set<LocalVariableNode> predLocalVariableNodes,
-          ControlFlowGraph controlFlowGraph){
+          ControlFlowGraph cfg){
     Block successor = cur.getSuccessor();
     if(successor!=null && successor instanceof SpecialBlock){
-      TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(successor);
-      CFStore succRegularStore = succTransferInput.getRegularStore();
-
+      CFStore storeAfter = getStoreAfter(cur.getNode());
       for (LocalVariableNode node : predLocalVariableNodes) {
-        if (succRegularStore.getValue(node) == null) {
+        if (storeAfter.getValue(node) == null) {
           checker.report(
                   node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
         } else{
-          CFValue cfValueOfNode = succRegularStore.getValue(node);
+          CFValue cfValueOfNode = storeAfter.getValue(node);
           if (cfValueOfNode == null) {
             checker.report(
                     node.getElement(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
 
           } else {
-            reportAlwaysCallExitPointsErrors(node, succRegularStore.getValue(node));
+            reportAlwaysCallExitPointsErrors(node, storeAfter.getValue(node));
           }
         }
       }
@@ -519,7 +517,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
           if(rhs instanceof MethodInvocationNode){
 //            CFStore s = getStoreAfter(node.);
-            String khar = "";
           }
         }
       }
