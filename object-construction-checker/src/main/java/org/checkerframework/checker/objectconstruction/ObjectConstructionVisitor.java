@@ -69,7 +69,6 @@ public class ObjectConstructionVisitor
 
       if (hasAlwaysCall(returnType)) {
         TypeElement eType = TypesUtils.getTypeElement(returnType);
-
         AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
 
         String alwaysCallAnnoVal =

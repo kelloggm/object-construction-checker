@@ -53,7 +53,6 @@ class ACRegularExitPointTest {
 
     void test110() {
         Foo foo = makeFoo2();
-
     }
 
     void test2(Foo f){
@@ -206,6 +205,13 @@ class ACRegularExitPointTest {
 
 
     void test8() { Foo f = null; }
+
+    void testLoop() {
+        Foo f = null;
+        while (true) {
+            f = new Foo();
+        }
+    }
 
 //    void test9E() {
 //        try{

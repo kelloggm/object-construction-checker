@@ -56,7 +56,6 @@ import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlock;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
-import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.NullLiteralNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
@@ -370,6 +369,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           blocksMapToReachableLocals.put(cur, (cPredLocals));
 
           Block elseSuccessor = ((ConditionalBlock) cur).getElseSuccessor();
+          Block thenSuccessor = ((ConditionalBlock) cur).getThenSuccessor();
 
           if (elseSuccessor instanceof SpecialBlock) {
             TransferInput<CFValue, CFStore> succTransferInput =
@@ -377,17 +377,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             CFStore succRegularStore = succTransferInput.getRegularStore();
 
             for (LocalVariableNode node : blocksMapToReachableLocals.get(cur)) {
-
               reportAlwaysCallExitPointsErrors(node, succRegularStore);
             }
-          }
 
+          }
           break;
 
         default:
       }
     }
-    String s = "";
   }
 
   private String getAlwaysCallValue(Element element) {
@@ -396,11 +394,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     TypeElement eType = TypesUtils.getTypeElement(type);
     AnnotationMirror alwaysCallAnnotation = getDeclAnnotation(eType, AlwaysCall.class);
 
-    if (alwaysCallAnnotation != null) {
-      return AnnotationUtils.getElementValue(alwaysCallAnnotation, "value", String.class, false);
-    } else {
-      return null;
-    }
+    return (alwaysCallAnnotation == null) ? null
+            : AnnotationUtils.getElementValue(alwaysCallAnnotation, "value", String.class, false);
   }
 
   private void reportAlwaysCallExitPointsErrors(
@@ -431,19 +426,23 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       Set<BlockImpl> preds, Map<Block, Set<LocalVariableNode>> blocksMapToReachableLocals) {
     Set<LocalVariableNode> mergeResult = null;
     Iterator<BlockImpl> itr = preds.iterator();
+
     while (itr.hasNext()) {
       Block b = itr.next();
+
       if (blocksMapToReachableLocals.get(b) != null) {
         mergeResult = new HashSet<>(blocksMapToReachableLocals.get(b));
         break;
       }
+
     }
+
     for (BlockImpl block : preds) {
-      if (blocksMapToReachableLocals.get(block) == null) {
-        continue;
+
+      if (blocksMapToReachableLocals.get(block) != null) {
+        mergeResult.retainAll(blocksMapToReachableLocals.get(block));
       }
 
-      mergeResult.retainAll(blocksMapToReachableLocals.get(block));
     }
 
     return mergeResult;
@@ -463,9 +462,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   private Set<LocalVariableNode> regularBlockAnalysis(
-      RegularBlockImpl cur,
-      Set<LocalVariableNode> predLocalVariableNodes,
-      ControlFlowGraph cfg) {
+      RegularBlockImpl cur, Set<LocalVariableNode> predLocalVariableNodes, ControlFlowGraph cfg) {
     Set<LocalVariableNode> preds = new HashSet<>(predLocalVariableNodes);
     List<Node> nodes = cur.getContents();
 
@@ -494,32 +491,29 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             preds.remove(rhs);
           }
 
-          if (rhs instanceof MethodInvocationNode) {
-            String s = "";
-            //            CFStore s = getStoreAfter(node.);
-          }
         }
+
       }
     }
 
-    CFStore storeAfter = getStoreAfter(nodes.get(nodes.size() - 1));
-    //    CFStore hashMap =  getStoreAfter();
+    Node last = nodes.get(nodes.size() - 1);
+    CFStore storeAfter = getStoreAfter(last);
 
     BlockImpl successor = cur.getRegularSuccessor();
     TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(successor);
     CFStore succRegularStore = succTransferInput.getRegularStore();
 
-    Node last = nodes.get(nodes.size() - 1);
-    Node returnNode =
-        (last instanceof ReturnNode) ? last : null;
+    Node returnNode = (last instanceof ReturnNode) ? last : null;
 
     for (LocalVariableNode node : preds) {
-      if (returnNode != node
-          && (succRegularStore.getValue(node) == null)){
+
+      if (returnNode != node && (succRegularStore.getValue(node) == null)) {
         reportAlwaysCallExitPointsErrors(node, storeAfter);
-      } else if (returnNode != node && successor.getType() == Block.BlockType.SPECIAL_BLOCK){
+
+      } else if (returnNode != node && successor.getType() == Block.BlockType.SPECIAL_BLOCK) {
         reportAlwaysCallExitPointsErrors(node, succRegularStore);
       }
+
     }
 
     return preds;
@@ -827,8 +821,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   public CFAnalysis getAnalysis() {
-    final CFAnalysis an = this.analysis;
-    return an;
+    final CFAnalysis analysis = this.analysis;
+    return analysis;
   }
 
   Collection<FrameworkSupport> getFrameworkSupports() {
