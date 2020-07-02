@@ -401,7 +401,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         propagate(Pair.of(succ, newDefs), visited, worklist);
 
       }
-      
+
     }
 
 
@@ -482,84 +482,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
 
-
-  public void traverseCFG(ControlFlowGraph cfg) {
-
-    List<Block> dfsOrder = getBlocksInReversePostOrders(cfg);
-    Map<BlockImpl, Set<LocalVariableNode>> blocksMapToReachableLocals = new HashMap<>();
-
-    for (int i = 0; i < dfsOrder.size(); i++) {
-
-      BlockImpl cur = (BlockImpl)dfsOrder.get(i);
-
-      switch (cur.getType()) {
-        case SPECIAL_BLOCK:
-          Set<BlockImpl> sPreds = ((BlockImpl) cur).getPredecessors();
-
-          if (sPreds.size() == 0) {
-            Set<LocalVariableNode> entryLocals = new HashSet<>();
-            blocksMapToReachableLocals.put(cur, (entryLocals));
-          }
-          break;
-
-        case REGULAR_BLOCK:
-          Set<BlockImpl> rPreds = ((BlockImpl) cur).getPredecessors();
-          Set<LocalVariableNode> predLocalVariableNodes;
-
-          if (rPreds.size() == 1) {
-            predLocalVariableNodes =
-                new HashSet<>(blocksMapToReachableLocals.get(rPreds.iterator().next()));
-          } else {
-            predLocalVariableNodes =
-                new HashSet<>(
-                    mergeMultiPredsLocalVaribaleNodes(rPreds, blocksMapToReachableLocals));
-          }
-
-          predLocalVariableNodes =
-              regularBlockAnalysis((RegularBlockImpl) cur, predLocalVariableNodes, cfg);
-
-          blocksMapToReachableLocals.put(cur, predLocalVariableNodes);
-          break;
-
-        case EXCEPTION_BLOCK:
-          Set<BlockImpl> ePred = ((BlockImpl) cur).getPredecessors();
-
-          // Conditional and Exceptional blocks have always one predecessor!
-          Set<LocalVariableNode> ePredLocals =
-              new HashSet<>(blocksMapToReachableLocals.get(ePred.iterator().next()));
-          blocksMapToReachableLocals.put(cur, (ePredLocals));
-
-          exceptionBlockAnalysis((ExceptionBlock) cur, blocksMapToReachableLocals.get(cur), cfg);
-
-          break;
-        case CONDITIONAL_BLOCK:
-          Set<BlockImpl> cPred = ((BlockImpl) cur).getPredecessors();
-
-          // Conditional and Exceptional blocks have always one predecessor!
-          Set<LocalVariableNode> cPredLocals =
-              new HashSet<>(blocksMapToReachableLocals.get(cPred.iterator().next()));
-          blocksMapToReachableLocals.put((BlockImpl) cur, (cPredLocals));
-
-          Block elseSuccessor = ((ConditionalBlock) cur).getElseSuccessor();
-          Block thenSuccessor = ((ConditionalBlock) cur).getThenSuccessor();
-
-          if (elseSuccessor instanceof SpecialBlock) {
-            TransferInput<CFValue, CFStore> succTransferInput =
-                getAnalysis().getInput(elseSuccessor);
-            CFStore succRegularStore = succTransferInput.getRegularStore();
-
-            for (LocalVariableNode node : blocksMapToReachableLocals.get(cur)) {
-//              reportAlwaysCallErrors(node, succRegularStore);
-            }
-
-          }
-          break;
-
-        default:
-      }
-    }
-  }
-
   private String getAlwaysCallValue(Element element) {
 
     TypeMirror type = element.asType();
@@ -576,7 +498,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     CFValue cfValue = store.getValue(lhs);
 
     if (cfValue == null) {
-      Element element = lhs.getElement();
       checker.report(
           latestAssignmentNode.getTree(),
           new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
@@ -596,134 +517,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
-  private Set<LocalVariableNode> mergeMultiPredsLocalVaribaleNodes(
-      Set<BlockImpl> preds, Map<BlockImpl, Set<LocalVariableNode>> blocksMapToReachableLocals) {
-    Set<LocalVariableNode> mergeResult = null;
-    Iterator<BlockImpl> itr = preds.iterator();
-
-    while (itr.hasNext()) {
-      Block b = itr.next();
-
-      if (blocksMapToReachableLocals.get(b) != null) {
-        mergeResult = new HashSet<>(blocksMapToReachableLocals.get(b));
-        break;
-      }
-
-    }
-
-    for (BlockImpl block : preds) {
-
-      if (blocksMapToReachableLocals.get(block) != null) {
-        mergeResult.retainAll(blocksMapToReachableLocals.get(block));
-      }
-
-    }
-
-    return mergeResult;
-  }
-
-  private void exceptionBlockAnalysis(
-      ExceptionBlock cur, Set<LocalVariableNode> predLocalVariableNodes, ControlFlowGraph cfg) {
-    Block successor = cur.getSuccessor();
-
-    if ((successor != null) && (successor instanceof SpecialBlock)) {
-      CFStore storeAfter = getStoreAfter(cur.getNode());
-
-      for (LocalVariableNode node : predLocalVariableNodes) {
-//        reportAlwaysCallErrors(node, storeAfter);
-      }
-    }
-  }
-
-  private Set<LocalVariableNode> regularBlockAnalysis(
-      RegularBlockImpl cur, Set<LocalVariableNode> predLocalVariableNodes, ControlFlowGraph cfg) {
-    Set<LocalVariableNode> preds = new HashSet<>(predLocalVariableNodes);
-    List<Node> nodes = cur.getContents();
-
-    for (Node node : nodes) {
-
-      if (node instanceof AssignmentNode) {
-        Node lhs = ((AssignmentNode) node).getTarget();
-        Node rhs = ((AssignmentNode) node).getExpression();
-
-        if (lhs instanceof LocalVariableNode && hasAlwaysCall(lhs.getType())) {
-
-          if (preds.contains(lhs)) {
-            CFStore storeBefore = getStoreBefore(node);
-//            reportAlwaysCallErrors((LocalVariableNode) lhs, storeBefore);
-
-            if (rhs instanceof NullLiteralNode) {
-              preds.remove(lhs);
-            }
-
-          } else if (!(rhs instanceof NullLiteralNode)) {
-            preds.add((LocalVariableNode) lhs);
-          }
-
-          // Ownership Transfer
-          if (rhs instanceof LocalVariableNode && preds.contains(rhs)) {
-            preds.remove(rhs);
-          }
-
-        }
-
-      }
-    }
-
-    Node last = nodes.get(nodes.size() - 1);
-    CFStore storeAfter = getStoreAfter(last);
-
-    BlockImpl successor = cur.getRegularSuccessor();
-    TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(successor);
-    CFStore succRegularStore = succTransferInput.getRegularStore();
-
-    Node returnNode = (last instanceof ReturnNode) ? last : null;
-
-    for (LocalVariableNode node : preds) {
-
-      if (returnNode != node && (succRegularStore.getValue(node) == null)) {
-//        reportAlwaysCallErrors(node, storeAfter);
-
-      } else if (returnNode != node && successor.getType() == Block.BlockType.SPECIAL_BLOCK) {
-//        reportAlwaysCallErrors(node, succRegularStore);
-      }
-
-    }
-
-    return preds;
-  }
-
   private boolean hasAlwaysCall(TypeMirror type) {
     TypeElement eType = TypesUtils.getTypeElement(type);
 
     return ((eType != null) && (getDeclAnnotation(eType, AlwaysCall.class) != null));
-  }
-
-  private List<Block> getBlocksInReversePostOrders(ControlFlowGraph methodCFG) {
-
-    List<Block> result = new ArrayList();
-    Set<Block> visited = new HashSet();
-    Deque<Block> worklist = new ArrayDeque();
-    worklist.add(methodCFG.getEntryBlock());
-
-    while (!worklist.isEmpty()) {
-      Block cur = worklist.getLast();
-
-      if (visited.contains(cur)) {
-        result.add(cur);
-        worklist.removeLast();
-
-      } else {
-        visited.add(cur);
-        Deque<Block> successors = this.getSuccessors(cur);
-
-        successors.removeAll(visited);
-        worklist.addAll(successors);
-      }
-    }
-
-    Collections.reverse(result);
-    return Collections.unmodifiableList(result);
   }
 
   private Deque<Block> getSuccessors(Block cur) {
