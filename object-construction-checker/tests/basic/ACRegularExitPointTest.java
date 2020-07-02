@@ -37,8 +37,8 @@ class ACRegularExitPointTest {
     }
 
     void makeFooFinilize2(){
-        // :: error: missing.alwayscall
         Foo m;
+        // :: error: missing.alwayscall
         m = new Foo();
         // :: error: missing.alwayscall
         Foo f = new Foo();
@@ -146,21 +146,18 @@ class ACRegularExitPointTest {
     }
 
 
-    // localVariableValues : {b}
     void fooExitStoreCheck3(boolean b) {
         Foo f1;
-        // :: error: missing.alwayscall
         Foo f2;
         if (b) {
             f1 = new Foo();
             f1.a();
         } else {
+            // :: error: missing.alwayscall
             f2 = new Foo();
         }
     }
 
-    // localVariableValues : {b, f1, f2}
-    // Annotations : {TOP, {a}, TOP}
     void fooExitStoreCheck4(boolean b) {
         // :: error: missing.alwayscall
         Foo f2 = new Foo();
@@ -169,6 +166,7 @@ class ACRegularExitPointTest {
             f11 = new Foo();
             f11.a();
         } else {
+            // :: error: missing.alwayscall
             f2 = new Foo();
         }
     }
@@ -186,20 +184,20 @@ class ACRegularExitPointTest {
 
     void fooExitStoreCheck6(boolean b) {
         Foo f1 = null;
-        // :: error: missing.alwayscall
         Foo f2 = null;
         if (b) {
             f1 = new Foo();
             f1.a();
         } else {
+            // :: error: missing.alwayscall
             f2 = new Foo();
         }
     }
 
 
     void test7(){
-        // :: error: missing.alwayscall
         Foo f;
+        // :: error: missing.alwayscall
         f = makeFoo();
     }
 
@@ -209,6 +207,7 @@ class ACRegularExitPointTest {
     void testLoop() {
         Foo f = null;
         while (true) {
+            // :: error: missing.alwayscall
             f = new Foo();
         }
     }
