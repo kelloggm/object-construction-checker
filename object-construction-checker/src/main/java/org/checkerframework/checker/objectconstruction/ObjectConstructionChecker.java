@@ -6,14 +6,14 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
 import org.checkerframework.common.value.ValueChecker;
 import org.checkerframework.framework.source.SupportedOptions;
-import org.checkerframework.framework.source.SuppressWarningsKeys;
+import org.checkerframework.framework.source.SuppressWarningsPrefix;
 
 /**
  * The primary typechecker for the object construction checker, which allows programmers to specify
  * unsafe combinations of options to builder or builder-like interfaces and prevent dangerous
  * objects from being instantiated.
  */
-@SuppressWarningsKeys({"builder", "object.construction", "objectconstruction"})
+@SuppressWarningsPrefix({"builder", "object.construction", "objectconstruction"})
 @SupportedOptions({
   ObjectConstructionChecker.USE_VALUE_CHECKER,
   ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
