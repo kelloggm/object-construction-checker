@@ -212,6 +212,42 @@ class ACRegularExitPointTest {
         }
     }
 
+
+    void testLoop2() {
+        // :: error: missing.alwayscall
+        Foo f = new Foo();
+        while (true) {
+            // :: error: missing.alwayscall
+            f = new Foo();
+            String s = "";
+        }
+    }
+
+
+    void testLoop3(boolean b) {
+        Foo f = null;
+        while (true) {
+            if (b) {
+                // :: error: missing.alwayscall
+                f = new Foo();
+            } else {
+                // :: error: missing.alwayscall
+                f = new Foo();
+            }
+        }
+    }
+
+
+    void testMulti(boolean b) {
+        // :: error: missing.alwayscall
+        Foo f = new Foo();
+        if (b) {
+            f = null;
+        } else {
+            f = null;
+        }
+    }
+
 //    void test9E() {
 //        try{
 //            Foo f = new Foo();

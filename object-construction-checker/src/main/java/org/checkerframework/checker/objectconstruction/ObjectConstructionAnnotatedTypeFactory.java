@@ -1,5 +1,6 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
@@ -26,6 +27,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
+
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
@@ -79,6 +81,7 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.checkerframework.org.apache.commons.lang3.tuple.Triple;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -318,19 +321,21 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   public void checkCFG(SpecialBlock entry, ControlFlowGraph cfg){
 
-    Pair<BlockImpl, Set<AssignmentNode>> first = Pair.of((BlockImpl) entry, Collections.emptySet());
+    Triple<Long, Long, Set<AssignmentNode>> v1 = Triple.of(entry.getId(), entry.getId(), Collections.emptySet());
+    Pair<BlockImpl, Set<AssignmentNode>> w1 = Pair.of((BlockImpl) entry, Collections.emptySet());
 
-    Set<Pair<BlockImpl, Set<AssignmentNode>>> visited = new HashSet<>();
-    visited.add(first);
+    Set<Triple<Long, Long, Set<AssignmentNode>>> visited = new HashSet<>();
+    visited.add(v1);
+
+
     Deque< Pair< BlockImpl, Set<AssignmentNode>>> worklist = new ArrayDeque();
-    worklist.add(first);
-
+    worklist.add(w1);
 
     while (!worklist.isEmpty()) {
 
       Pair< BlockImpl, Set<AssignmentNode>> state = worklist.getLast();
       worklist.removeLast();
-
+//      ((UnderlyingAST.CFGMethod)cfg.getUnderlyingAST()).getMethod().getName().toString().contains("testLoop2")
       List<Node> nodes = getBlockNodes(state.first);
       Set<AssignmentNode> newDefs = new HashSet<>(state.second);
 
@@ -339,13 +344,16 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           Node lhs = ((AssignmentNode) node).getTarget();
           Node rhs = ((AssignmentNode) node).getExpression();
 
+
           if (lhs instanceof LocalVariableNode && hasAlwaysCall(lhs.getType())) {
 
-            if (isVarInPrevDefs(newDefs, lhs)) {
+            if (isVarInPrevDefs(newDefs, lhs, cfg)) {
               CFStore storeBefore = getStoreBefore(node);
               AssignmentNode latestAssignmentNode = getLastAssignmentNodeOfVar(newDefs, lhs);
 
               reportAlwaysCallErrors(latestAssignmentNode, storeBefore, cfg);
+
+
               newDefs.remove(latestAssignmentNode);
 
               if (!(rhs instanceof NullLiteralNode)) {
@@ -357,85 +365,81 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             }
 
             // Ownership Transfer
-            if (rhs instanceof LocalVariableNode && isVarInPrevDefs(newDefs, rhs)) {
+            if (rhs instanceof LocalVariableNode && isVarInPrevDefs(newDefs, rhs, cfg)) {
               newDefs.remove(getLastAssignmentNodeOfVar(newDefs, rhs));
             }
 
           }
         }
 
-        if (node instanceof ReturnNode && ((ReturnNode) node).getResult() instanceof LocalVariableNode && isVarInPrevDefs(newDefs, ((ReturnNode) node).getResult())) {
+        if (node instanceof ReturnNode && ((ReturnNode) node).getResult() instanceof LocalVariableNode && isVarInPrevDefs(newDefs, ((ReturnNode) node).getResult(), cfg)) {
           newDefs.remove(getLastAssignmentNodeOfVar(newDefs, ((ReturnNode) node).getResult()));
         }
       }
 
-      List<BlockImpl> successorBlocks = getSuccessorsBlocks(state.first);
+      List<BlockImpl> successorBlocks = getSuccessorsBlocks(state.first, cfg);
 
 
       for (BlockImpl succ: successorBlocks) {
-        if(nodes.size() == 0){
-          propagate(Pair.of(succ, newDefs), visited, worklist);
+
+        if (newDefs.size() == 0){
+          propagate(Pair.of(succ, newDefs), state.first, visited, worklist);
           continue;
         }
 
-        if (newDefs.size() == 0){
-          propagate(Pair.of(succ, newDefs), visited, worklist);
-        }
 
-        Node last = nodes.get(nodes.size() - 1);
-        CFStore storeAfter = getStoreAfter(last);
 
         TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(succ);
         CFStore succRegularStore = succTransferInput.getRegularStore();
 
         for (AssignmentNode assignmentNode: newDefs) {
-          if (succ instanceof SpecialBlockImpl) {
-            reportAlwaysCallErrors(assignmentNode, storeAfter, cfg);
-          } else if (succRegularStore.getValue((LocalVariableNode) (assignmentNode.getTarget())) == null){
+          if (succ instanceof SpecialBlockImpl || visited.contains(Triple.of(succ.getId(), state.first.getId(), newDefs))) {
+            if( nodes.size() == 0 ) {
+              reportAlwaysCallErrors(assignmentNode, succRegularStore, cfg);
+            } else {
+              Node last = nodes.get(nodes.size() - 1);
+              CFStore storeAfter = getStoreAfter(last);
+              reportAlwaysCallErrors(assignmentNode, storeAfter, cfg);
+            }
+//            error.add(assignmentNode);
+          } else if (succRegularStore.getValue((LocalVariableNode) (assignmentNode.getTarget())) == null) {
+//            error.add(assignmentNode);
             reportAlwaysCallErrors(assignmentNode, succRegularStore, cfg);
 
           }
-
         }
 
-        propagate(Pair.of(succ, newDefs), visited, worklist);
-
+        propagate(Pair.of(succ, newDefs), state.first, visited, worklist);
       }
-
     }
-
-
-
   }
 
   public AssignmentNode getLastAssignmentNodeOfVar(Set<AssignmentNode> newDefs, Node localVariableNode) {
 
     for (AssignmentNode assignmentNode: newDefs) {
-      Node lhs = (assignmentNode).getTarget();
+      LocalVariableNode lhs = (LocalVariableNode) (assignmentNode).getTarget();
 
-      if (lhs == localVariableNode) {
-//        newDefs.remove(assignmentNode);
+      if (lhs.getElement() == ((LocalVariableNode) localVariableNode).getElement()) {
         return assignmentNode;
       }
-
     }
 
     return null;
   }
 
 
-  public boolean isVarInPrevDefs(Set<AssignmentNode> newDefs, Node localVariableNode) {
+  public boolean isVarInPrevDefs(Set<AssignmentNode> newDefs, Node localVariableNode, ControlFlowGraph cfg) {
 
     for (AssignmentNode assignmentNode: newDefs) {
-      Node lhs = (assignmentNode).getTarget();
-      if (lhs == localVariableNode) {
+      LocalVariableNode lhs = (LocalVariableNode) (assignmentNode).getTarget();
+      if (lhs.getElement() == ((LocalVariableNode) localVariableNode).getElement()) {
         return true;
       }
     }
     return false;
   }
 
-  public List<BlockImpl> getSuccessorsBlocks(BlockImpl cur){
+  public List<BlockImpl> getSuccessorsBlocks(BlockImpl cur, ControlFlowGraph cfg){
     List<BlockImpl> successorBlock = new ArrayList<>();
 
     if (cur.getType() == Block.BlockType.CONDITIONAL_BLOCK) {
@@ -474,9 +478,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
 
-  public void propagate(Pair<BlockImpl, Set<AssignmentNode>> newState, Set<Pair<BlockImpl, Set<AssignmentNode>>> visited, Deque< Pair< BlockImpl, Set<AssignmentNode>>> worklist){
-    if (!visited.contains(newState)) {
-      visited.add(newState);
+  public void propagate(Pair<BlockImpl, Set<AssignmentNode>> newState, BlockImpl prev, Set<Triple<Long, Long, Set<AssignmentNode>>> visited, Deque< Pair< BlockImpl, Set<AssignmentNode>>> worklist){
+    if (!visited.contains(Triple.of(newState.first.getId(), prev.getId(), newState.second))) {
+      visited.add(Triple.of(newState.first.getId(), prev.getId(), newState.second));
       worklist.add(newState);
     }
   }
@@ -498,6 +502,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     CFValue cfValue = store.getValue(lhs);
 
     if (cfValue == null) {
+//      errors.add(latestAssignmentNode);
       checker.report(
           latestAssignmentNode.getTree(),
           new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
