@@ -1,6 +1,5 @@
 package org.checkerframework.checker.objectconstruction;
 
-import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
@@ -13,12 +12,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -27,7 +23,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
@@ -52,7 +47,6 @@ import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.BlockImpl;
 import org.checkerframework.dataflow.cfg.block.ConditionalBlock;
-import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlockImpl;
 import org.checkerframework.dataflow.cfg.block.RegularBlockImpl;
 import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
@@ -313,37 +307,36 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   @Override
   public void postAnalyze(ControlFlowGraph cfg) {
-//    traverseCFG(cfg);
+    //    traverseCFG(cfg);
     checkCFG(cfg.getEntryBlock(), cfg);
     super.postAnalyze(cfg);
   }
 
+  public void checkCFG(SpecialBlock entry, ControlFlowGraph cfg) {
 
-  public void checkCFG(SpecialBlock entry, ControlFlowGraph cfg){
-
-    Triple<Long, Long, Set<AssignmentNode>> v1 = Triple.of(entry.getId(), entry.getId(), Collections.emptySet());
+    Triple<Long, Long, Set<AssignmentNode>> v1 =
+        Triple.of(entry.getId(), entry.getId(), Collections.emptySet());
     Pair<BlockImpl, Set<AssignmentNode>> w1 = Pair.of((BlockImpl) entry, Collections.emptySet());
 
     Set<Triple<Long, Long, Set<AssignmentNode>>> visited = new HashSet<>();
     visited.add(v1);
 
-
-    Deque< Pair< BlockImpl, Set<AssignmentNode>>> worklist = new ArrayDeque();
+    Deque<Pair<BlockImpl, Set<AssignmentNode>>> worklist = new ArrayDeque();
     worklist.add(w1);
 
     while (!worklist.isEmpty()) {
 
-      Pair< BlockImpl, Set<AssignmentNode>> state = worklist.getLast();
+      Pair<BlockImpl, Set<AssignmentNode>> state = worklist.getLast();
       worklist.removeLast();
-//      ((UnderlyingAST.CFGMethod)cfg.getUnderlyingAST()).getMethod().getName().toString().contains("testLoop2")
+      //
+      // ((UnderlyingAST.CFGMethod)cfg.getUnderlyingAST()).getMethod().getName().toString().contains("testLoop2")
       List<Node> nodes = getBlockNodes(state.first);
       Set<AssignmentNode> newDefs = new HashSet<>(state.second);
 
-      for (Node node: nodes) {
+      for (Node node : nodes) {
         if (node instanceof AssignmentNode) {
           Node lhs = ((AssignmentNode) node).getTarget();
           Node rhs = ((AssignmentNode) node).getExpression();
-
 
           if (lhs instanceof LocalVariableNode && hasAlwaysCall(lhs.getType())) {
 
@@ -352,7 +345,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               AssignmentNode latestAssignmentNode = getLastAssignmentNodeOfVar(newDefs, lhs);
 
               reportAlwaysCallErrors(latestAssignmentNode, storeBefore, cfg);
-
 
               newDefs.remove(latestAssignmentNode);
 
@@ -368,44 +360,44 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             if (rhs instanceof LocalVariableNode && isVarInPrevDefs(newDefs, rhs, cfg)) {
               newDefs.remove(getLastAssignmentNodeOfVar(newDefs, rhs));
             }
-
           }
         }
 
-        if (node instanceof ReturnNode && ((ReturnNode) node).getResult() instanceof LocalVariableNode && isVarInPrevDefs(newDefs, ((ReturnNode) node).getResult(), cfg)) {
+        if (node instanceof ReturnNode
+            && ((ReturnNode) node).getResult() instanceof LocalVariableNode
+            && isVarInPrevDefs(newDefs, ((ReturnNode) node).getResult(), cfg)) {
           newDefs.remove(getLastAssignmentNodeOfVar(newDefs, ((ReturnNode) node).getResult()));
         }
       }
 
       List<BlockImpl> successorBlocks = getSuccessorsBlocks(state.first, cfg);
 
+      for (BlockImpl succ : successorBlocks) {
 
-      for (BlockImpl succ: successorBlocks) {
-
-        if (newDefs.size() == 0){
+        if (newDefs.size() == 0) {
           propagate(Pair.of(succ, newDefs), state.first, visited, worklist);
           continue;
         }
 
-
-
         TransferInput<CFValue, CFStore> succTransferInput = getAnalysis().getInput(succ);
         CFStore succRegularStore = succTransferInput.getRegularStore();
 
-        for (AssignmentNode assignmentNode: newDefs) {
-          if (succ instanceof SpecialBlockImpl || visited.contains(Triple.of(succ.getId(), state.first.getId(), newDefs))) {
-            if( nodes.size() == 0 ) {
+        for (AssignmentNode assignmentNode : newDefs) {
+
+          if (succ instanceof SpecialBlockImpl
+              || visited.contains(Triple.of(succ.getId(), state.first.getId(), newDefs))) {
+
+            if (nodes.size() == 0) {
               reportAlwaysCallErrors(assignmentNode, succRegularStore, cfg);
             } else {
               Node last = nodes.get(nodes.size() - 1);
               CFStore storeAfter = getStoreAfter(last);
               reportAlwaysCallErrors(assignmentNode, storeAfter, cfg);
             }
-//            error.add(assignmentNode);
-          } else if (succRegularStore.getValue((LocalVariableNode) (assignmentNode.getTarget())) == null) {
-//            error.add(assignmentNode);
-            reportAlwaysCallErrors(assignmentNode, succRegularStore, cfg);
 
+          } else if (succRegularStore.getValue((LocalVariableNode) (assignmentNode.getTarget()))
+              == null) {
+            reportAlwaysCallErrors(assignmentNode, succRegularStore, cfg);
           }
         }
 
@@ -414,9 +406,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
-  public AssignmentNode getLastAssignmentNodeOfVar(Set<AssignmentNode> newDefs, Node localVariableNode) {
+  public AssignmentNode getLastAssignmentNodeOfVar(
+      Set<AssignmentNode> newDefs, Node localVariableNode) {
 
-    for (AssignmentNode assignmentNode: newDefs) {
+    for (AssignmentNode assignmentNode : newDefs) {
       LocalVariableNode lhs = (LocalVariableNode) (assignmentNode).getTarget();
 
       if (lhs.getElement() == ((LocalVariableNode) localVariableNode).getElement()) {
@@ -427,10 +420,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return null;
   }
 
+  public boolean isVarInPrevDefs(
+      Set<AssignmentNode> newDefs, Node localVariableNode, ControlFlowGraph cfg) {
 
-  public boolean isVarInPrevDefs(Set<AssignmentNode> newDefs, Node localVariableNode, ControlFlowGraph cfg) {
-
-    for (AssignmentNode assignmentNode: newDefs) {
+    for (AssignmentNode assignmentNode : newDefs) {
       LocalVariableNode lhs = (LocalVariableNode) (assignmentNode).getTarget();
       if (lhs.getElement() == ((LocalVariableNode) localVariableNode).getElement()) {
         return true;
@@ -439,7 +432,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return false;
   }
 
-  public List<BlockImpl> getSuccessorsBlocks(BlockImpl cur, ControlFlowGraph cfg){
+  public List<BlockImpl> getSuccessorsBlocks(BlockImpl cur, ControlFlowGraph cfg) {
     List<BlockImpl> successorBlock = new ArrayList<>();
 
     if (cur.getType() == Block.BlockType.CONDITIONAL_BLOCK) {
@@ -461,7 +454,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return successorBlock;
   }
 
-
   public List<Node> getBlockNodes(Block b) {
     List<Node> blockNodes = new ArrayList<>();
 
@@ -472,19 +464,20 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       case EXCEPTION_BLOCK:
         blockNodes.add(((ExceptionBlockImpl) b).getNode());
-
     }
     return blockNodes;
   }
 
-
-  public void propagate(Pair<BlockImpl, Set<AssignmentNode>> newState, BlockImpl prev, Set<Triple<Long, Long, Set<AssignmentNode>>> visited, Deque< Pair< BlockImpl, Set<AssignmentNode>>> worklist){
+  public void propagate(
+      Pair<BlockImpl, Set<AssignmentNode>> newState,
+      BlockImpl prev,
+      Set<Triple<Long, Long, Set<AssignmentNode>>> visited,
+      Deque<Pair<BlockImpl, Set<AssignmentNode>>> worklist) {
     if (!visited.contains(Triple.of(newState.first.getId(), prev.getId(), newState.second))) {
       visited.add(Triple.of(newState.first.getId(), prev.getId(), newState.second));
       worklist.add(newState);
     }
   }
-
 
   private String getAlwaysCallValue(Element element) {
 
@@ -492,8 +485,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     TypeElement eType = TypesUtils.getTypeElement(type);
     AnnotationMirror alwaysCallAnnotation = getDeclAnnotation(eType, AlwaysCall.class);
 
-    return (alwaysCallAnnotation == null) ? null
-            : AnnotationUtils.getElementValue(alwaysCallAnnotation, "value", String.class, false);
+    return (alwaysCallAnnotation == null)
+        ? null
+        : AnnotationUtils.getElementValue(alwaysCallAnnotation, "value", String.class, false);
   }
 
   private void reportAlwaysCallErrors(
@@ -502,7 +496,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     CFValue cfValue = store.getValue(lhs);
 
     if (cfValue == null) {
-//      errors.add(latestAssignmentNode);
+      //      errors.add(latestAssignmentNode);
       checker.report(
           latestAssignmentNode.getTree(),
           new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
@@ -516,7 +510,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         List<String> annotationValues = getValueOfAnnotationWithStringArgument(annotationMirror);
 
         if (!annotationValues.contains(alwaysCallValue)) {
-          checker.report(latestAssignmentNode.getTree(), new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
+          checker.report(
+              latestAssignmentNode.getTree(),
+              new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
         }
       }
     }
