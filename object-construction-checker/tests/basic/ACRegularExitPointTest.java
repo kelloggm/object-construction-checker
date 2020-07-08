@@ -169,7 +169,7 @@ class ACRegularExitPointTest {
         Foo f2 = new Foo();
         Foo f11 = null;
         if (b) {
-            f11 = new Foo();
+            f11 = makeFoo();
             f11.a();
         } else {
             // :: error: missing.alwayscall

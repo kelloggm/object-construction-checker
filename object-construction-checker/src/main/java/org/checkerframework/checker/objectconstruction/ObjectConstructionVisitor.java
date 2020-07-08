@@ -1,9 +1,11 @@
 package org.checkerframework.checker.objectconstruction;
 
+import static com.sun.source.tree.Tree.Kind.VARIABLE;
 import static javax.lang.model.element.ElementKind.LOCAL_VARIABLE;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument;
 
 import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
@@ -127,7 +129,7 @@ public class ObjectConstructionVisitor
     return getValueOfAnnotationWithStringArgument(calledMethodAnno);
   }
 
-  private static boolean isAssignedToLocal(final TreePath treePath) {
+  private boolean isAssignedToLocal(final TreePath treePath) {
     TreePath parentPath = treePath.getParentPath();
 
     if (parentPath == null) {
@@ -148,8 +150,13 @@ public class ObjectConstructionVisitor
         // Otherwise use the context of the ConditionalExpressionTree.
         return isAssignedToLocal(parentPath);
       case ASSIGNMENT: // check if the left hand is a local variable
+        // TODO! not sure about this part!
         final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
-        return (((JCTree.JCIdent) lhs).sym.getKind() == LOCAL_VARIABLE);
+        if (!(lhs instanceof JCTree.JCFieldAccess)) {
+          return (((JCTree.JCIdent) lhs).sym.getKind() == LOCAL_VARIABLE);
+        } else {
+          return false;
+        }
 
       case RETURN:
       case VARIABLE:

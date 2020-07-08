@@ -388,7 +388,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           // If the successor block is the exit block or if the set of the pair of block id and set
           // of defs is repeated in a loop or if the variable is going out of scope
           if (succ instanceof SpecialBlockImpl
-              || visited.contains(Pair.of(succ.getId(), newDefs)) || succRegularStore.getValue((LocalVariableNode) (assignmentNode.getTarget()))
+              || visited.contains(Pair.of(succ.getId(), newDefs))
+              || succRegularStore.getValue((LocalVariableNode) (assignmentNode.getTarget()))
                   == null) {
 
             if (nodes.size() == 0) { // If the cur block is special or conditional block
@@ -403,12 +404,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
                   storeAfter,
                   (last instanceof AssignmentNode) ? getAnnotatedType(last.getTree()) : null);
             }
-
           }
 
-          if (succRegularStore.getValue((LocalVariableNode) (assignmentNode.getTarget()))
-              == null) {
-            // If the lhs of the assignmentNode isn't in the successor's input store, it means the variable is going out of scope
+          if (succRegularStore.getValue((LocalVariableNode) (assignmentNode.getTarget())) == null) {
+            // If the lhs of the assignmentNode isn't in the successor's input store, it means the
+            // variable is going out of scope
             toRemove.add(assignmentNode);
           }
         }
@@ -553,7 +553,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     } else if (annotatedTypeMirror != null) {
 
-      // Sometimes getStoreAfter doesn't contain correct set of local variable nodes! Then, it checks
+      // Sometimes getStoreAfter doesn't contain correct set of local variable nodes! Then, it
+      // checks
       // the AlwaysCall condition by looking at AnnotatedTypeMirror
       AnnotationMirror annotationMirror = annotatedTypeMirror.getAnnotation(CalledMethods.class);
 
@@ -565,8 +566,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     if (report) {
       checker.report(
-              lastAssignmentNode.getTree(),
-              new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
+          lastAssignmentNode.getTree(),
+          new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
     }
   }
 
