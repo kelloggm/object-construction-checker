@@ -7,11 +7,6 @@ class ACRegularExitPointTest {
 
     @AlwaysCall("a")
     class Foo {
-
-//        Foo() throws IOException {
-//
-//        }
-
         void a() {}
         @This Foo b() {
             return this;
@@ -24,7 +19,7 @@ class ACRegularExitPointTest {
         return new Foo();
     }
 
-    @CalledMethods({"a"}) Foo makeFoo2(){
+    @CalledMethods({"a"}) Foo makeFooCallA(){
         Foo f =  new Foo();
         f.a();
         return f;
@@ -36,7 +31,7 @@ class ACRegularExitPointTest {
         f.a();
     }
 
-    void makeFooFinilize2(){
+    void makeFooFinilizeWrong(){
         Foo m;
         // :: error: missing.alwayscall
         m = new Foo();
@@ -45,21 +40,32 @@ class ACRegularExitPointTest {
         f.b();
     }
 
-    void testStoringInLocal() {
+    void testStoringInLocalWrong() {
         // :: error: missing.alwayscall
         Foo foo = makeFoo();
+    }
+
+    void testStoringInLocalWrong2(){
         Foo f;
+        // :: error: missing.alwayscall
+        f = makeFoo();
     }
 
-    void test110() {
-        Foo foo = makeFoo2();
+    void testStoringInLocal() {
+
+        Foo foo = makeFooCallA();
     }
 
-    void test2(Foo f){
+    void testStoringInLocalWrong3() {
+        // :: error: missing.alwayscall
+        Foo foo = new Foo();
+    }
+
+    void emptyFuncWithFormalPram(Foo f){
 
     }
 
-    void test3(Foo f){
+    void innerFunc(Foo f){
         Runnable r = new Runnable(){
             public void run(){
                 Foo f;
@@ -69,7 +75,7 @@ class ACRegularExitPointTest {
     }
 
 
-    void test4(Foo f){
+    void innerFuncWrong(Foo f){
         Runnable r = new Runnable(){
             public void run(){
                 // :: error: missing.alwayscall
@@ -80,7 +86,7 @@ class ACRegularExitPointTest {
     }
 
 
-    void test5(Foo f){
+    void innerFunc2(Foo f){
         Runnable r = new Runnable(){
             public void run(){
                 Foo g = makeFoo();
@@ -91,7 +97,7 @@ class ACRegularExitPointTest {
     }
 
 
-    void nestedFunc2(){
+    void innerfunc3(){
 
         Foo f = makeFoo();
         f.a();
@@ -108,7 +114,7 @@ class ACRegularExitPointTest {
     }
 
 
-    void fooExitStoreCheck(boolean b) {
+    void ifElse(boolean b) {
         if (b) {
             Foo f1 = new Foo();
             f1.a();
@@ -119,7 +125,7 @@ class ACRegularExitPointTest {
 
     }
 
-    Foo fooExitStoreCheck2(boolean b, boolean c) {
+    Foo ifElseWithReturnExit(boolean b, boolean c) {
         // :: error: missing.alwayscall
         Foo f1 = makeFoo();
         // :: error: missing.alwayscall
@@ -146,7 +152,7 @@ class ACRegularExitPointTest {
     }
 
 
-    void fooExitStoreCheck3(boolean b) {
+    void ifElseWithDeclaration(boolean b) {
         Foo f1;
         Foo f2;
         if (b) {
@@ -158,7 +164,7 @@ class ACRegularExitPointTest {
         }
     }
 
-    void fooExitStoreCheck4(boolean b) {
+    void ifElseWithInitialization(boolean b) {
         // :: error: missing.alwayscall
         Foo f2 = new Foo();
         Foo f11 = null;
@@ -171,7 +177,7 @@ class ACRegularExitPointTest {
         }
     }
 
-    void fooExitStoreCheck5(boolean b) {
+    void ifWithInitialization(boolean b) {
         // :: error: missing.alwayscall
         Foo f1 = new Foo();
         // :: error: missing.alwayscall
@@ -181,8 +187,15 @@ class ACRegularExitPointTest {
         }
     }
 
+    void variableGoesOutOfScope(boolean b) {
+        if (b) {
+            Foo f1 = new Foo();
+            f1.a();
+        }
+    }
 
-    void fooExitStoreCheck6(boolean b) {
+
+    void ifWithNullInitialization(boolean b) {
         Foo f1 = null;
         Foo f2 = null;
         if (b) {
@@ -194,15 +207,7 @@ class ACRegularExitPointTest {
         }
     }
 
-
-    void test7(){
-        Foo f;
-        // :: error: missing.alwayscall
-        f = makeFoo();
-    }
-
-
-    void test8() { Foo f = null; }
+    void variableInitializedWithNull() { Foo f = null; }
 
     void testLoop() {
         Foo f = null;
@@ -213,18 +218,17 @@ class ACRegularExitPointTest {
     }
 
 
-    void testLoop2() {
+    void overWrittingVarInLoop() {
         // :: error: missing.alwayscall
         Foo f = new Foo();
         while (true) {
             // :: error: missing.alwayscall
             f = new Foo();
-            String s = "";
         }
     }
 
 
-    void testLoop3(boolean b) {
+    void loopWithNestedBranches(boolean b) {
         Foo f = null;
         while (true) {
             if (b) {
@@ -238,30 +242,31 @@ class ACRegularExitPointTest {
     }
 
 
-    void testMulti(boolean b) {
+    void replaceVarWithNull(boolean b, boolean c) {
         // :: error: missing.alwayscall
         Foo f = new Foo();
         if (b) {
             f = null;
-        } else {
+        } else if (c) {
             f = null;
+        } else {
+
         }
     }
 
 
+    void ownershipTransfer(){
+        Foo f1 = new Foo();
+        //TODO this is a false positive but we're not going to handle it for now
+        // :: error: missing.alwayscall
+        Foo f2 = f1;
+        Foo f3 = f2.b();
+        f3.a();
+    }
 
-//    void test9E() {
-//        try{
-//            Foo f = new Foo();
-//        }catch (IOException exception){
-//
-//        }
-//
-//    }
-
-//    void test10E() throws IOException{
-//        Foo f = new Foo();
-//    }
-
+    void ownershipTransferWrong(){
+        Foo f1 = null;
+        Foo f2 = f1;
+    }
 
 }

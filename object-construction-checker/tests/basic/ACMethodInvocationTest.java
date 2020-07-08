@@ -26,66 +26,62 @@ class ACMethodInvocationTest {
     }
 
     @CalledMethods({"b"}) Foo makeFooFinilize2(){
-        // :: error: missing.alwayscall
         Foo f = new Foo();
         f.b();
         return f;
     }
 
-//    void makeFooFinilize3(){
-//        Foo f = new Foo();
-//        f.b();
-//        f.a();
+    //TODO
+//    void testFluentAPI() {
+//        // won't pass yet due to dataflow issue
+//        makeFoo().a();
 //    }
 
+    //TODO
+//    void testFluentAPI2() {
+//        // won't pass yet due to dataflow issue
+//        makeFoo().b().a();
+//    }
 
-    void test1() {
-        // won't pass yet due to dataflow issue
-        makeFoo().a();
-    }
-
-    void test2() {
-        // won't pass yet due to dataflow issue
-        makeFoo().b().a();
-    }
-
-    void test3() {
+    void testFluentAPIWrong() {
         // :: error: missing.alwayscall
         makeFoo().b();
     }
 
-    void test4() {
+    void testFluentAPIWrong2() {
         // :: error: missing.alwayscall
         makeFoo();
     }
 
-    void test5() {
+    void invokeMethodWithCallA() {
         makeFooFinilize();
     }
 
 
-    void test6() {
+    void invokeMethodWithCallBWrong() {
         // :: error: missing.alwayscall
         makeFooFinilize2();
     }
 
-    void test7() {
+    void invokeMethodAndCallCWrong() {
         // :: error: missing.alwayscall
         makeFoo().c();
     }
 
-    void testStoringInLocal() {
-        // :: error: missing.alwayscall
-        Foo foo = makeFoo();
+    Foo returnMakeFoo(){
+        return makeFoo();
     }
 
-    Foo testField;
+    Foo testField1;
     Foo testField2;
+    Foo testField3;
 
     void testStoringInField() {
         // :: error: missing.alwayscall
-        testField2 = new Foo();
+        testField1 = makeFoo();
         // :: error: missing.alwayscall
-        testField = makeFoo();
+        testField2 = new Foo();
+
+        testField3 = makeFooFinilize();
     }
 }
