@@ -7,12 +7,12 @@ buildscript {
 }
 
 plugins {
-    id "com.diffplug.gradle.spotless" version "3.29.0" apply false
+    id "com.diffplug.gradle.spotless" version "4.5.1" apply false
 }
 
 
 ext.versions = [
-    checkerFramework: "3.5.0-SNAPSHOT",
+    checkerFramework: "3.5.0",
     autoValue       : "1.6.5",
     lombok          : "1.18.12",
 ]
