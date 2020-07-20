@@ -10,7 +10,6 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
-import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.tree.JCTree;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,7 +28,6 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.source.DiagMessage;
-import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -77,15 +75,13 @@ public class ObjectConstructionVisitor
         List<String> currentCalledMethods = getCalledMethodAnnotation(node);
 
         if (!currentCalledMethods.contains(alwaysCallAnnoVal)) {
-          String error = " " + alwaysCallAnnoVal + " has not been called";
-          checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", error));
+          checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
         }
       }
     }
 
     if (checker.getBooleanOption(ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS)) {
       ExecutableElement element = TreeUtils.elementFromUse(node);
-
       for (FrameworkSupport frameworkSupport : getTypeFactory().getFrameworkSupports()) {
         if (frameworkSupport.isBuilderBuildMethod(element)) {
           ((ObjectConstructionChecker) checker).numBuildCalls++;
@@ -98,16 +94,8 @@ public class ObjectConstructionVisitor
 
   @Override
   public Void visitNewClass(NewClassTree node, Void p) {
-
     if (!isAssignedToLocal(this.getCurrentPath())) {
-
-      AnnotatedTypeFactory.ParameterizedExecutableType ptype =
-          atypeFactory.constructorFromUse(node);
-      AnnotatedTypeMirror.AnnotatedExecutableType constructor = ptype.executableType;
-
-      ExecutableElement ee = constructor.getElement();
-      TypeMirror type = ((Symbol.ClassSymbol) ((Symbol.MethodSymbol) ee).owner).type;
-
+      TypeMirror type = TreeUtils.typeOf(node);
       if (hasAlwaysCall(type)) {
         checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", " "));
       }
