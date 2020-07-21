@@ -1,0 +1,64 @@
+package java.net;
+
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@AlwaysCall("close")
+class Socket implements Closeable {
+    Socket();
+    Socket(Proxy arg0);
+    protected Socket(SocketImpl arg0) throws SocketException;
+    Socket(String arg0, int arg1) throws UnknownHostException, IOException;
+    Socket(InetAddress arg0, int arg1) throws IOException;
+    Socket(String arg0, int arg1, InetAddress arg2, int arg3) throws IOException;
+    Socket(InetAddress arg0, int arg1, InetAddress arg2, int arg3) throws IOException;
+    @java.lang.Deprecated
+Socket(String arg0, int arg1, boolean arg2) throws IOException;
+    @java.lang.Deprecated
+Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
+    void connect(SocketAddress arg0) throws IOException;
+    void connect(SocketAddress arg0, int arg1) throws IOException;
+    void bind(SocketAddress arg0) throws IOException;
+    InetAddress getInetAddress();
+    InetAddress getLocalAddress();
+    int getPort();
+    int getLocalPort();
+    SocketAddress getRemoteSocketAddress();
+    SocketAddress getLocalSocketAddress();
+    SocketChannel getChannel();
+    InputStream getInputStream() throws IOException;
+    OutputStream getOutputStream() throws IOException;
+    void setTcpNoDelay(boolean arg0) throws SocketException;
+    boolean getTcpNoDelay() throws SocketException;
+    void setSoLinger(boolean arg0, int arg1) throws SocketException;
+    int getSoLinger() throws SocketException;
+    void sendUrgentData(int arg0) throws IOException;
+    void setOOBInline(boolean arg0) throws SocketException;
+    boolean getOOBInline() throws SocketException;
+    void setSoTimeout(int arg0) throws SocketException;
+    int getSoTimeout() throws SocketException;
+    void setSendBufferSize(int arg0) throws SocketException;
+    int getSendBufferSize() throws SocketException;
+    void setReceiveBufferSize(int arg0) throws SocketException;
+    int getReceiveBufferSize() throws SocketException;
+    void setKeepAlive(boolean arg0) throws SocketException;
+    boolean getKeepAlive() throws SocketException;
+    void setTrafficClass(int arg0) throws SocketException;
+    int getTrafficClass() throws SocketException;
+    void setReuseAddress(boolean arg0) throws SocketException;
+    boolean getReuseAddress() throws SocketException;
+    void close() throws IOException;
+    void shutdownInput() throws IOException;
+    void shutdownOutput() throws IOException;
+    String toString();
+    boolean isConnected();
+    boolean isBound();
+    boolean isClosed();
+    boolean isInputShutdown();
+    boolean isOutputShutdown();
+    static void setSocketImplFactory(SocketImplFactory arg0) throws IOException;
+    void setPerformancePreferences(int arg0, int arg1, int arg2);
+    <T> Socket setOption(SocketOption<T> arg0, T arg1) throws IOException;
+    <T> T getOption(SocketOption<T> arg0) throws IOException;
+    Set<SocketOption<?>> supportedOptions();
+}
