@@ -12,6 +12,7 @@ class ACRegularExitPointTest {
             return this;
         }
         void c(@CalledMethods({"a"}) Foo this) {}
+
     }
 
 
@@ -235,6 +236,7 @@ class ACRegularExitPointTest {
                 // :: error: missing.alwayscall
                 f = new Foo();
             } else {
+                //TODO
                 // :: error: missing.alwayscall
                 f = new Foo();
             }
@@ -264,7 +266,7 @@ class ACRegularExitPointTest {
         f3.a();
     }
 
-    void ownershipTransferWrong(){
+    void ownershipTransfer2(){
         Foo f1 = null;
         Foo f2 = f1;
     }

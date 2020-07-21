@@ -32,13 +32,13 @@ class ACMethodInvocationTest {
     }
 
     //TODO
-//    void testFluentAPI() {
+//    void CallMethodsInSequence() {
 //        // won't pass yet due to dataflow issue
 //        makeFoo().a();
 //    }
 
     //TODO
-//    void testFluentAPI2() {
+//    void CallMethodsInSequence2() {
 //        // won't pass yet due to dataflow issue
 //        makeFoo().b().a();
 //    }
