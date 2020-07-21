@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -311,12 +310,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   private void checkAlwaysCall(ControlFlowGraph cfg) {
+    Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>> firstPair =
+        Pair.of((BlockImpl) cfg.getEntryBlock(), Collections.emptySet());
 
-    Set<Pair<BlockImpl, Set<Tree>>> visited = new HashSet<>();
-    visited.add(Pair.of((BlockImpl) cfg.getEntryBlock(), Collections.emptySet()));
-
+    Set<Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>>> visited = new HashSet<>();
     Deque<Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>>> worklist = new ArrayDeque<>();
-    worklist.add(Pair.of((BlockImpl) cfg.getEntryBlock(), Collections.emptySet()));
+
+    worklist.add(firstPair);
+    visited.add(firstPair);
 
     while (!worklist.isEmpty()) {
 
@@ -336,22 +337,21 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               Pair<LocalVariableNode, Tree> latestAssignmentPair =
                   getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
               reportAlwaysCallErrors(latestAssignmentPair, getStoreBefore(node), null);
-              newDefs.remove(Pair.of((LocalVariableNode) lhs, latestAssignmentPair));
+              newDefs.remove(latestAssignmentPair);
             }
 
-            // If the rhs is ObjectCreationNode, MethodInvocationNode, or
-            // LocalVariableNode that exists in the newDefs (Note that if the localVariableNode
-            // exists in the newDefs it means it is assigned to a non-null values), then it adds
+            // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
             // the the AssignmentNode to the newDefs.
-            if ((rhs instanceof ObjectCreationNode)
-                || (rhs instanceof MethodInvocationNode)
-                || (rhs instanceof LocalVariableNode
-                    && isVarInDefs(newDefs, (LocalVariableNode) rhs))) {
+            if ((rhs instanceof ObjectCreationNode) || (rhs instanceof MethodInvocationNode)) {
               newDefs.add(Pair.of((LocalVariableNode) lhs, node.getTree()));
             }
 
             // Ownership Transfer
             if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
+              // If the rhs is a LocalVariableNode that exists in the newDefs (Note that if a
+              // localVariableNode exists in the newDefs it means it is assigned to a non-null
+              // values), then it adds the localVariableNode to the newDefs
+              newDefs.add(Pair.of((LocalVariableNode) lhs, node.getTree()));
               newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs));
             }
           }
@@ -482,17 +482,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    */
   private void propagate(
       Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>> state,
-      Set<Pair<BlockImpl, Set<Tree>>> visited,
+      Set<Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>>> visited,
       Deque<Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>>> worklist) {
 
-    if (!visited.contains(
-        Pair.of(
-            state.first,
-            state.second.stream().map(item -> item.second).collect(Collectors.toSet())))) {
-      visited.add(
-          Pair.of(
-              state.first,
-              state.second.stream().map(item -> item.second).collect(Collectors.toSet())));
+    if (!visited.contains(state)) {
+      visited.add(state);
       worklist.add(state);
     }
   }
