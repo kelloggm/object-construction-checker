@@ -4,6 +4,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
+import com.sun.tools.javac.code.Type;
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -15,14 +16,15 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.tools.Diagnostic;
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
@@ -58,7 +60,6 @@ import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
-import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
@@ -309,23 +310,49 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     super.postAnalyze(cfg);
   }
 
+  /**
+   * This function traverses a method CFG and reports an error if "f" isn't called on any local
+   * variable node whose class type has @AlwaysCall(f) annotation before the variable goes out of
+   * scope. The traverse is a standard worklist algorithm. Worklist and visited entries are
+   * BlockWithLocals objects that contain a set of (LocalVariableNode, Tree) pairs for each block. A
+   * pair (n, T) represents a local variable node "n" and the latest AssignmentTree "T" that assigns
+   * a non-null value to "n".
+   *
+   * @param cfg
+   */
   private void checkAlwaysCall(ControlFlowGraph cfg) {
-    Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>> firstPair =
-        Pair.of((BlockImpl) cfg.getEntryBlock(), Collections.emptySet());
+    BlockWithLocals firstBlockLocals =
+        new BlockWithLocals(cfg.getEntryBlock(), Collections.emptySet());
 
-    Set<Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>>> visited = new HashSet<>();
-    Deque<Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>>> worklist = new ArrayDeque<>();
+    Set<BlockWithLocals> visited = new HashSet<>();
+    Deque<BlockWithLocals> worklist = new ArrayDeque<>();
 
-    worklist.add(firstPair);
-    visited.add(firstPair);
+    worklist.add(firstBlockLocals);
+    visited.add(firstBlockLocals);
 
     while (!worklist.isEmpty()) {
 
-      Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>> state = worklist.removeLast();
-      List<Node> nodes = getBlockNodes(state.first);
-      Set<Pair<LocalVariableNode, Tree>> newDefs = new HashSet<>(state.second);
+      BlockWithLocals curBlockLocals = worklist.removeLast();
+      List<Node> nodes = getBlockNodes(curBlockLocals.block);
+      Set<Pair<LocalVariableNode, Tree>> newDefs = new HashSet<>(curBlockLocals.localSet);
 
       for (Node node : nodes) {
+
+        if (node instanceof MethodInvocationNode) {
+          Node receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
+          Element method = ((MethodInvocationNode) node).getTarget().getMethod();
+
+          if (receiver instanceof LocalVariableNode
+              && isVarInDefs(newDefs, (LocalVariableNode) receiver)) {
+            if (getAlwaysCallValue(((LocalVariableNode) receiver).getElement())
+                .equals(method.getSimpleName().toString())) {
+              // If the method called on the receiver is the same as receiver's alwasyCallValue,
+              // then we can remove the receiver from the newDefs
+              newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) receiver));
+            }
+          }
+        }
+
         if (node instanceof AssignmentNode) {
           Node lhs = ((AssignmentNode) node).getTarget();
           Node rhs = ((AssignmentNode) node).getExpression();
@@ -367,7 +394,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         }
       }
 
-      for (BlockImpl succ : getSuccessors(state.first)) {
+      if (curBlockLocals.block.getType() == Block.BlockType.EXCEPTION_BLOCK) {
+        checkACInExceptionSuccessors((ExceptionBlockImpl) curBlockLocals.block, newDefs);
+      }
+
+      for (BlockImpl succ : getSuccessors(curBlockLocals.block)) {
         Set<Pair<LocalVariableNode, Tree>> toRemove = new HashSet<>();
 
         CFStore succRegularStore = this.analysis.getInput(succ).getRegularStore();
@@ -383,10 +414,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               // condition in the store right after the last node
               Node last = nodes.get(nodes.size() - 1);
               CFStore storeAfter = getStoreAfter(last);
-              reportAlwaysCallErrors(
-                  assign,
-                  storeAfter,
-                  (last instanceof AssignmentNode) ? getAnnotatedType(last.getTree()) : null);
+              AnnotatedTypeMirror lastAType =
+                  (last instanceof AssignmentNode) ? getAnnotatedType(last.getTree()) : null;
+              reportAlwaysCallErrors(assign, storeAfter, lastAType);
             }
 
             toRemove.add(assign);
@@ -394,7 +424,22 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         }
 
         newDefs.removeAll(toRemove);
-        propagate(Pair.of(succ, newDefs), visited, worklist);
+        propagate(new BlockWithLocals(succ, newDefs), visited, worklist);
+      }
+    }
+  }
+
+  public void checkACInExceptionSuccessors(
+      ExceptionBlockImpl exceptionBlock, Set<Pair<LocalVariableNode, Tree>> defs) {
+    Map<TypeMirror, Set<Block>> exSucc = exceptionBlock.getExceptionalSuccessors();
+    for (Map.Entry<TypeMirror, Set<Block>> pair : exSucc.entrySet()) {
+      Name exceptionClassName = ((Type.ClassType) pair.getKey()).tsym.getSimpleName();
+      if (!(exceptionClassName.contentEquals(Throwable.class.getSimpleName())
+          || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName()))) {
+        CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
+        for (Pair<LocalVariableNode, Tree> assignTree : defs) {
+          reportAlwaysCallErrors(assignTree, storeAfter, null);
+        }
       }
     }
   }
@@ -481,11 +526,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * @param worklist
    */
   private void propagate(
-      Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>> state,
-      Set<Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>>> visited,
-      Deque<Pair<BlockImpl, Set<Pair<LocalVariableNode, Tree>>>> worklist) {
+      BlockWithLocals state, Set<BlockWithLocals> visited, Deque<BlockWithLocals> worklist) {
 
-    if (!visited.contains(state)) {
+    if (!visited.stream()
+        .anyMatch(pair -> pair.block.equals(state.block) && pair.localSet.equals(state.localSet))) {
       visited.add(state);
       worklist.add(state);
     }
@@ -524,10 +568,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     } else if (annotatedTypeMirror != null) {
 
       // Sometimes getStoreAfter doesn't contain correct set of local variable nodes! Then, it
-      // checks
-      // the AlwaysCall condition by looking at AnnotatedTypeMirror
+      // checks the AlwaysCall condition by looking at AnnotatedTypeMirror
       AnnotationMirror annotationMirror = annotatedTypeMirror.getAnnotation(CalledMethods.class);
-
       if (annotationMirror != null
           && getValueOfAnnotationWithStringArgument(annotationMirror).contains(alwaysCallValue)) {
         report = false;
@@ -535,14 +577,23 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
 
     if (report) {
-      checker.report(
-          assign.second, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
+      checker.reportError(assign.second, "missing.alwayscall", alwaysCallValue);
     }
   }
 
   private boolean hasAlwaysCall(TypeMirror type) {
     TypeElement eType = TypesUtils.getTypeElement(type);
     return ((eType != null) && (getDeclAnnotation(eType, AlwaysCall.class) != null));
+  }
+
+  private class BlockWithLocals {
+    public BlockImpl block;
+    public Set<Pair<LocalVariableNode, Tree>> localSet;
+
+    public BlockWithLocals(Block b, Set<Pair<LocalVariableNode, Tree>> ls) {
+      this.block = (BlockImpl) b;
+      this.localSet = ls;
+    }
   }
 
   /**

@@ -19,29 +19,31 @@ class ACMethodInvocationTest {
     }
 
 
-    @CalledMethods({"a"}) Foo makeFooFinilize(){
+    @CalledMethods({"a"}) Foo makeFooFinalize(){
         Foo f = new Foo();
         f.a();
         return f;
     }
 
-    @CalledMethods({"b"}) Foo makeFooFinilize2(){
+    @CalledMethods({"b"}) Foo makeFooFinalize2(){
         Foo f = new Foo();
         f.b();
         return f;
     }
 
     //TODO
-//    void CallMethodsInSequence() {
-//        // won't pass yet due to dataflow issue
-//        makeFoo().a();
-//    }
+    void CallMethodsInSequence() {
+        // won't pass yet due to dataflow issue
+        // :: error: missing.alwayscall
+        makeFoo().a();
+    }
 
     //TODO
-//    void CallMethodsInSequence2() {
-//        // won't pass yet due to dataflow issue
-//        makeFoo().b().a();
-//    }
+    void CallMethodsInSequence2() {
+        // won't pass yet due to dataflow issue
+        // :: error: missing.alwayscall
+        makeFoo().b().a();
+    }
 
     void testFluentAPIWrong() {
         // :: error: missing.alwayscall
@@ -54,13 +56,13 @@ class ACMethodInvocationTest {
     }
 
     void invokeMethodWithCallA() {
-        makeFooFinilize();
+        makeFooFinalize();
     }
 
 
     void invokeMethodWithCallBWrong() {
         // :: error: missing.alwayscall
-        makeFooFinilize2();
+        makeFooFinalize2();
     }
 
     void invokeMethodAndCallCWrong() {
@@ -82,6 +84,6 @@ class ACMethodInvocationTest {
         // :: error: missing.alwayscall
         testField2 = new Foo();
 
-        testField3 = makeFooFinilize();
+        testField3 = makeFooFinalize();
     }
 }

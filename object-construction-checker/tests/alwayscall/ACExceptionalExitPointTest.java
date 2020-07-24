@@ -22,12 +22,11 @@ class ACExceptionalExitPointTest {
         return f;
     }
 
-    //TODO
-//    void exceptionalExitWrong() {
-//        // :: error: missing.alwayscall
-//        Foo fw = makeFoo();
-//        throw new RuntimeException();
-//    }
+    void exceptionalExitWrong() {
+        // :: error: missing.alwayscall
+        Foo fw = makeFoo();
+        throw new RuntimeException();
+    }
 
     void exceptionalExitCorrect() {
         Foo fw = new Foo();

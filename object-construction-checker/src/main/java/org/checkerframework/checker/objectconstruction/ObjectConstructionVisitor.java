@@ -67,15 +67,11 @@ public class ObjectConstructionVisitor
       TypeMirror returnType = TreeUtils.typeOf(node);
 
       if (hasAlwaysCall(returnType)) {
-        TypeElement eType = TypesUtils.getTypeElement(returnType);
-        AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
-
-        String alwaysCallAnnoVal =
-            AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false);
+        String alwaysCallAnnoVal = getAlwaysCallValue(returnType);
         List<String> currentCalledMethods = getCalledMethodAnnotation(node);
 
         if (!currentCalledMethods.contains(alwaysCallAnnoVal)) {
-          checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", ""));
+          checker.reportError(node, "missing.alwayscall", alwaysCallAnnoVal);
         }
       }
     }
@@ -97,10 +93,19 @@ public class ObjectConstructionVisitor
     if (!isAssignedToLocal(this.getCurrentPath())) {
       TypeMirror type = TreeUtils.typeOf(node);
       if (hasAlwaysCall(type)) {
-        checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "missing.alwayscall", " "));
+        checker.reportError(node, "missing.alwayscall", getAlwaysCallValue(type));
       }
     }
     return super.visitNewClass(node, p);
+  }
+
+  private String getAlwaysCallValue(TypeMirror type) {
+    TypeElement eType = TypesUtils.getTypeElement(type);
+    AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
+
+    return (alwaysCallAnno != null)
+        ? AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false)
+        : null;
   }
 
   private List<String> getCalledMethodAnnotation(MethodInvocationTree node) {
@@ -137,13 +142,10 @@ public class ObjectConstructionVisitor
         // Otherwise use the context of the ConditionalExpressionTree.
         return isAssignedToLocal(parentPath);
       case ASSIGNMENT: // check if the left hand is a local variable
-        // TODO! not sure about this part!
         final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
-        if (!(lhs instanceof JCTree.JCFieldAccess)) {
-          return (((JCTree.JCIdent) lhs).sym.getKind() == LOCAL_VARIABLE);
-        } else {
-          return false;
-        }
+        return (lhs instanceof JCTree.JCIdent)
+            ? (((JCTree.JCIdent) lhs).sym.getKind().equals(LOCAL_VARIABLE))
+            : false;
 
       case RETURN:
       case VARIABLE:

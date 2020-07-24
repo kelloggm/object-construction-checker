@@ -27,12 +27,12 @@ class ACRegularExitPointTest {
     }
 
 
-    void makeFooFinilize(){
+    void makeFooFinalize(){
         Foo f = new Foo();
         f.a();
     }
 
-    void makeFooFinilizeWrong(){
+    void makeFooFinalizeWrong(){
         Foo m;
         // :: error: missing.alwayscall
         m = new Foo();
@@ -236,9 +236,8 @@ class ACRegularExitPointTest {
                 // :: error: missing.alwayscall
                 f = new Foo();
             } else {
-                //TODO
-                // :: error: missing.alwayscall
                 f = new Foo();
+                f.a();
             }
         }
     }
