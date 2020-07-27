@@ -2,7 +2,6 @@ package org.checkerframework.checker.objectconstruction;
 
 import static com.sun.source.tree.Tree.Kind.VARIABLE;
 import static javax.lang.model.element.ElementKind.LOCAL_VARIABLE;
-import static org.checkerframework.checker.objectconstruction.ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument;
 
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ConditionalExpressionTree;
@@ -29,6 +28,8 @@ import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -68,9 +69,15 @@ public class ObjectConstructionVisitor
 
       if (hasAlwaysCall(returnType)) {
         String alwaysCallAnnoVal = getAlwaysCallValue(returnType);
-        List<String> currentCalledMethods = getCalledMethodAnnotation(node);
+        AnnotationMirror dummyCMAnno = atypeFactory.createCalledMethods(alwaysCallAnnoVal);
+        AnnotatedTypeMirror annoType = atypeFactory.getAnnotatedType(node);
+        AnnotationMirror CMAnno = annoType.getAnnotation(CalledMethods.class);
 
-        if (!currentCalledMethods.contains(alwaysCallAnnoVal)) {
+        QualifierHierarchy qualifierHierarchy =
+            atypeFactory.createQualifierHierarchy(
+                new MultiGraphQualifierHierarchy.MultiGraphFactory(atypeFactory));
+
+        if (CMAnno == null || !qualifierHierarchy.isSubtype(dummyCMAnno, CMAnno)) {
           checker.reportError(node, "missing.alwayscall", alwaysCallAnnoVal);
         }
       }
@@ -106,19 +113,6 @@ public class ObjectConstructionVisitor
     return (alwaysCallAnno != null)
         ? AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false)
         : null;
-  }
-
-  private List<String> getCalledMethodAnnotation(MethodInvocationTree node) {
-    AnnotationMirror calledMethodAnno;
-    AnnotatedTypeMirror currentType = getTypeFactory().getAnnotatedType(node);
-
-    if (currentType == null || !currentType.isAnnotatedInHierarchy(atypeFactory.TOP)) {
-      calledMethodAnno = atypeFactory.TOP;
-    } else {
-      calledMethodAnno = currentType.getAnnotationInHierarchy(atypeFactory.TOP);
-    }
-
-    return getValueOfAnnotationWithStringArgument(calledMethodAnno);
   }
 
   private boolean isAssignedToLocal(final TreePath treePath) {
