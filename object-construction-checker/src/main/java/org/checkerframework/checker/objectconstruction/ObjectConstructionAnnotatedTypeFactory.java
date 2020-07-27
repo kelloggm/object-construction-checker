@@ -311,9 +311,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * This function traverses the given method CFG and reports an error if "f" isn't called on any local
-   * variable node whose class type has @AlwaysCall(f) annotation before the variable goes out of
-   * scope. The traverse is a standard worklist algorithm. Worklist and visited entries are
+   * This function traverses the given method CFG and reports an error if "f" isn't called on any
+   * local variable node whose class type has @AlwaysCall(f) annotation before the variable goes out
+   * of scope. The traverse is a standard worklist algorithm. Worklist and visited entries are
    * BlockWithLocals objects that contain a set of (LocalVariableNode, Tree) pairs for each block. A
    * pair (n, T) represents a local variable node "n" and the latest AssignmentTree "T" that assigns
    * a non-null value to "n".
