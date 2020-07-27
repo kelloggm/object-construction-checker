@@ -19,6 +19,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
+
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
@@ -71,13 +72,12 @@ public class ObjectConstructionVisitor
         String alwaysCallAnnoVal = getAlwaysCallValue(returnType);
         AnnotationMirror dummyCMAnno = atypeFactory.createCalledMethods(alwaysCallAnnoVal);
         AnnotatedTypeMirror annoType = atypeFactory.getAnnotatedType(node);
-        AnnotationMirror CMAnno = annoType.getAnnotation(CalledMethods.class);
+        AnnotationMirror CMAnno = annoType.getAnnotationInHierarchy(atypeFactory.TOP);
 
         QualifierHierarchy qualifierHierarchy =
             atypeFactory.createQualifierHierarchy(
                 new MultiGraphQualifierHierarchy.MultiGraphFactory(atypeFactory));
-
-        if (CMAnno == null || !qualifierHierarchy.isSubtype(dummyCMAnno, CMAnno)) {
+        if (!qualifierHierarchy.isSubtype(CMAnno, dummyCMAnno)) {
           checker.reportError(node, "missing.alwayscall", alwaysCallAnnoVal);
         }
       }

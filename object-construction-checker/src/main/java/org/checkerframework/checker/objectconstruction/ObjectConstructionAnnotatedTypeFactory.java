@@ -572,11 +572,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     if (lhsCFValue != null) { // When store contains the lhs
       AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
       AnnotatedTypeMirror annoType = getAnnotatedType(assign.first.getTree());
-      AnnotationMirror CMAnno = annoType.getAnnotation(CalledMethods.class);
+      AnnotationMirror CMAnno = annoType.getAnnotationInHierarchy(TOP);
       QualifierHierarchy qualifierHierarchy =
           createQualifierHierarchy(new MultiGraphQualifierHierarchy.MultiGraphFactory(this));
 
-      if (CMAnno != null && qualifierHierarchy.isSubtype(dummyCMAnno, CMAnno)) {
+      if (qualifierHierarchy.isSubtype(CMAnno, dummyCMAnno)) {
         report = false;
       }
 
