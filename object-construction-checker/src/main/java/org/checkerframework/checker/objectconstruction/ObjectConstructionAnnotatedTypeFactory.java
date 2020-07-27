@@ -306,7 +306,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   @Override
   public void postAnalyze(ControlFlowGraph cfg) {
-    checkAlwaysCall(cfg);
+    alwaysCallTraverse(cfg);
     super.postAnalyze(cfg);
   }
 
@@ -316,11 +316,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * of scope. The traverse is a standard worklist algorithm. Worklist and visited entries are
    * BlockWithLocals objects that contain a set of (LocalVariableNode, Tree) pairs for each block. A
    * pair (n, T) represents a local variable node "n" and the latest AssignmentTree "T" that assigns
-   * a non-null value to "n".
+   * a value to "n".
    *
-   * @param cfg
+   * @param cfg the control flow graph of a method
    */
-  private void checkAlwaysCall(ControlFlowGraph cfg) {
+  private void alwaysCallTraverse(ControlFlowGraph cfg) {
     BlockWithLocals firstBlockLocals =
         new BlockWithLocals(cfg.getEntryBlock(), Collections.emptySet());
 
@@ -363,12 +363,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
               Pair<LocalVariableNode, Tree> latestAssignmentPair =
                   getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-              reportAlwaysCallErrors(latestAssignmentPair, getStoreBefore(node), null);
+              checkAlwaysCall(latestAssignmentPair, getStoreBefore(node), null);
               newDefs.remove(latestAssignmentPair);
             }
 
             // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
-            // the the AssignmentNode to the newDefs.
+            // the AssignmentNode to the newDefs.
             if ((rhs instanceof ObjectCreationNode) || (rhs instanceof MethodInvocationNode)) {
               newDefs.add(Pair.of((LocalVariableNode) lhs, node.getTree()));
             }
@@ -376,8 +376,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             // Ownership Transfer
             if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
               // If the rhs is a LocalVariableNode that exists in the newDefs (Note that if a
-              // localVariableNode exists in the newDefs it means it is assigned to a non-null
-              // values), then it adds the localVariableNode to the newDefs
+              // localVariableNode exists in the newDefs it means it isn't assigned to a null
+              // literals), then it adds the localVariableNode to the newDefs
               newDefs.add(Pair.of((LocalVariableNode) lhs, node.getTree()));
               newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs));
             }
@@ -408,7 +408,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           if (succ instanceof SpecialBlockImpl || succRegularStore.getValue(assign.first) == null) {
 
             if (nodes.size() == 0) { // If the cur block is special or conditional block
-              reportAlwaysCallErrors(assign, succRegularStore, null);
+              checkAlwaysCall(assign, succRegularStore, null);
 
             } else { // If the cur block is Exception/Regular block then it checks AlwaysCall
               // condition in the store right after the last node
@@ -416,7 +416,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               CFStore storeAfter = getStoreAfter(last);
               AnnotatedTypeMirror lastAType =
                   (last instanceof AssignmentNode) ? getAnnotatedType(last.getTree()) : null;
-              reportAlwaysCallErrors(assign, storeAfter, lastAType);
+              checkAlwaysCall(assign, storeAfter, lastAType);
             }
 
             toRemove.add(assign);
@@ -429,6 +429,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
+  /**
+   * Does AlwaysCall check for all local variable nodes exist in {@code defs} if {@code
+   * exceptionBlock} is not NullPointerException or Throwable.
+   */
   public void checkACInExceptionSuccessors(
       ExceptionBlockImpl exceptionBlock, Set<Pair<LocalVariableNode, Tree>> defs) {
     Map<TypeMirror, Set<Block>> exSucc = exceptionBlock.getExceptionalSuccessors();
@@ -438,22 +442,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName()))) {
         CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
         for (Pair<LocalVariableNode, Tree> assignTree : defs) {
-          reportAlwaysCallErrors(assignTree, storeAfter, null);
+          checkAlwaysCall(assignTree, storeAfter, null);
         }
       }
     }
   }
 
   /**
-   * it inputs a set of AssignmentNodes(defs) and a LocalVariableNode(localVariableNode), if there
-   * is an AssignmentNode in defs that its lhs is equal to localVarNode, then it returns that
-   * AssignmentNode, otherwise it returns null.
-   *
-   * @param defs
-   * @param node
-   * @return
+   * Returns a pair in {@code defs} that its first var is equal to {@code node} if one exists, null
+   * otherwise.
    */
-  private Pair<LocalVariableNode, Tree> getAssignmentTreeOfVar(
+  private @Nullable Pair<LocalVariableNode, Tree> getAssignmentTreeOfVar(
       Set<Pair<LocalVariableNode, Tree>> defs, LocalVariableNode node) {
     return defs.stream()
         .filter(assign -> assign.first.getElement().equals(node.getElement()))
@@ -461,6 +460,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         .orElse(null);
   }
 
+  /**
+   * Checks whether a pair exists in {@code defs} that its first var is equal to {@code node} or
+   * not. This is useful when we want to check if a LocalVariableNode is overwritten or not.
+   */
   private boolean isVarInDefs(Set<Pair<LocalVariableNode, Tree>> defs, LocalVariableNode node) {
     return defs.stream()
         .map(assign -> ((assign.first).getElement()))
@@ -486,7 +489,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       successorBlock.add((BlockImpl) ccur.getElseSuccessor());
 
     } else {
-      assert cur instanceof SingleSuccessorBlock;
+      if (!(cur instanceof SingleSuccessorBlock)) {
+        throw new BugInCF("BlockImpl is neither a conditional block nor a SingleSuccessorBlock");
+      }
 
       Block b = ((SingleSuccessorBlock) cur).getSuccessor();
       if (b != null) {
@@ -497,9 +502,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * If the input block is Regular, then it returns a list of nodes exist in the content. If it's an
-   * Exception_Block, then it returns the corresponding node that causes exception. Otherwise, it
-   * returns an emptyList.
+   * If the input block is Regular, the returned list of nodes is exactly the contents of the block.
+   * If it's an Exception_Block, then it returns the corresponding node that causes exception.
+   * Otherwise, it returns an emptyList.
    *
    * @param block
    * @return List of Nodes
@@ -519,11 +524,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * It updates visited and worklist if the input state has not been visited yet
-   *
-   * @param state
-   * @param visited
-   * @param worklist
+   * Updates {@code visited} and {@code worklist} if the input {@code state} has not been visited
+   * yet.
    */
   private void propagate(
       BlockWithLocals state, Set<BlockWithLocals> visited, Deque<BlockWithLocals> worklist) {
@@ -535,7 +537,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
-  private String getAlwaysCallValue(Element element) {
+  /**
+   * Returns the String value of @AlwaysCall annotation declared on the class type of {@code
+   * element}. Returns null if the class type of {@code element} doesn't have @AlwaysCall
+   * annotation.
+   */
+  private @Nullable String getAlwaysCallValue(Element element) {
 
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
@@ -546,7 +553,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         : null;
   }
 
-  private void reportAlwaysCallErrors(
+  /**
+   * Creates the appropriate @CalledMethods annotation that corresponds to the @AlwaysCall
+   * annotation declared on the class type of {@code assign.first}. Then, it gets @CalledMethod
+   * annotation of {@code assign.first} to do a subtyping check and reports an error if the check
+   * fails.
+   */
+  private void checkAlwaysCall(
       Pair<LocalVariableNode, Tree> assign,
       CFStore store,
       AnnotatedTypeMirror annotatedTypeMirror) {
@@ -557,12 +570,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     boolean report = true;
 
     if (lhsCFValue != null) { // When store contains the lhs
+      AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
+      AnnotatedTypeMirror annoType = getAnnotatedType(assign.first.getTree());
+      AnnotationMirror CMAnno = annoType.getAnnotation(CalledMethods.class);
+      QualifierHierarchy qualifierHierarchy =
+          createQualifierHierarchy(new MultiGraphQualifierHierarchy.MultiGraphFactory(this));
 
-      for (AnnotationMirror annotationMirror : lhsCFValue.getAnnotations()) {
-        if (AnnotationUtils.areSameByClass(annotationMirror, CalledMethods.class)
-            && getValueOfAnnotationWithStringArgument(annotationMirror).contains(alwaysCallValue)) {
-          report = false;
-        }
+      if (CMAnno != null && qualifierHierarchy.isSubtype(dummyCMAnno, CMAnno)) {
+        report = false;
       }
 
     } else if (annotatedTypeMirror != null) {
