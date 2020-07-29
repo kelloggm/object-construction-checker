@@ -26,6 +26,10 @@ class ACRegularExitPointTest {
         return f;
     }
 
+    @EnsuresCalledMethods(value = "#1", methods = "a")
+    void callA(Foo f) {
+        f.a();
+    }
 
     void makeFooFinalize(){
         Foo f = new Foo();
@@ -268,6 +272,11 @@ class ACRegularExitPointTest {
     void ownershipTransfer2(){
         Foo f1 = null;
         Foo f2 = f1;
+    }
+
+    void testECM(){
+        Foo f = new Foo();
+        callA(f);
     }
 
 }

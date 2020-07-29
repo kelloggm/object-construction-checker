@@ -334,7 +334,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       BlockWithLocals curBlockLocals = worklist.removeLast();
       List<Node> nodes = getBlockNodes(curBlockLocals.block);
-      Set<Pair<LocalVariableNode, Tree>> newDefs = new HashSet<>(curBlockLocals.localSet);
+      Set<Pair<LocalVariableNode, Tree>> newDefs = new HashSet<>(curBlockLocals.localSetInfo);
 
       for (Node node : nodes) {
 
@@ -411,7 +411,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               checkAlwaysCall(assign, succRegularStore, null);
 
             } else { // If the cur block is Exception/Regular block then it checks AlwaysCall
-              // condition in the store right after the last node
+              // annotation in the store right after the last node
               Node last = nodes.get(nodes.size() - 1);
               CFStore storeAfter = getStoreAfter(last);
               AnnotatedTypeMirror lastAType =
@@ -531,7 +531,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       BlockWithLocals state, Set<BlockWithLocals> visited, Deque<BlockWithLocals> worklist) {
 
     if (!visited.stream()
-        .anyMatch(pair -> pair.block.equals(state.block) && pair.localSet.equals(state.localSet))) {
+        .anyMatch(
+            pair ->
+                pair.block.equals(state.block) && pair.localSetInfo.equals(state.localSetInfo))) {
       visited.add(state);
       worklist.add(state);
     }
@@ -566,17 +568,18 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     CFValue lhsCFValue = store.getValue(assign.first);
     String alwaysCallValue = getAlwaysCallValue(assign.first.getElement());
+    AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
 
     boolean report = true;
 
     if (lhsCFValue != null) { // When store contains the lhs
-      AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
-      AnnotatedTypeMirror annoType = getAnnotatedType(assign.first.getTree());
-      AnnotationMirror CMAnno = annoType.getAnnotationInHierarchy(TOP);
-      QualifierHierarchy qualifierHierarchy =
-          createQualifierHierarchy(new MultiGraphQualifierHierarchy.MultiGraphFactory(this));
+      AnnotationMirror cmAnno =
+          lhsCFValue.getAnnotations().stream()
+              .filter(anno -> AnnotationUtils.areSameByClass(anno, CalledMethods.class))
+              .findAny()
+              .orElse(TOP);
 
-      if (qualifierHierarchy.isSubtype(CMAnno, dummyCMAnno)) {
+      if (this.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
         report = false;
       }
 
@@ -584,9 +587,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       // Sometimes getStoreAfter doesn't contain correct set of local variable nodes! Then, it
       // checks the AlwaysCall condition by looking at AnnotatedTypeMirror
-      AnnotationMirror annotationMirror = annotatedTypeMirror.getAnnotation(CalledMethods.class);
-      if (annotationMirror != null
-          && getValueOfAnnotationWithStringArgument(annotationMirror).contains(alwaysCallValue)) {
+      AnnotationMirror annotationMirror = annotatedTypeMirror.getAnnotationInHierarchy(TOP);
+      if (this.getQualifierHierarchy().isSubtype(annotationMirror, dummyCMAnno)) {
         report = false;
       }
     }
@@ -596,20 +598,30 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
-  private boolean hasAlwaysCall(TypeMirror type) {
+  boolean hasAlwaysCall(TypeMirror type) {
     TypeElement eType = TypesUtils.getTypeElement(type);
     return ((eType != null) && (getDeclAnnotation(eType, AlwaysCall.class) != null));
   }
 
   private class BlockWithLocals {
     public BlockImpl block;
-    public Set<Pair<LocalVariableNode, Tree>> localSet;
+    public Set<Pair<LocalVariableNode, Tree>> localSetInfo;
 
     public BlockWithLocals(Block b, Set<Pair<LocalVariableNode, Tree>> ls) {
       this.block = (BlockImpl) b;
-      this.localSet = ls;
+      this.localSetInfo = ls;
     }
   }
+
+  //  private class LocalAssignPair {
+  //    public LocalVariableNode localVarNode;
+  //    public Tree assignTree;
+  //
+  //    public LocalAssignPair(LocalVariableNode localVarNode, Tree assignTree) {
+  //      this.localVarNode = localVarNode;
+  //      this.assignTree = assignTree;
+  //    }
+  //  }
 
   /**
    * This tree annotator is needed to create types for fluent builders that have @This annotations.

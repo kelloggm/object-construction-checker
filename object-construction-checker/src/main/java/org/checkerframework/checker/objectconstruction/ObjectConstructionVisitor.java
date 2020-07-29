@@ -1,6 +1,5 @@
 package org.checkerframework.checker.objectconstruction;
 
-import static com.sun.source.tree.Tree.Kind.VARIABLE;
 import static javax.lang.model.element.ElementKind.LOCAL_VARIABLE;
 
 import com.sun.source.tree.AnnotationTree;
@@ -19,7 +18,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
@@ -29,8 +27,6 @@ import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.QualifierHierarchy;
-import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -68,16 +64,13 @@ public class ObjectConstructionVisitor
     if (!isAssignedToLocal(this.getCurrentPath()) && !atypeFactory.returnsThis(node)) {
       TypeMirror returnType = TreeUtils.typeOf(node);
 
-      if (hasAlwaysCall(returnType)) {
+      if (atypeFactory.hasAlwaysCall(returnType)) {
         String alwaysCallAnnoVal = getAlwaysCallValue(returnType);
         AnnotationMirror dummyCMAnno = atypeFactory.createCalledMethods(alwaysCallAnnoVal);
         AnnotatedTypeMirror annoType = atypeFactory.getAnnotatedType(node);
-        AnnotationMirror CMAnno = annoType.getAnnotationInHierarchy(atypeFactory.TOP);
+        AnnotationMirror cmAnno = annoType.getAnnotationInHierarchy(atypeFactory.TOP);
 
-        QualifierHierarchy qualifierHierarchy =
-            atypeFactory.createQualifierHierarchy(
-                new MultiGraphQualifierHierarchy.MultiGraphFactory(atypeFactory));
-        if (!qualifierHierarchy.isSubtype(CMAnno, dummyCMAnno)) {
+        if (!atypeFactory.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
           checker.reportError(node, "missing.alwayscall", alwaysCallAnnoVal);
         }
       }
@@ -99,7 +92,7 @@ public class ObjectConstructionVisitor
   public Void visitNewClass(NewClassTree node, Void p) {
     if (!isAssignedToLocal(this.getCurrentPath())) {
       TypeMirror type = TreeUtils.typeOf(node);
-      if (hasAlwaysCall(type)) {
+      if (atypeFactory.hasAlwaysCall(type)) {
         checker.reportError(node, "missing.alwayscall", getAlwaysCallValue(type));
       }
     }
@@ -147,12 +140,6 @@ public class ObjectConstructionVisitor
       default:
         return false;
     }
-  }
-
-  private boolean hasAlwaysCall(TypeMirror type) {
-    TypeElement eType = TypesUtils.getTypeElement(type);
-
-    return ((eType != null) && (atypeFactory.getDeclAnnotation(eType, AlwaysCall.class) != null));
   }
 
   /**
