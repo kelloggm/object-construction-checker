@@ -437,7 +437,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       ExceptionBlockImpl exceptionBlock, Set<Pair<LocalVariableNode, Tree>> defs) {
     Map<TypeMirror, Set<Block>> exSucc = exceptionBlock.getExceptionalSuccessors();
     for (Map.Entry<TypeMirror, Set<Block>> pair : exSucc.entrySet()) {
-      Name exceptionClassName = ((Type.ClassType) pair.getKey()).tsym.getSimpleName();
+      Name exceptionClassName = ((Type) pair.getKey()).tsym.getSimpleName();
       if (!(exceptionClassName.contentEquals(Throwable.class.getSimpleName())
           || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName()))) {
         CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
