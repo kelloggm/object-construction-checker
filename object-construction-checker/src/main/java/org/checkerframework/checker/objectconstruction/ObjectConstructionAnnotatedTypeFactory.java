@@ -1,5 +1,6 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.google.common.collect.Sets;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
@@ -334,7 +335,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
       BlockWithLocals curBlockLocals = worklist.removeLast();
       List<Node> nodes = getBlockNodes(curBlockLocals.block);
-      Set<Pair<LocalVariableNode, Tree>> newDefs = new HashSet<>(curBlockLocals.localSetInfo);
+      Set<LocalVarWithAssignTree> newDefs = new HashSet<>(curBlockLocals.localSetInfo);
 
       for (Node node : nodes) {
 
@@ -361,7 +362,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
             // Reassignment to the lhs
             if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
-              Pair<LocalVariableNode, Tree> latestAssignmentPair =
+              LocalVarWithAssignTree latestAssignmentPair =
                   getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
               checkAlwaysCall(latestAssignmentPair, getStoreBefore(node), null);
               newDefs.remove(latestAssignmentPair);
@@ -370,7 +371,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
             // the AssignmentNode to the newDefs.
             if ((rhs instanceof ObjectCreationNode) || (rhs instanceof MethodInvocationNode)) {
-              newDefs.add(Pair.of((LocalVariableNode) lhs, node.getTree()));
+              newDefs.add(new LocalVarWithAssignTree((LocalVariableNode) lhs, node.getTree()));
             }
 
             // Ownership Transfer
@@ -378,7 +379,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               // If the rhs is a LocalVariableNode that exists in the newDefs (Note that if a
               // localVariableNode exists in the newDefs it means it isn't assigned to a null
               // literals), then it adds the localVariableNode to the newDefs
-              newDefs.add(Pair.of((LocalVariableNode) lhs, node.getTree()));
+              newDefs.add(new LocalVarWithAssignTree((LocalVariableNode) lhs, node.getTree()));
               newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs));
             }
           }
@@ -399,13 +400,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
 
       for (BlockImpl succ : getSuccessors(curBlockLocals.block)) {
-        Set<Pair<LocalVariableNode, Tree>> toRemove = new HashSet<>();
+        Set<LocalVarWithAssignTree> toRemove = new HashSet<>();
 
         CFStore succRegularStore = this.analysis.getInput(succ).getRegularStore();
-        for (Pair<LocalVariableNode, Tree> assign : newDefs) {
+        for (LocalVarWithAssignTree assign : newDefs) {
 
           // If the successor block is the exit block or if the variable is going out of scope
-          if (succ instanceof SpecialBlockImpl || succRegularStore.getValue(assign.first) == null) {
+          if (succ instanceof SpecialBlockImpl || succRegularStore.getValue(assign.localVarNode) == null) {
 
             if (nodes.size() == 0) { // If the cur block is special or conditional block
               checkAlwaysCall(assign, succRegularStore, null);
@@ -434,14 +435,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * exceptionBlock} is not NullPointerException or Throwable.
    */
   public void checkACInExceptionSuccessors(
-      ExceptionBlockImpl exceptionBlock, Set<Pair<LocalVariableNode, Tree>> defs) {
+      ExceptionBlockImpl exceptionBlock, Set<LocalVarWithAssignTree> defs) {
     Map<TypeMirror, Set<Block>> exSucc = exceptionBlock.getExceptionalSuccessors();
     for (Map.Entry<TypeMirror, Set<Block>> pair : exSucc.entrySet()) {
       Name exceptionClassName = ((Type) pair.getKey()).tsym.getSimpleName();
       if (!(exceptionClassName.contentEquals(Throwable.class.getSimpleName())
           || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName()))) {
         CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
-        for (Pair<LocalVariableNode, Tree> assignTree : defs) {
+        for (LocalVarWithAssignTree assignTree : defs) {
           checkAlwaysCall(assignTree, storeAfter, null);
         }
       }
@@ -452,10 +453,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * Returns a pair in {@code defs} that its first var is equal to {@code node} if one exists, null
    * otherwise.
    */
-  private @Nullable Pair<LocalVariableNode, Tree> getAssignmentTreeOfVar(
-      Set<Pair<LocalVariableNode, Tree>> defs, LocalVariableNode node) {
+  private @Nullable LocalVarWithAssignTree getAssignmentTreeOfVar(
+      Set<LocalVarWithAssignTree> defs, LocalVariableNode node) {
     return defs.stream()
-        .filter(assign -> assign.first.getElement().equals(node.getElement()))
+        .filter(assign -> assign.localVarNode.getElement().equals(node.getElement()))
         .findAny()
         .orElse(null);
   }
@@ -464,9 +465,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * Checks whether a pair exists in {@code defs} that its first var is equal to {@code node} or
    * not. This is useful when we want to check if a LocalVariableNode is overwritten or not.
    */
-  private boolean isVarInDefs(Set<Pair<LocalVariableNode, Tree>> defs, LocalVariableNode node) {
+  private boolean isVarInDefs(Set<LocalVarWithAssignTree> defs, LocalVariableNode node) {
     return defs.stream()
-        .map(assign -> ((assign.first).getElement()))
+        .map(assign -> ((assign.localVarNode).getElement()))
         .anyMatch(elem -> elem.equals(node.getElement()));
   }
 
@@ -562,12 +563,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * fails.
    */
   private void checkAlwaysCall(
-      Pair<LocalVariableNode, Tree> assign,
+          LocalVarWithAssignTree assign,
       CFStore store,
       AnnotatedTypeMirror annotatedTypeMirror) {
 
-    CFValue lhsCFValue = store.getValue(assign.first);
-    String alwaysCallValue = getAlwaysCallValue(assign.first.getElement());
+    CFValue lhsCFValue = store.getValue(assign.localVarNode);
+    String alwaysCallValue = getAlwaysCallValue(assign.localVarNode.getElement());
     AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
 
     boolean report = true;
@@ -594,7 +595,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
 
     if (report) {
-      checker.reportError(assign.second, "missing.alwayscall", alwaysCallValue);
+      checker.reportError(assign.assignTree, "missing.alwayscall", alwaysCallValue);
     }
   }
 
@@ -605,23 +606,44 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   private class BlockWithLocals {
     public BlockImpl block;
-    public Set<Pair<LocalVariableNode, Tree>> localSetInfo;
+    public Set<LocalVarWithAssignTree> localSetInfo;
 
-    public BlockWithLocals(Block b, Set<Pair<LocalVariableNode, Tree>> ls) {
+    public BlockWithLocals(Block b, Set<LocalVarWithAssignTree> ls) {
       this.block = (BlockImpl) b;
       this.localSetInfo = ls;
     }
+
   }
 
-  //  private class LocalAssignPair {
-  //    public LocalVariableNode localVarNode;
-  //    public Tree assignTree;
-  //
-  //    public LocalAssignPair(LocalVariableNode localVarNode, Tree assignTree) {
-  //      this.localVarNode = localVarNode;
-  //      this.assignTree = assignTree;
-  //    }
-  //  }
+    private class LocalVarWithAssignTree {
+      public LocalVariableNode localVarNode;
+      public Tree assignTree;
+
+      public LocalVarWithAssignTree(LocalVariableNode localVarNode, Tree assignTree) {
+        this.localVarNode = localVarNode;
+        this.assignTree = assignTree;
+
+      }
+
+      @Override
+      public boolean equals(Object o) {
+        if (this == o) {
+          return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+          return false;
+        }
+        LocalVarWithAssignTree localVarWithAssignTree = (LocalVarWithAssignTree) o;
+        return localVarNode.equals(localVarWithAssignTree.localVarNode) &&
+                assignTree.equals(localVarWithAssignTree.assignTree);
+
+      }
+
+      @Override
+      public int hashCode() {
+        return Pair.of(localVarNode, assignTree).hashCode();
+      }
+    }
 
   /**
    * This tree annotator is needed to create types for fluent builders that have @This annotations.
