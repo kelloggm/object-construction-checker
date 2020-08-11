@@ -279,4 +279,20 @@ class ACRegularExitPointTest {
         callA(f);
     }
 
+
+    @EnsuresCalledMethodsIf(expression = "#1", methods = {"a"}, result = true)
+    boolean ensuresCalledMethodsIf(Foo f, boolean b) {
+//        if (sock == null) {
+//            return;
+//        }
+
+//        try {
+            f.a();
+            return false;
+//            return true;
+//        } catch (IOException ie) {
+
+//        }
+    }
+
 }

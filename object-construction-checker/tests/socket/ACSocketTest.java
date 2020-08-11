@@ -3,8 +3,11 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.net.Socket;
+import java.net.*;
 import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.Optional;
 
 public class ACSocketTest
 {
@@ -153,5 +156,86 @@ public class ACSocketTest
             e.printStackTrace();
         }
     }
+
+
+    protected Socket sock;
+    void connectToLeader(AtomicReference<Socket> socket) throws IOException {
+        // :: error: missing.alwayscall
+        if (socket.get() == null) {
+            throw new IOException("Failed connect to " );
+        } else {
+            // :: error: missing.alwayscall
+            sock = socket.get();
+        }
+
+    }
+
+
+    Socket createSocket(boolean b, String address, int port) throws IOException {
+        Socket sock;
+        if (b) {
+            sock = new Socket(address, port);
+        } else {
+            sock = new Socket(address, port);
+        }
+        sock.setSoTimeout(10000);
+        return sock;
+    }
+
+    void replaceVarWithNull(String address, int port) {
+        // :: error: missing.alwayscall
+        Socket s = makeSocket(address, port);
+
+    }
+
+    @EnsuresCalledMethodsIf(expression = "#1", methods = {"close"}, result = true)
+    void closeSocket(Socket sock) {
+//        if (sock == null) {
+//            return;
+//        }
+
+        try {
+            sock.close();
+        } catch (IOException ie) {
+
+        }
+    }
+
+
+    Optional<ServerSocket> createServerSocket(InetSocketAddress address) {
+        ServerSocket serverSocket;
+        try {
+            serverSocket = new ServerSocket();
+
+            serverSocket.setReuseAddress(true);
+            serverSocket.bind(address);
+            return Optional.of(serverSocket);
+        } catch (IOException e) {
+
+        }
+        return Optional.empty();
+    }
+
+
+
+
+    public static void ruok(String host, int port) {
+        Socket s = null;
+        try {
+            s = new Socket(host, port);
+//            s.setReuseAddress(true);
+        } catch (IOException e) {
+
+        } finally {
+
+            try {
+                s.close();
+            } catch (IOException e) {
+
+            }
+
+        }
+    }
+
 }
 
