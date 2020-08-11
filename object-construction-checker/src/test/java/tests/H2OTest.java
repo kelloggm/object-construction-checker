@@ -1,4 +1,3 @@
 package tests;
 
-public class H2OTest {
-}
+public class H2OTest {}

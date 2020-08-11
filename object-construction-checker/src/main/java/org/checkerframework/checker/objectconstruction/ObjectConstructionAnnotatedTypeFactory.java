@@ -1,6 +1,5 @@
 package org.checkerframework.checker.objectconstruction;
 
-import com.google.common.collect.Sets;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
@@ -406,7 +405,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         for (LocalVarWithAssignTree assign : newDefs) {
 
           // If the successor block is the exit block or if the variable is going out of scope
-          if (succ instanceof SpecialBlockImpl || succRegularStore.getValue(assign.localVarNode) == null) {
+          if (succ instanceof SpecialBlockImpl
+              || succRegularStore.getValue(assign.localVarNode) == null) {
 
             if (nodes.size() == 0) { // If the cur block is special or conditional block
               checkAlwaysCall(assign, succRegularStore, null);
@@ -563,9 +563,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * fails.
    */
   private void checkAlwaysCall(
-          LocalVarWithAssignTree assign,
-      CFStore store,
-      AnnotatedTypeMirror annotatedTypeMirror) {
+      LocalVarWithAssignTree assign, CFStore store, AnnotatedTypeMirror annotatedTypeMirror) {
 
     CFValue lhsCFValue = store.getValue(assign.localVarNode);
     String alwaysCallValue = getAlwaysCallValue(assign.localVarNode.getElement());
@@ -612,38 +610,35 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       this.block = (BlockImpl) b;
       this.localSetInfo = ls;
     }
-
   }
 
-    private class LocalVarWithAssignTree {
-      public LocalVariableNode localVarNode;
-      public Tree assignTree;
+  private class LocalVarWithAssignTree {
+    public LocalVariableNode localVarNode;
+    public Tree assignTree;
 
-      public LocalVarWithAssignTree(LocalVariableNode localVarNode, Tree assignTree) {
-        this.localVarNode = localVarNode;
-        this.assignTree = assignTree;
-
-      }
-
-      @Override
-      public boolean equals(Object o) {
-        if (this == o) {
-          return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-          return false;
-        }
-        LocalVarWithAssignTree localVarWithAssignTree = (LocalVarWithAssignTree) o;
-        return localVarNode.equals(localVarWithAssignTree.localVarNode) &&
-                assignTree.equals(localVarWithAssignTree.assignTree);
-
-      }
-
-      @Override
-      public int hashCode() {
-        return Pair.of(localVarNode, assignTree).hashCode();
-      }
+    public LocalVarWithAssignTree(LocalVariableNode localVarNode, Tree assignTree) {
+      this.localVarNode = localVarNode;
+      this.assignTree = assignTree;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      LocalVarWithAssignTree localVarWithAssignTree = (LocalVarWithAssignTree) o;
+      return localVarNode.equals(localVarWithAssignTree.localVarNode)
+          && assignTree.equals(localVarWithAssignTree.assignTree);
+    }
+
+    @Override
+    public int hashCode() {
+      return Pair.of(localVarNode, assignTree).hashCode();
+    }
+  }
 
   /**
    * This tree annotator is needed to create types for fluent builders that have @This annotations.
