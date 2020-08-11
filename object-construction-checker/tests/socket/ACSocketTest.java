@@ -153,5 +153,19 @@ public class ACSocketTest
             e.printStackTrace();
         }
     }
+
+    @EnsuresCalledMethods(value = "#1", methods = "close")
+    void closeSocket(Socket sock) {
+        try {
+            sock.close();
+        } catch (IOException e) {
+
+        }
+    }
+
+    void useCloseSocket(String address, int port) throws IOException {
+        Socket sock = new Socket(address, port);
+        closeSocket(sock);
+    }
 }
 
