@@ -413,7 +413,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         if (node instanceof ReturnNode && transferOwnershipAtReturn) {
           Node result = ((ReturnNode) node).getResult();
           if (result instanceof LocalVariableNode
-                  && isVarInDefs(newDefs, (LocalVariableNode) result)) {
+              && isVarInDefs(newDefs, (LocalVariableNode) result)) {
             newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) result));
           }
         }
