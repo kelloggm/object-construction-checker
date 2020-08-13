@@ -6,10 +6,6 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 
 
 @AlwaysCall("close")
-class ServerSocket implements Closeable {}
-
-
-@AlwaysCall("close")
 class Socket implements Closeable {
     Socket();
     Socket(Proxy arg0);

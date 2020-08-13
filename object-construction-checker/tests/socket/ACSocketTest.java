@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.Optional;
+import javax.net.ssl.*;
 
 public class ACSocketTest
 {
@@ -16,6 +17,7 @@ public class ACSocketTest
 
         try
         {
+            // :: error: missing.alwayscall
             Socket socket = new Socket(address, port);
             return socket;
         }
@@ -157,7 +159,6 @@ public class ACSocketTest
         }
     }
 
-
     protected Socket sock;
     void connectToLeader(AtomicReference<Socket> socket) throws IOException {
         // :: error: missing.alwayscall
@@ -178,7 +179,9 @@ public class ACSocketTest
         } else {
             sock = new Socket(address, port);
         }
+
         sock.setSoTimeout(10000);
+        closeSocket(sock);
         return sock;
     }
 
@@ -188,18 +191,18 @@ public class ACSocketTest
 
     }
 
-    @EnsuresCalledMethodsIf(expression = "#1", methods = {"close"}, result = true)
-    void closeSocket(Socket sock) {
-//        if (sock == null) {
-//            return;
+//    @EnsuresCalledMethodsIf(expression = "#1", methods = {"close"}, result = true)
+//    void closeSocket(Socket sock) {
+////        if (sock == null) {
+////            return;
+////        }
+//
+//        try {
+//            sock.close();
+//        } catch (IOException ie) {
+//
 //        }
-
-        try {
-            sock.close();
-        } catch (IOException ie) {
-
-        }
-    }
+//    }
 
 
     Optional<ServerSocket> createServerSocket(InetSocketAddress address) {
@@ -236,6 +239,56 @@ public class ACSocketTest
 
         }
     }
+
+    @EnsuresCalledMethods(value = "#1", methods = "close")
+    void closeSocket(Socket sock) {
+        try {
+            if(sock!=null){
+                sock.close();
+            }
+        } catch (IOException e) {
+
+        }
+    }
+
+    void useCloseSocket(String address, int port) throws IOException {
+        Socket sock = new Socket(address, port);
+        closeSocket(sock);
+    }
+
+
+
+    void setSockOpts(Socket sock) throws SocketException {
+        sock.setTcpNoDelay(true);
+        sock.setKeepAlive(true);
+        sock.setSoTimeout(1000);
+    }
+
+    void initiateConnection(SocketAddress endpoint, int timeout) {
+        Socket sock = null;
+        try {
+
+            sock = new Socket("", 1);
+
+            setSockOpts(sock);
+            sock.connect(endpoint, timeout);
+            if (sock instanceof SSLSocket) {
+                SSLSocket sslSock = (SSLSocket) sock;
+                sslSock.startHandshake();
+
+            }
+
+            closeSocket(sock);
+        } catch (IOException e) {
+
+            closeSocket(sock);
+            return;
+        }
+    }
+
+
+
+
 
 }
 

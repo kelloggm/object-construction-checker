@@ -46,13 +46,11 @@ class ACRegularExitPointTest {
     }
 
     void testStoringInLocalWrong() {
-        // :: error: missing.alwayscall
         Foo foo = makeFoo();
     }
 
     void testStoringInLocalWrong2(){
         Foo f;
-        // :: error: missing.alwayscall
         f = makeFoo();
     }
 
@@ -131,7 +129,6 @@ class ACRegularExitPointTest {
     }
 
     Foo ifElseWithReturnExit(boolean b, boolean c) {
-        // :: error: missing.alwayscall
         Foo f1 = makeFoo();
         // :: error: missing.alwayscall
         Foo f3 = new Foo();
@@ -280,19 +277,20 @@ class ACRegularExitPointTest {
     }
 
 
-    @EnsuresCalledMethodsIf(expression = "#1", methods = {"a"}, result = true)
-    boolean ensuresCalledMethodsIf(Foo f, boolean b) {
-//        if (sock == null) {
-//            return;
-//        }
+    void testFinallyBlock(boolean b) {
+        Foo f = null;
+        try {
+            f = new Foo();
+            if (true) {
+                throw new IOException();
+            }
+        } catch (IOException e) {
 
-//        try {
+        } finally {
             f.a();
-            return false;
-//            return true;
-//        } catch (IOException ie) {
 
-//        }
+        }
     }
+
 
 }

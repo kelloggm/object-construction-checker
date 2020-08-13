@@ -2,15 +2,21 @@ package org.checkerframework.checker.objectconstruction;
 
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
+import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
 import org.checkerframework.dataflow.analysis.FlowExpressions;
 import org.checkerframework.dataflow.analysis.FlowExpressions.Receiver;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
+import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.flow.CFAnalysis;
@@ -40,6 +46,7 @@ public class ObjectConstructionTransfer extends CFTransfer {
   public TransferResult<CFValue, CFStore> visitMethodInvocation(
       final MethodInvocationNode node, final TransferInput<CFValue, CFStore> input) {
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(node, input);
+
     Node receiver = node.getTarget().getReceiver();
 
     // in the event that the method we're visiting is static
@@ -79,12 +86,14 @@ public class ObjectConstructionTransfer extends CFTransfer {
     // support conditional post-condition annotations, based on the comments in CFAbstractTransfer.
     CFStore thenStore = result.getThenStore();
     CFStore elseStore = result.getElseStore();
+    Map<TypeMirror, CFStore> exceptionalStores = makeExceptionalStores(node, input);
 
     while (receiver != null) {
       // Insert the new type computed previously as the type of the receiver.
       Receiver receiverReceiver = FlowExpressions.internalReprOf(atypefactory, receiver);
       thenStore.insertValue(receiverReceiver, newType);
       elseStore.insertValue(receiverReceiver, newType);
+      exceptionalStores.values().stream().forEach(s -> s.insertValue(receiverReceiver, newType));
 
       Tree receiverTree = receiver.getTree();
 
@@ -112,6 +121,20 @@ public class ObjectConstructionTransfer extends CFTransfer {
       }
     }
 
+    return new ConditionalTransferResult<>(
+        result.getResultValue(), thenStore, elseStore, exceptionalStores);
+  }
+
+  private Map<TypeMirror, CFStore> makeExceptionalStores(
+      MethodInvocationNode node, final TransferInput<CFValue, CFStore> input) {
+    if (!(node.getBlock() instanceof ExceptionBlock)) {
+      // this can happen in some weird (buggy) cases
+      return Collections.emptyMap();
+    }
+    ExceptionBlock block = (ExceptionBlock) node.getBlock();
+    Map<TypeMirror, CFStore> result = new LinkedHashMap<>();
+    block.getExceptionalSuccessors().keySet().stream()
+        .forEach(tm -> result.put(tm, input.getRegularStore().copy()));
     return result;
   }
 }
