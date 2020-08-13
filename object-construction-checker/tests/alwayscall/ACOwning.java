@@ -27,4 +27,8 @@ class ACOwning {
         noOwnership(g);
     }
 
+    // make sure enum doesn't crash things
+    static enum TestEnum {
+        CASE1, CASE2, CASE3
+    }
 }

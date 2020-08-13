@@ -425,7 +425,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           ExecutableElement executableElement = TreeUtils.elementFromUse(invocationNode.getTree());
           List<? extends VariableElement> formals = executableElement.getParameters();
           if (arguments.size() != formals.size()) {
-            throw new BugInCF("doh");
+            // this could happen, e.g., with varargs, or with strange cases like generated Enum
+            // constructors
+            // for now, just skip this case
+            // TODO allow for ownership transfer here if needed in future
+            continue;
           }
           for (int i = 0; i < arguments.size(); i++) {
             Node n = arguments.get(i);
