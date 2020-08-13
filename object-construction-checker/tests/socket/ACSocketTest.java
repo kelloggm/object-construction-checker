@@ -42,7 +42,7 @@ public class ACSocketTest
     }
 
 
-    void callMakeSocket(String address, int port){
+    void callMakeSocketAndClose(String address, int port){
         Socket socket = makeSocket(address, port);
         try
         {
@@ -55,8 +55,7 @@ public class ACSocketTest
     }
 
 
-    void callMakeSocketWrong(String address, int port){
-        // :: error: missing.alwayscall
+    void callMakeSocket(String address, int port){
         Socket socket = makeSocket(address, port);
     }
 
@@ -82,17 +81,25 @@ public class ACSocketTest
     void testLoop(String address, int port) {
         Socket s = null;
         while (true) {
-            // :: error: missing.alwayscall
-            s = makeSocket(address, port);
+            try {
+                s = new Socket(address, port);
+                s.close();
+            } catch (IOException e) {
+
+            }
         }
     }
 
     void overWrittingVarInLoop(String address, int port) {
-        // :: error: missing.alwayscall
+
         Socket s = makeSocket(address, port);
         while (true) {
-            // :: error: missing.alwayscall
-            s = makeSocket(address, port);
+            try {
+                // :: error: missing.alwayscall
+                s = new Socket(address, port);
+            } catch (IOException e) {
+
+            }
         }
     }
 
@@ -101,10 +108,8 @@ public class ACSocketTest
         Socket s = null;
         while (true) {
             if (b) {
-                // :: error: missing.alwayscall
                 s = makeSocket(address, port);
             } else {
-                // :: error: missing.alwayscall
                 s = makeSocket(address, port);
             }
         }
@@ -112,8 +117,13 @@ public class ACSocketTest
 
 
     void replaceVarWithNull(String address, int port, boolean b, boolean c) {
-        // :: error: missing.alwayscall
-        Socket s = makeSocket(address, port);
+        Socket s;
+        try {
+            // :: error: missing.alwayscall
+            s = new Socket(address, port);
+        } catch (IOException e) {
+
+        }
         if (b) {
             s = null;
         } else if (c) {
@@ -125,18 +135,16 @@ public class ACSocketTest
 
 
     void ownershipTransfer(String address, int port) {
-        Socket s1 = makeSocket(address, port);
+        Socket s1 = null;
+        try {
+            s1 = new Socket(address, port);
+        } catch (IOException e) {
+
+        }
         // :: error: missing.alwayscall
         Socket s2 = s1;
         if(true){
-
-            try {
-                s2.close();
-            }
-            catch (IOException i)
-            {
-
-            }
+            closeSocket(s2);
         }
 
     }
@@ -186,8 +194,13 @@ public class ACSocketTest
     }
 
     void replaceVarWithNull(String address, int port) {
-        // :: error: missing.alwayscall
-        Socket s = makeSocket(address, port);
+        try {
+            // :: error: missing.alwayscall
+            Socket s = new Socket(address, port);
+            s = null;
+        } catch (IOException e) {
+
+        }
 
     }
 
