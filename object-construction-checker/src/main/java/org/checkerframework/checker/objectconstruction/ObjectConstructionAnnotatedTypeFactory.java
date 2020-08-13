@@ -64,6 +64,7 @@ import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
+import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -327,6 +328,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * @param cfg the control flow graph of a method
    */
   private void alwaysCallTraverse(ControlFlowGraph cfg) {
+    boolean transferOwnershipAtReturn = false;
+
     // add any owning parameters to initial set
     Set<LocalVarWithAssignTree> init = new HashSet<>();
     UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
@@ -403,6 +406,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
                       new LocalVariable((LocalVariableNode) lhs), node.getTree()));
               newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs));
             }
+          }
+        }
+
+        // Remove the returned localVariableNode from newDefs.
+        if (node instanceof ReturnNode && transferOwnershipAtReturn) {
+          Node result = ((ReturnNode) node).getResult();
+          if (result instanceof LocalVariableNode
+                  && isVarInDefs(newDefs, (LocalVariableNode) result)) {
+            newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) result));
           }
         }
 
