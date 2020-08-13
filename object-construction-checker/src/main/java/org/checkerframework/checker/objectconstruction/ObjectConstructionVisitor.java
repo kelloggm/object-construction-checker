@@ -61,7 +61,9 @@ public class ObjectConstructionVisitor
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
 
-    if (!isAssignedToLocal(this.getCurrentPath()) && !atypeFactory.returnsThis(node)) {
+    if (!isAssignedToLocal(this.getCurrentPath())
+        && !atypeFactory.returnsThis(node)
+        && atypeFactory.transferOwnershipAtReturn) {
       TypeMirror returnType = TreeUtils.typeOf(node);
 
       if (atypeFactory.hasAlwaysCall(returnType)) {

@@ -89,6 +89,8 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
+  public boolean transferOwnershipAtReturn = false;
+
   /** The top annotation. Package private to permit access from the Transfer class. */
   final AnnotationMirror TOP;
 
@@ -328,8 +330,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * @param cfg the control flow graph of a method
    */
   private void alwaysCallTraverse(ControlFlowGraph cfg) {
-    boolean transferOwnershipAtReturn = false;
-
     // add any owning parameters to initial set
     Set<LocalVarWithAssignTree> init = new HashSet<>();
     UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
@@ -390,7 +390,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
             // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
             // the AssignmentNode to the newDefs.
-            if ((rhs instanceof ObjectCreationNode)) {
+            if ((rhs instanceof ObjectCreationNode)
+                || (transferOwnershipAtReturn && rhs instanceof MethodInvocationNode)) {
               newDefs.add(
                   new LocalVarWithAssignTree(
                       new LocalVariable((LocalVariableNode) lhs), node.getTree()));
