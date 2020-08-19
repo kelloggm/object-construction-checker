@@ -65,3 +65,19 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
     Set<SocketOption<?>> supportedOptions();
 }
 
+
+
+@AlwaysCall("close")
+class ServerSocket implements Closeable {
+
+}
+
+
+package javax.net.ssl;
+
+abstract class SSLSocketFactory extends SocketFactory{
+    public @Owning Socket createSocket(Socket s, InputStream consumed, boolean autoClose) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+}
+

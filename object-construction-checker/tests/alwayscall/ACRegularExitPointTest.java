@@ -12,9 +12,11 @@ class ACRegularExitPointTest {
             return this;
         }
         void c(@CalledMethods({"a"}) Foo this) {}
-
     }
 
+    class SubFoo extends Foo {
+
+    }
 
     Foo makeFoo(){
         return new Foo();
@@ -291,6 +293,17 @@ class ACRegularExitPointTest {
 
         }
     }
+
+    void testSubFoo() {
+        // :: error: missing.alwayscall
+        Foo f = new SubFoo();
+    }
+
+    void testSubFoo2() {
+        // :: error: missing.alwayscall
+        SubFoo f = new SubFoo();
+    }
+
 
 
 }

@@ -1,6 +1,7 @@
 package org.checkerframework.checker.objectconstruction.qual;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -14,6 +15,7 @@ import java.lang.annotation.Target;
  *
  * <pre>{@code @AlwaysCall({"m1", "m2"}) <: @AlwaysCall({"m1", "m2", "m3"})}</pre>
  */
+@Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface AlwaysCall {

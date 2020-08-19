@@ -303,5 +303,17 @@ public class ACSocketTest
 
 
 
+    class PrependableSocket extends Socket {
+
+        public PrependableSocket(SocketImpl base) throws IOException {
+            super(base);
+        }
+    }
+
+    void makePrependableSocket() throws IOException {
+        // :: error: missing.alwayscall
+        final PrependableSocket prependableSocket = new PrependableSocket(null);
+    }
+
 }
 

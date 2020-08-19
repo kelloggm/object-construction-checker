@@ -390,8 +390,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
             // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
             // the AssignmentNode to the newDefs.
-            if ((rhs instanceof ObjectCreationNode)
-                || (transferOwnershipAtReturn && rhs instanceof MethodInvocationNode)) {
+            if ((rhs instanceof ObjectCreationNode) // TODO
+                || ((transferOwnershipAtReturn) && rhs instanceof MethodInvocationNode)) {
               newDefs.add(
                   new LocalVarWithAssignTree(
                       new LocalVariable((LocalVariableNode) lhs), node.getTree()));
@@ -411,7 +411,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         }
 
         // Remove the returned localVariableNode from newDefs.
-        if (node instanceof ReturnNode && transferOwnershipAtReturn) {
+        if (node instanceof ReturnNode && transferOwnershipAtReturn) { // TODO
           Node result = ((ReturnNode) node).getResult();
           if (result instanceof LocalVariableNode
               && isVarInDefs(newDefs, (LocalVariableNode) result)) {
@@ -614,7 +614,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * annotation.
    */
   private @Nullable String getAlwaysCallValue(Element element) {
-
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
     AnnotationMirror alwaysCallAnnotation = getDeclAnnotation(eType, AlwaysCall.class);
