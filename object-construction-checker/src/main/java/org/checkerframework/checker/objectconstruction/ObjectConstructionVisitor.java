@@ -22,6 +22,7 @@ import org.checkerframework.checker.objectconstruction.framework.FrameworkSuppor
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.common.value.ValueCheckerUtils;
@@ -63,7 +64,8 @@ public class ObjectConstructionVisitor
 
     if (!isAssignedToLocal(this.getCurrentPath())
         && !atypeFactory.returnsThis(node)
-        && atypeFactory.transferOwnershipAtReturn) {
+        && (atypeFactory.transferOwnershipAtReturn
+            || isTransferOwnershipAtMethodInvocation(node))) {
       TypeMirror returnType = TreeUtils.typeOf(node);
 
       if (atypeFactory.hasAlwaysCall(returnType)) {
@@ -88,6 +90,11 @@ public class ObjectConstructionVisitor
       }
     }
     return super.visitMethodInvocation(node, p);
+  }
+
+  boolean isTransferOwnershipAtMethodInvocation(MethodInvocationTree tree) {
+    ExecutableElement ee = TreeUtils.elementFromUse(tree);
+    return (ee.getAnnotation(Owning.class) != null);
   }
 
   @Override
@@ -137,6 +144,7 @@ public class ObjectConstructionVisitor
             : false;
 
       case RETURN:
+        return atypeFactory.transferOwnershipAtReturn;
       case VARIABLE:
         return true;
       default:

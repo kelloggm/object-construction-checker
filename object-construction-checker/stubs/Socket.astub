@@ -69,15 +69,53 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
 
 @AlwaysCall("close")
 class ServerSocket implements Closeable {
-
+    ServerSocket() throws IOException;
+    ServerSocket(int arg0) throws IOException;
+    ServerSocket(int arg0, int arg1) throws IOException;
+    ServerSocket(int arg0, int arg1, InetAddress arg2) throws IOException;
+    void bind(SocketAddress arg0) throws IOException;
+    void bind(SocketAddress arg0, int arg1) throws IOException;
+    InetAddress getInetAddress();
+    int getLocalPort();
+    SocketAddress getLocalSocketAddress();
+    @Owning Socket accept() throws IOException;
+    protected void implAccept(Socket arg0) throws IOException;
+    void close() throws IOException;
+    ServerSocketChannel getChannel();
+    boolean isBound();
+    boolean isClosed();
+    void setSoTimeout(int arg0) throws SocketException;
+    int getSoTimeout() throws IOException;
+    void setReuseAddress(boolean arg0) throws SocketException;
+    boolean getReuseAddress() throws SocketException;
+    String toString();
+    static void setSocketFactory(SocketImplFactory arg0) throws IOException;
+    void setReceiveBufferSize(int arg0) throws SocketException;
+    int getReceiveBufferSize() throws SocketException;
+    void setPerformancePreferences(int arg0, int arg1, int arg2);
+    <T> ServerSocket setOption(SocketOption<T> arg0, T arg1) throws IOException;
+    <T> T getOption(SocketOption<T> arg0) throws IOException;
+    Set<SocketOption<?>> supportedOptions();
 }
 
 
 package javax.net.ssl;
 
-abstract class SSLSocketFactory extends SocketFactory{
-    public @Owning Socket createSocket(Socket s, InputStream consumed, boolean autoClose) throws IOException {
-        throw new UnsupportedOperationException();
-    }
+class SSLSocketFactory extends SocketFactory {
+    @Owning Socket createSocket(Socket arg0, String arg1, int arg2, boolean arg3) throws IOException;
+    @Owning Socket createSocket(Socket arg0, InputStream arg1, boolean arg2) throws IOException;
 }
+
+package javax.net;
+
+class SocketFactory {
+    @Owning Socket createSocket() throws IOException;
+    @Owning Socket createSocket(String arg0, int arg1) throws IOException, UnknownHostException;
+    @Owning Socket createSocket(String arg0, int arg1, InetAddress arg2, int arg3) throws IOException, UnknownHostException;
+    @Owning Socket createSocket(InetAddress arg0, int arg1) throws IOException;
+    @Owning Socket createSocket(InetAddress arg0, int arg1, InetAddress arg2, int arg3) throws IOException;
+}
+
+
+
 

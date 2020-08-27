@@ -390,8 +390,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
             // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
             // the AssignmentNode to the newDefs.
-            if ((rhs instanceof ObjectCreationNode) // TODO
-                || ((transferOwnershipAtReturn) && rhs instanceof MethodInvocationNode)) {
+            if ((rhs instanceof ObjectCreationNode)
+                || (rhs instanceof MethodInvocationNode
+                    && (isTransferOwnershipAtMethodInvocation(rhs) || transferOwnershipAtReturn))) {
               newDefs.add(
                   new LocalVarWithAssignTree(
                       new LocalVariable((LocalVariableNode) lhs), node.getTree()));
@@ -411,7 +412,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         }
 
         // Remove the returned localVariableNode from newDefs.
-        if (node instanceof ReturnNode && transferOwnershipAtReturn) { // TODO
+        if (node instanceof ReturnNode
+            && (isTransferOwnershipAtReturn(node, cfg) || transferOwnershipAtReturn)) {
           Node result = ((ReturnNode) node).getResult();
           if (result instanceof LocalVariableNode
               && isVarInDefs(newDefs, (LocalVariableNode) result)) {
@@ -485,6 +487,28 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
+  boolean isTransferOwnershipAtReturn(Node node, ControlFlowGraph cfg) {
+    if (node instanceof ReturnNode) {
+      UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
+      if (underlyingAST instanceof UnderlyingAST.CFGMethod) {
+        // TODO: lambdas?
+        MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
+        ExecutableElement executableElement = TreeUtils.elementFromDeclaration(method);
+        return (getDeclAnnotation(executableElement, Owning.class) != null);
+      }
+    }
+    return false;
+  }
+
+  boolean isTransferOwnershipAtMethodInvocation(Node node) {
+    if (node instanceof MethodInvocationNode) {
+      MethodInvocationTree mit = ((MethodInvocationNode) node).getTree();
+      ExecutableElement ee = TreeUtils.elementFromUse(mit);
+      return (ee.getAnnotation(Owning.class) != null);
+    }
+    return false;
+  }
+
   /**
    * Does AlwaysCall check for all local variable nodes exist in {@code defs} if {@code
    * exceptionBlock} is not NullPointerException or Throwable.
@@ -500,16 +524,21 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       if (!(exceptionClassName.contentEquals(Throwable.class.getSimpleName())
           || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName()))) {
         for (Block tSucc : pair.getValue()) {
-          List<BlockImpl> successors = getSuccessors((BlockImpl) tSucc);
-
-          for (BlockImpl succ : successors) {
-            if ((succ instanceof SpecialBlock)) {
-              CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
-              for (LocalVarWithAssignTree assignTree : defs) {
-                checkAlwaysCall(assignTree, storeAfter, null);
+          CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
+          if (tSucc instanceof SpecialBlock) {
+            for (LocalVarWithAssignTree assignTree : defs) {
+              checkAlwaysCall(assignTree, storeAfter, null);
+            }
+          } else {
+            List<BlockImpl> successors = getSuccessors((BlockImpl) tSucc);
+            for (BlockImpl succ : successors) {
+              if ((succ instanceof SpecialBlock)) {
+                for (LocalVarWithAssignTree assignTree : defs) {
+                  checkAlwaysCall(assignTree, storeAfter, null);
+                }
+              } else {
+                propagate(new BlockWithLocals(succ, defs), visited, worklist);
               }
-            } else {
-              propagate(new BlockWithLocals(succ, defs), visited, worklist);
             }
           }
         }
@@ -613,7 +642,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * element}. Returns null if the class type of {@code element} doesn't have @AlwaysCall
    * annotation.
    */
-  private @Nullable String getAlwaysCallValue(Element element) {
+  @Nullable
+  String getAlwaysCallValue(Element element) {
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
     AnnotationMirror alwaysCallAnnotation = getDeclAnnotation(eType, AlwaysCall.class);

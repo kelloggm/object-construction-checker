@@ -31,4 +31,15 @@ class ACOwning {
     static enum TestEnum {
         CASE1, CASE2, CASE3
     }
+
+
+    @Owning public Foo owningAtReturn() {
+        return new Foo();
+    }
+
+
+    void owningAtReturnTest() {
+        // :: error: missing.alwayscall
+        Foo f = owningAtReturn();
+    }
 }

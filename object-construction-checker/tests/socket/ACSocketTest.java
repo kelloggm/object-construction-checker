@@ -183,8 +183,10 @@ public class ACSocketTest
     Socket createSocket(boolean b, String address, int port) throws IOException {
         Socket sock;
         if (b) {
+            // :: error: missing.alwayscall
             sock = new Socket(address, port);
         } else {
+            // :: error: missing.alwayscall
             sock = new Socket(address, port);
         }
 
@@ -239,7 +241,6 @@ public class ACSocketTest
         Socket s = null;
         try {
             s = new Socket(host, port);
-//            s.setReuseAddress(true);
         } catch (IOException e) {
 
         } finally {
@@ -255,6 +256,17 @@ public class ACSocketTest
 
     @EnsuresCalledMethods(value = "#1", methods = "close")
     void closeSocket(Socket sock) {
+        try {
+            if(sock!=null){
+                sock.close();
+            }
+        } catch (IOException e) {
+
+        }
+    }
+
+    @EnsuresCalledMethods(value = "#1", methods = "close")
+    void closeServerSocket(ServerSocket sock) {
         try {
             if(sock!=null){
                 sock.close();
@@ -280,9 +292,8 @@ public class ACSocketTest
     void initiateConnection(SocketAddress endpoint, int timeout) {
         Socket sock = null;
         try {
-
+            // :: error: missing.alwayscall
             sock = new Socket("", 1);
-
             setSockOpts(sock);
             sock.connect(endpoint, timeout);
             if (sock instanceof SSLSocket) {
@@ -315,5 +326,88 @@ public class ACSocketTest
         final PrependableSocket prependableSocket = new PrependableSocket(null);
     }
 
+
+
+
+
+//    private void acceptConnections() {
+//        int numRetries = 0;
+//        Socket client = null;
+//
+//        while ((!shutdown) && (portBindMaxRetry == 0 || numRetries < portBindMaxRetry)) {
+//            try {
+//                serverSocket = createNewServerSocket();
+//                LOG.info("{} is accepting connections now, my election bind port: {}", QuorumCnxManager.this.mySid, address.toString());
+//                while (!shutdown) {
+//                    try {
+//                        client = serverSocket.accept();
+//                        setSockOpts(client);
+//                        LOG.info("Received connection request from {}", client.getRemoteSocketAddress());
+//                        // Receive and handle the connection request
+//                        // asynchronously if the quorum sasl authentication is
+//                        // enabled. This is required because sasl server
+//                        // authentication process may take few seconds to finish,
+//                        // this may delay next peer connection requests.
+//                        if (quorumSaslAuthEnabled) {
+//                            receiveConnectionAsync(client);
+//                        } else {
+//                            receiveConnection(client);
+//                        }
+//                        numRetries = 0;
+//                    } catch (SocketTimeoutException e) {
+//                        LOG.warn("The socket is listening for the election accepted "
+//                                + "and it timed out unexpectedly, but will retry."
+//                                + "see ZOOKEEPER-2836");
+//                    }
+//                }
+//            } catch (IOException e) {
+//                if (shutdown) {
+//                    break;
+//                }
+//
+//                LOG.error("Exception while listening", e);
+//
+//                if (e instanceof SocketException) {
+//                    socketException.set(true);
+//                }
+//
+//                numRetries++;
+//                try {
+//                    close();
+//                    Thread.sleep(1000);
+//                } catch (IOException ie) {
+//                    LOG.error("Error closing server socket", ie);
+//                } catch (InterruptedException ie) {
+//                    LOG.error("Interrupted while sleeping. Ignoring exception", ie);
+//                }
+//                closeSocket(client);
+//            }
+//        }
+//        if (!shutdown) {
+//            LOG.error(
+//                    "Leaving listener thread for address {} after {} errors. Use {} property to increase retry count.",
+//                    formatInetAddr(address),
+//                    numRetries,
+//                    ELECTION_PORT_BIND_RETRY);
+//        }
+//    }
+
+
+    void createNewServerSocket(InetSocketAddress address) throws IOException {
+        ServerSocket socket;
+
+        if (true) {
+            socket = new ServerSocket();
+        } else if (false) {
+            socket = new ServerSocket();
+        } else {
+            socket = new ServerSocket();
+        }
+
+        socket.setReuseAddress(true);
+        socket.bind(address);
+        closeServerSocket(socket);
+//        return socket;
+    }
 }
 

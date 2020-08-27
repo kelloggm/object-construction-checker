@@ -14,7 +14,7 @@ class ACMethodInvocationTest {
     }
 
 
-    Foo makeFoo(){
+    @Owning Foo makeFoo(){
         return new Foo();
     }
 
@@ -25,7 +25,7 @@ class ACMethodInvocationTest {
         return f;
     }
 
-    @CalledMethods({"b"}) Foo makeFooFinalize2(){
+    @Owning @CalledMethods({"b"}) Foo makeFooFinalize2(){
         Foo f = new Foo();
         f.b();
         return f;
