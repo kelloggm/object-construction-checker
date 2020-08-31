@@ -63,8 +63,10 @@ import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
+import org.checkerframework.dataflow.cfg.node.NullLiteralNode;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
+import org.checkerframework.dataflow.cfg.node.TypeCastNode;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -378,6 +380,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           Node lhs = ((AssignmentNode) node).getTarget();
           Node rhs = ((AssignmentNode) node).getExpression();
 
+          if(rhs instanceof TypeCastNode) {
+            rhs = ((TypeCastNode) rhs).getOperand();
+          }
+
           if (lhs instanceof LocalVariableNode && hasAlwaysCall(lhs.getType())) {
 
             // Reassignment to the lhs
@@ -393,6 +399,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             if ((rhs instanceof ObjectCreationNode)
                 || (rhs instanceof MethodInvocationNode
                     && (isTransferOwnershipAtMethodInvocation(rhs) || transferOwnershipAtReturn))) {
+//              if (!(rhs instanceof NullLiteralNode) && !(rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs))) {
               newDefs.add(
                   new LocalVarWithAssignTree(
                       new LocalVariable((LocalVariableNode) lhs), node.getTree()));
@@ -504,7 +511,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     if (node instanceof MethodInvocationNode) {
       MethodInvocationTree mit = ((MethodInvocationNode) node).getTree();
       ExecutableElement ee = TreeUtils.elementFromUse(mit);
-      return (ee.getAnnotation(Owning.class) != null);
+      return (getDeclAnnotation(ee, Owning.class) != null);
     }
     return false;
   }

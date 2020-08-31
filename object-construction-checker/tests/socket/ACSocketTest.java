@@ -9,15 +9,15 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.Optional;
 import javax.net.ssl.*;
+import java.nio.channels.*;
 
 public class ACSocketTest
 {
 
-    Socket makeSocket(String address, int port){
+    @Owning Socket makeSocket(String address, int port){
 
         try
         {
-            // :: error: missing.alwayscall
             Socket socket = new Socket(address, port);
             return socket;
         }
@@ -56,6 +56,7 @@ public class ACSocketTest
 
 
     void callMakeSocket(String address, int port){
+        // :: error: missing.alwayscall
         Socket socket = makeSocket(address, port);
     }
 
@@ -91,7 +92,7 @@ public class ACSocketTest
     }
 
     void overWrittingVarInLoop(String address, int port) {
-
+        // :: error: missing.alwayscall
         Socket s = makeSocket(address, port);
         while (true) {
             try {
@@ -108,8 +109,10 @@ public class ACSocketTest
         Socket s = null;
         while (true) {
             if (b) {
+                // :: error: missing.alwayscall
                 s = makeSocket(address, port);
             } else {
+                // :: error: missing.alwayscall
                 s = makeSocket(address, port);
             }
         }
@@ -223,6 +226,7 @@ public class ACSocketTest
     Optional<ServerSocket> createServerSocket(InetSocketAddress address) {
         ServerSocket serverSocket;
         try {
+            // :: error: missing.alwayscall
             serverSocket = new ServerSocket();
 
             serverSocket.setReuseAddress(true);
@@ -289,20 +293,23 @@ public class ACSocketTest
         sock.setSoTimeout(1000);
     }
 
-    void initiateConnection(SocketAddress endpoint, int timeout) {
+    void initiateConnection(SocketAddress endpoint, int timeout, SSLContext context) {
         Socket sock = null;
         try {
-            // :: error: missing.alwayscall
-            sock = new Socket("", 1);
+            sock = context.getSocketFactory().createSocket();
             setSockOpts(sock);
             sock.connect(endpoint, timeout);
             if (sock instanceof SSLSocket) {
+                // :: error: missing.alwayscall
                 SSLSocket sslSock = (SSLSocket) sock;
                 sslSock.startHandshake();
 
             }
 
             closeSocket(sock);
+        } catch (ClassCastException e){
+            closeSocket(sock);
+            return;
         } catch (IOException e) {
 
             closeSocket(sock);
@@ -397,10 +404,13 @@ public class ACSocketTest
         ServerSocket socket;
 
         if (true) {
+            // :: error: missing.alwayscall
             socket = new ServerSocket();
         } else if (false) {
+            // :: error: missing.alwayscall
             socket = new ServerSocket();
         } else {
+            // :: error: missing.alwayscall
             socket = new ServerSocket();
         }
 
@@ -409,5 +419,23 @@ public class ACSocketTest
         closeServerSocket(socket);
 //        return socket;
     }
+
+
+    @Owning public SSLServerSocket createSSLServerSocket(SSLContext sslContext) throws IOException {
+        SSLServerSocket sslServerSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket();
+        return configureSSLServerSocket(sslServerSocket);
+    }
+
+    private SSLServerSocket configureSSLServerSocket(SSLServerSocket socket) {
+        return socket;
+    }
+
+
+    private void updateSocketAddresses( SelectionKey sockKey ) {
+        Socket socket = ((SocketChannel) sockKey.channel()).socket();
+        SocketAddress localSocketAddress = socket.getLocalSocketAddress();
+        SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();
+    }
+
 }
 

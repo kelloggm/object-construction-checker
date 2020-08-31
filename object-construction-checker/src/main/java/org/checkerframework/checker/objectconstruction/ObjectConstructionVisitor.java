@@ -144,7 +144,6 @@ public class ObjectConstructionVisitor
             : false;
 
       case RETURN:
-        return atypeFactory.transferOwnershipAtReturn;
       case VARIABLE:
         return true;
       default:
