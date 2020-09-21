@@ -28,7 +28,7 @@ dependencies {
     implementation project(":object-construction-qual")
 
     // For the @CalledMethodsPredicate evaluation
-    implementation "org.springframework:spring-expression:5.2.8.RELEASE"
+    implementation "org.springframework:spring-expression:5.2.9.RELEASE"
 
     // For subtyping between @CalledMethodsPredicate annotations
     implementation 'org.sosy-lab:java-smt:3.2.0'
