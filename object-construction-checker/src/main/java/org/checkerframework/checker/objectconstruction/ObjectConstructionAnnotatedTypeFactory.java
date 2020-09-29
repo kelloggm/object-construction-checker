@@ -448,8 +448,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               if (isVarInDefs(newDefs, local)) {
                 // check if formal has an @Owning annotation
                 VariableElement formal = formals.get(i);
-//                if(getAnnotatedType(formal).getAnnotation(Owning.class) != null) {
-                if (formal.getAnnotation(Owning.class) != null) {
+                if(getAnnotatedType(formal).getAnnotation(Owning.class) != null) {
+//                if (formal.getAnnotation(Owning.class) != null) {
                   // transfer ownership!
                   newDefs.remove(getAssignmentTreeOfVar(newDefs, local));
                 }
