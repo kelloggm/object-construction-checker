@@ -24,64 +24,66 @@ the builder.
 
 ## Requirements
 
-You must use either Maven or Gradle as your build system.
+You can use any build system supported by the 
+[Checker Framework](https://checkerframework.org/manual/#external-tools).
+
+If you are checking code that uses Lombok, there are [additional requirements](#for-lombok-users).
+Lombok support is only maintained for Gradle projects.
 
 For Gradle, you must use version 4.6 or later.
-Using 4.5 or later will result in an error `Could not find method
+Using 4.5 or earlier will result in an error `Could not find method
 annotationProcessor() ...`.
 
 
 ## Using the checker
 
-If your project uses Lombok, also see the further Lombok-specific instructions below.
+The following example uses Gradle.
 
 1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file:
 
-  ```groovy
-  plugins {
-      ...
-      id "org.checkerframework" version "0.5.1"
-  }
-  ```
-
-Note that the Gradle plugin is updated frequently.  We recommend you use the latest version shown [here](https://plugins.gradle.org/plugin/org.checkerframework).
+    ```groovy
+    plugins {
+        ...
+        id "org.checkerframework" version "0.5.1"
+    }
+    ```
 
 2. For a vanilla Gradle project, add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present).
 If your project has subprojects or you need other customizations, see the documentation for the
 [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) plugin.
 
-  ```groovy
-  repositories {
-      mavenCentral()
-  }
-  checkerFramework {
-      skipVersionCheck = true
-      checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
-      extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
-  }
-  dependencies {
-      checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.9'
-      implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.9'
-  }
-  ```
+    ```groovy
+    repositories {
+        mavenCentral()
+    }
+    checkerFramework {
+        checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
+        extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
+    }
+    dependencies {
+        checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.9'
+        implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.9'
+    }
+    ```
 
 3. Build your project normally, such as by running `./gradlew build`.  The checker will report an error if any required properties have not been set.
 
 ### For Lombok users
 
-The Object Construction Checker supports projects that use Lombok via the [io.freefair.lombok](https://plugins.gradle.org/plugin/io.freefair.lombok) Gradle plugin.  For such projects, the above instructions should work unmodified for running the checker.  However, note that to fix issues, you should edit your original source code, **not** the files in the checker's error messages.  The checker's error messages refer to Lombok's output, which is a variant of your source code that appears in a `delombok` directory.
+The Object Construction Checker supports projects that use Lombok via the [io.freefair.lombok](https://plugins.gradle.org/plugin/io.freefair.lombok) Gradle plugin.
+However, note that the checker's error messages refer to Lombok's output, which is a variant of your source code that appears in a `delombok` directory.
+To fix issues, you should edit your original source code, **not** the files in the checker's error messages.  
 
-Note that the Gradle plugin does two things that allow Lombok projects to be checked.
-If either of these are not done, the checker will not issue any errors on Lombok code:
-* sets Lombok configuration option `lombok.addLombokGeneratedAnnotation = true`
-* delomboks the code before passing it to the checker
+If you use Lombok with a build system other than Gradle, you must configure it to do two tasks.
+If either of these are not done, the checker will not issue any errors on Lombok code.
+* set Lombok configuration option `lombok.addLombokGeneratedAnnotation = true`
+* delombok the code before passing it to the checker
+
 
 ## Specifying your code
 
-The Object Construction Checker works as follows:
- * It reads method specifications or contracts:  what a method requires when it is called.
- * It keeps track of which methods have been called on each object.
- * It warns if method arguments do not satisfy the method's specification.
+The Object Construction Checker reads method specifications or contracts:  what a method requires when it is called.
+It warns if method arguments do not satisfy the method's specification.
 
 If you use AutoValue or Lombok, most specifications are automatically
 inferred by the Object Construction Checker, from field annotations such as
@@ -89,7 +91,7 @@ inferred by the Object Construction Checker, from field annotations such as
  [section on defaulting rules for Lombok and AutoValue for more details](#default-handling-for-lombok-and-autovalue).
 
 In some cases, you may need to specify your code.  You do so by writing
-type annotations.  A type annotation is written before a type.  For
+*type annotations*.  A type annotation is written before a type.  For
 example, in `@NonEmpty List<@Regex String>`, `@NonEmpty` is a type
 annotation on `List`, and `@Regex` is a type annotation on `String`.
 
@@ -107,11 +109,11 @@ class MyBuilder {
   MyObject build(@CalledMethods({"setX", "setY"}) MyBuilder this) { ... }
 }
 ```
-Then the receiver for any call to `build()` must have had `setX` and `setY` called on it.
+Then the receiver for any call to `build()` must have had `setX()` and `setY()` called on it.
 </dd>
 
 <dt><code>@CalledMethodsPredicate(<em>logical-expression</em>)</code></dt>
-<dd>specifies the required method calls using [Java boolean syntax](https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html).
+<dd>specifies the required method calls using <a href="https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html">Java boolean syntax</a>.
 
 For example, the annotation `@CalledMethodsPredicate("x && y || z")` on a type represents
 objects such that:
@@ -121,16 +123,21 @@ objects such that:
 
 <dt><code>@EnsureCalledMethods(<em>expression, method-list</em>)</code></dt>
 <dd>specifies a post-condition on a method, indicating the methods it guarantees to be called on some
-input expression.  The expression is specified [as documented in the Checker Framework manual](https://checkerframework.org/manual/#java-expressions-as-arguments).
+input expression.  The expression is specified <a href="https://checkerframework.org/manual/#java-expressions-as-arguments">as documented in the Checker Framework manual</a>.
 
-
-For example, the annotation `@EnsuresCalledMethods(value = "#1", methods = {"x","y"})` on a method
-`void m(Param p)` guarantees that `p.x()` and `p.y()` will always be called before `m` returns.
+This specification:
+```
+@EnsuresCalledMethods(value = "#1", methods = {"x","y"})
+void m(Param p) { ... }
+```
+guarantees that `p.x()` and `p.y()` will always be called before `m` returns.
+The body of `m` must satisfy that property, and clients of `m` can depend on the property.
 </dd>
 
-<dt><code>@This</code></dt>
+<dt><code><a href="https://checkerframework.org/api/org/checkerframework/common/returnsreceiver/qual/This.html">@This</a></code></dt>
 <dd>may only be written on a method return type, and means that the method returns its receiver.
-This is helpful when type-checking fluent APIs.
+This is helpful when type-checking fluent APIs. This annotation is defined by the
+<a href="https://checkerframework.org/manual/#returns-receiver-checker">Returns Receiver Checker</a>.
 </dd>
 </dl>
 
@@ -149,10 +156,19 @@ subtyping.  Then
 
 `@CalledMethods(`*set1*`) T1` &#8849; `@CalledMethods(`*set2*`) T2` iff  *set1 &supe; set2* and T1 &#8849; T2.
 
-No `@CalledMethodsPredicate` annotation is ever a subtype of another, or of
-any `@CalledMethods` annotation.  (This imprecise behavior is a limitation
-of the Object Construction Checker.)  For this reason, programmers usually only
-write `@CalledMethodsPredicate` annotations on formal parameters.
+Subtyping between two `@CalledMethodsPredicate` annotations is determined by
+checking whether the proposed subtype implies the proposed supertype. In
+particular:
+
+`CalledMethodsPredicate(`P`) T1` &#8849; `CalledMethodsPredicate(`Q`) T2` iff T1 &#8849; T2
+and "not (P &rArr; Q)" is unsatisfiable. Subtyping will not be checked.
+
+If either P or Q contains operators other than `&&`, `||`, or `!`, the checker will 
+report an error indicating the offending formula.
+
+To determine whether `@CalledMethodsPredicate(`*P*`)` &#8849; `@CalledMethods(`*M*`)`,
+use the above procedure for checking subtyping between `@CalledMethodsPredicate`
+annotations, but replace Q with the conjunctions of the literals in M.
 
 To determine whether `@CalledMethods(`*M*`)` &#8849; `@CalledMethodsPredicate(`*P*`)`,
 use the following procedure:
@@ -202,8 +218,8 @@ However, if will not warn if there are some paths on which both methods are call
 
 ### Default handling for Lombok and AutoValue
 
-The checker automatically inserts default annotations for code that uses builders generated
-by Lombok and AutoValue. There are three places annotations are usually inserted:
+The Object Construction Checker automatically assumes default annotations for code that uses builders generated
+by Lombok and AutoValue. There are three places annotations are usually assumed:
 * A `@CalledMethods` annotation is placed on the receiver of the `build()` method, capturing the
 setter methods that must be invoked on the builder before calling `build()`. For Lombok,
 this annotation's argument is the set of `@lombok.NonNull` fields that do not have default values.
@@ -224,10 +240,10 @@ a Lombok builder), you may need to write the annotations manually.
 Minor notes/caveats on these rules:
 * Lombok fields annotated with `@Singular` will be treated as defaulted (i.e. not required), because
 Lombok will set them to empty collections if the appropriate setter is not called.
-* If you manually provide defaults to a Lombok builder (for example by defining the builder yourself,
+* If you manually provide defaults to a Lombok builder (for example, by defining the builder yourself
 and assigning a default value to the builder's field), the checker will treat that field as defaulted
-*most of the time*. In particular, it will not treat it as defaulted across module boundaries (because
-the checker needs access to the source code to determine that the defaulting is occurring).
+*most of the time*. In particular, it will not treat it as defaulted if it is defined in bytecode rather
+than in source code.
 
 ## More information
 

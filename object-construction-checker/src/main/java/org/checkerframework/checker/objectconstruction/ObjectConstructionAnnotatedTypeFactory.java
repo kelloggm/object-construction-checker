@@ -72,6 +72,7 @@ import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
@@ -734,6 +735,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     /** isSubtype in this type system is subset */
     @Override
     public boolean isSubtype(final AnnotationMirror subAnno, final AnnotationMirror superAnno) {
+
       if (AnnotationUtils.areSame(subAnno, BOTTOM)) {
         return true;
       } else if (AnnotationUtils.areSame(superAnno, BOTTOM)) {
@@ -743,34 +745,53 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       if (AnnotationUtils.areSame(superAnno, TOP)) {
         return true;
       }
+      // Do not symmetrically check top here because some @CalledMethodsPredicate
+      // annotations involving ! are equivalent to top.
 
       if (AnnotationUtils.areSameByClass(subAnno, CalledMethodsPredicate.class)) {
+        String subPredicate =
+            AnnotationUtils.getElementValue(subAnno, "value", String.class, false);
         if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
-          // Permit this only if the predicates are identical, to avoid complicated
-          // predicate equivalence calculation. Good enough in practice.
-          String predicate1 =
+          String superPredicate =
               AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
-          String predicate2 =
-              AnnotationUtils.getElementValue(subAnno, "value", String.class, false);
-          return predicate1.equals(predicate2);
+          // shortcut if they're equal (most common case) to avoid calling the SMT solver
+          if (superPredicate.equals(subPredicate)) {
+            return true;
+          } else {
+            return CalledMethodsPredicateEvaluator.implies(subPredicate, superPredicate);
+          }
+        } else if (AnnotationUtils.areSameByClass(superAnno, CalledMethods.class)) {
+          // If the supertype is a called methods type, treat it as a conjunction of its
+          // arguments and use the predicate evaluator.
+          List<String> superVals = getValueOfAnnotationWithStringArgument(superAnno);
+          String superPredicate = String.join(" && ", superVals);
+          return CalledMethodsPredicateEvaluator.implies(subPredicate, superPredicate);
         }
-        return false;
       }
 
-      List<String> subVal =
-          AnnotationUtils.areSame(subAnno, TOP)
-              ? Collections.emptyList()
-              : getValueOfAnnotationWithStringArgument(subAnno);
+      if (AnnotationUtils.areSameByClass(subAnno, CalledMethods.class)
+          || AnnotationUtils.areSame(subAnno, TOP)) {
+        // Treat top as @CalledMethods({}) so that predicates with ! are evaluated correctly.
+        List<String> subVals =
+            AnnotationUtils.areSame(subAnno, TOP)
+                ? Collections.emptyList()
+                : getValueOfAnnotationWithStringArgument(subAnno);
 
-      if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
-        // superAnno is a CMP annotation, so we need to evaluate the predicate
-        String predicate = AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
-        CalledMethodsPredicateEvaluator evaluator = new CalledMethodsPredicateEvaluator(subVal);
-        return evaluator.evaluate(predicate);
-      } else {
-        // superAnno is a CM annotation, so compare the sets
-        return subVal.containsAll(getValueOfAnnotationWithStringArgument(superAnno));
+        if (AnnotationUtils.areSameByClass(superAnno, CalledMethodsPredicate.class)) {
+          // superAnno is a CMP annotation, so we need to evaluate the predicate
+          String predicate =
+              AnnotationUtils.getElementValue(superAnno, "value", String.class, false);
+          return CalledMethodsPredicateEvaluator.evaluate(predicate, subVals);
+        } else if (AnnotationUtils.areSameByClass(superAnno, CalledMethods.class)) {
+          // superAnno is a CM annotation, so compare the sets
+          return subVals.containsAll(getValueOfAnnotationWithStringArgument(superAnno));
+        }
       }
+
+      // should never happen: all possible subtypes already handled
+      throw new BugInCF(
+          "ObjectConstructionAnnotatedTypeFactory.isSubType: unreachable case for subanno="
+              + subAnno);
     }
   }
 
