@@ -503,16 +503,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
-  private boolean hasAnnotationTest(Element element, String annotName) {
-    return element.getAnnotationMirrors().stream()
-            .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
-  }
-
-  public static boolean hasAnnotation(Element element, String annotName) {
-    return element.getAnnotationMirrors().stream()
-            .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
-  }
-
   boolean hasNotOwningAnno(Node node, ControlFlowGraph cfg) {
     if (node instanceof ReturnNode) {
       UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
@@ -717,7 +707,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     CFValue lhsCFValue = store.getValue(assign.localVar);
     String alwaysCallValue = getAlwaysCallValue(assign.localVar.getElement());
-    Element e = assign.localVar.getElement();
     AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
 
     boolean report = true;
