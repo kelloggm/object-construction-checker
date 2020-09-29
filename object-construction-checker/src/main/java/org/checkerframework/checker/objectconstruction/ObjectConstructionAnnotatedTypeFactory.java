@@ -8,9 +8,7 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Type;
 
-import java.io.Closeable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,7 +94,7 @@ import org.checkerframework.javacutil.TypesUtils;
 public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   public boolean transferOwnershipAtReturn = true;
-
+  public Set<LocalVarWithAssignTree> errors = new HashSet<>();
   /** The top annotation. Package private to permit access from the Transfer class. */
   final AnnotationMirror TOP;
 
@@ -401,14 +399,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
             // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
             // the AssignmentNode to the newDefs.
-//            if ((!(rhs instanceof MethodInvocationNode) && !(rhs instanceof NullLiteralNode) && !(rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)))
-//                    || (rhs instanceof MethodInvocationNode && !hasNotOwningAnno(rhs))) {
             if ((rhs instanceof ObjectCreationNode)
                     || (rhs instanceof MethodInvocationNode && !hasNotOwningAnno(rhs))) {
-//            if ((rhs instanceof ObjectCreationNode)
-//                || (rhs instanceof MethodInvocationNode
-//                    && (isTransferOwnershipAtMethodInvocation(rhs) || (transferOwnershipAtReturn && !hasNotOwningAnno(rhs))))) {
-//              if (!(rhs instanceof NullLiteralNode) && !(rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs))) {
               newDefs.add(
                   new LocalVarWithAssignTree(
                       new LocalVariable((LocalVariableNode) lhs), node.getTree()));
@@ -456,6 +448,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               if (isVarInDefs(newDefs, local)) {
                 // check if formal has an @Owning annotation
                 VariableElement formal = formals.get(i);
+//                if(getAnnotatedType(formal).getAnnotation(Owning.class) != null) {
                 if (formal.getAnnotation(Owning.class) != null) {
                   // transfer ownership!
                   newDefs.remove(getAssignmentTreeOfVar(newDefs, local));
@@ -501,6 +494,16 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         propagate(new BlockWithLocals(succ, newDefs), visited, worklist);
       }
     }
+  }
+
+  private boolean hasAnnotationTest(Element element, String annotName) {
+    return element.getAnnotationMirrors().stream()
+            .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
+  }
+
+  public static boolean hasAnnotation(Element element, String annotName) {
+    return element.getAnnotationMirrors().stream()
+            .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
   }
 
   boolean hasNotOwningAnno(Node node, ControlFlowGraph cfg) {
@@ -728,7 +731,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
 
     if (report) {
-      checker.reportError(assign.assignTree, "missing.alwayscall", alwaysCallValue);//assign.localVar.getType().toString()
+      if (!errors.contains(assign)) {
+        errors.add(assign);
+        checker.reportError(assign.assignTree, "missing.alwayscall", assign.localVar.getType().toString());
+      }
     }
   }
 
@@ -1022,10 +1028,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         CalledMethodsTop.class);
   }
 
-  private boolean hasAnnotation(Element element, String annotName) {
-    return element.getAnnotationMirrors().stream()
-        .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
-  }
+
 
   /**
    * Returns the annotation type mirror for the type of {@code expressionTree} with default

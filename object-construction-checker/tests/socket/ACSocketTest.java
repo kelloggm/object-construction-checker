@@ -443,6 +443,25 @@ public class ACSocketTest
         return socket;
     }
 
+    public SSLSocket createSSLSocket(@Owning Socket socket, byte[] pushbackBytes, SSLContext sslContext) throws IOException {
+        SSLSocket sslSocket;
+        if (pushbackBytes != null && pushbackBytes.length > 0) {
+            sslSocket = (SSLSocket) sslContext.getSocketFactory()
+                    .createSocket(socket, null, socket.getPort(), true);
+        } else {
+            sslSocket = (SSLSocket) sslContext.getSocketFactory().createSocket(socket, null, socket.getPort(), true);
+        }
+        return configureSSLSocket(sslSocket, false);
+    }
+
+    private SSLSocket configureSSLSocket(@Owning SSLSocket socket, boolean isClientSocket) {
+        SSLParameters sslParameters = socket.getSSLParameters();
+//        configureSslParameters(sslParameters, isClientSocket);
+        socket.setSSLParameters(sslParameters);
+        socket.setUseClientMode(isClientSocket);
+        return socket;
+    }
+
 
     private void updateSocketAddresses( SelectionKey sockKey ) {
         Socket socket = ((SocketChannel) sockKey.channel()).socket();

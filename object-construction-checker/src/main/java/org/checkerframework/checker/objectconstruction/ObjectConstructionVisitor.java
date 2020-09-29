@@ -78,7 +78,7 @@ public class ObjectConstructionVisitor
         AnnotationMirror cmAnno = annoType.getAnnotationInHierarchy(atypeFactory.TOP);
 
         if (!atypeFactory.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
-          checker.reportError(node, "missing.alwayscall", alwaysCallAnnoVal); //returnType.toString()
+          checker.reportError(node, "missing.alwayscall", returnType.toString());
         }
       }
     }
@@ -110,7 +110,7 @@ public class ObjectConstructionVisitor
     if (!isAssignedToLocal(this.getCurrentPath())) {
       TypeMirror type = TreeUtils.typeOf(node);
       if (atypeFactory.hasAlwaysCall(type)) {
-        checker.reportError(node, "missing.alwayscall", getAlwaysCallValue(type)); //type.toString()
+        checker.reportError(node, "missing.alwayscall", type.toString());
       }
     }
     return super.visitNewClass(node, p);
