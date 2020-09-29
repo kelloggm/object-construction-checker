@@ -5,6 +5,7 @@ import java.util.Properties;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
 import org.checkerframework.common.value.ValueChecker;
+import org.checkerframework.framework.qual.StubFiles;
 import org.checkerframework.framework.source.SupportedOptions;
 import org.checkerframework.framework.source.SuppressWarningsPrefix;
 
@@ -19,6 +20,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
   ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
 })
+@StubFiles({"Socket.astub", "NotOwning.astub", "Stream.astub", "DescribeImages.astub", "GenerateDataKey.astub"})
 public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String USE_VALUE_CHECKER = "useValueChecker";

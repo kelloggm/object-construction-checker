@@ -71,6 +71,7 @@ import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.node.TypeCastNode;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
+import org.checkerframework.framework.stub.StubTypes;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
@@ -86,6 +87,7 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.springframework.util.TypeUtils;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -94,6 +96,7 @@ import org.checkerframework.javacutil.TypesUtils;
 public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   public boolean transferOwnershipAtReturn = true;
+  public StubTypes stubTypes;
   public Set<LocalVarWithAssignTree> errors = new HashSet<>();
   /** The top annotation. Package private to permit access from the Transfer class. */
   final AnnotationMirror TOP;
@@ -129,6 +132,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    */
   public ObjectConstructionAnnotatedTypeFactory(final BaseTypeChecker checker) {
     super(checker);
+    stubTypes = new StubTypes(this);
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
     EnumSet<FrameworkSupportUtils.Framework> frameworkSet =
@@ -335,6 +339,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * @param cfg the control flow graph of a method
    */
   private void alwaysCallTraverse(ControlFlowGraph cfg) {
+    stubTypes.parseStubFiles();
     // add any owning parameters to initial set
     Set<LocalVarWithAssignTree> init = new HashSet<>();
     UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
@@ -446,10 +451,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             if (n instanceof LocalVariableNode) {
               LocalVariableNode local = (LocalVariableNode) n;
               if (isVarInDefs(newDefs, local)) {
+
                 // check if formal has an @Owning annotation
                 VariableElement formal = formals.get(i);
-                if(getAnnotatedType(formal).getAnnotation(Owning.class) != null) {
-//                if (formal.getAnnotation(Owning.class) != null) {
+                Set<AnnotationMirror> annotationMirrors = getDeclAnnotations(formal);
+
+                if(annotationMirrors.stream().anyMatch(anno -> AnnotationUtils.areSameByClass(anno,Owning.class))) {
                   // transfer ownership!
                   newDefs.remove(getAssignmentTreeOfVar(newDefs, local));
                 }
@@ -687,6 +694,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   String getAlwaysCallValue(Element element) {
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
+//    boolean b = isFromStubFile(eType);
+//    AnnotatedTypeMirror.AnnotatedDeclaredType adt = fromElement(eType);
+//    Tree t = declarationFromElement(element);
+//    AnnotationMirror am = adt.getAnnotation(AlwaysCall.class);
+//    Set<AnnotationMirror> ammm = getDeclAnnotations(eType);
     AnnotationMirror alwaysCallAnnotation = getDeclAnnotation(eType, AlwaysCall.class);
 
     return (alwaysCallAnnotation != null)
@@ -705,6 +717,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     CFValue lhsCFValue = store.getValue(assign.localVar);
     String alwaysCallValue = getAlwaysCallValue(assign.localVar.getElement());
+    Element e = assign.localVar.getElement();
     AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
 
     boolean report = true;
