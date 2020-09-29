@@ -7,7 +7,10 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Type;
+
+import java.io.Closeable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +42,7 @@ import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop;
+import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -91,7 +95,7 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
-  public boolean transferOwnershipAtReturn = false;
+  public boolean transferOwnershipAtReturn = true;
 
   /** The top annotation. Package private to permit access from the Transfer class. */
   final AnnotationMirror TOP;
@@ -198,13 +202,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
    */
   boolean returnsThis(final MethodInvocationTree tree) {
-    ReturnsReceiverAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
-    ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
-    AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
-    AnnotatedTypeMirror rrType =
-        ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
-    return (rrType != null && rrType.hasAnnotation(This.class))
-        || hasOldReturnsReceiverAnnotation(tree);
+    return false;
+//    ReturnsReceiverAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
+//    ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
+//    AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
+//    AnnotatedTypeMirror rrType =
+//        ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
+//    return (rrType != null && rrType.hasAnnotation(This.class))
+//        || hasOldReturnsReceiverAnnotation(tree);
   }
 
   /**
@@ -396,9 +401,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
             // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
             // the AssignmentNode to the newDefs.
+//            if ((!(rhs instanceof MethodInvocationNode) && !(rhs instanceof NullLiteralNode) && !(rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)))
+//                    || (rhs instanceof MethodInvocationNode && !hasNotOwningAnno(rhs))) {
             if ((rhs instanceof ObjectCreationNode)
-                || (rhs instanceof MethodInvocationNode
-                    && (isTransferOwnershipAtMethodInvocation(rhs) || transferOwnershipAtReturn))) {
+                    || (rhs instanceof MethodInvocationNode && !hasNotOwningAnno(rhs))) {
+//            if ((rhs instanceof ObjectCreationNode)
+//                || (rhs instanceof MethodInvocationNode
+//                    && (isTransferOwnershipAtMethodInvocation(rhs) || (transferOwnershipAtReturn && !hasNotOwningAnno(rhs))))) {
 //              if (!(rhs instanceof NullLiteralNode) && !(rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs))) {
               newDefs.add(
                   new LocalVarWithAssignTree(
@@ -420,7 +429,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
         // Remove the returned localVariableNode from newDefs.
         if (node instanceof ReturnNode
-            && (isTransferOwnershipAtReturn(node, cfg) || transferOwnershipAtReturn)) {
+            && (isTransferOwnershipAtReturn(node, cfg) || (transferOwnershipAtReturn && !hasNotOwningAnno(node, cfg)))) {
           Node result = ((ReturnNode) node).getResult();
           if (result instanceof LocalVariableNode
               && isVarInDefs(newDefs, (LocalVariableNode) result)) {
@@ -494,6 +503,19 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
+  boolean hasNotOwningAnno(Node node, ControlFlowGraph cfg) {
+    if (node instanceof ReturnNode) {
+      UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
+      if (underlyingAST instanceof UnderlyingAST.CFGMethod) {
+        // TODO: lambdas?
+        MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
+        ExecutableElement executableElement = TreeUtils.elementFromDeclaration(method);
+        return (getDeclAnnotation(executableElement, NotOwning.class) != null);
+      }
+    }
+    return false;
+  }
+
   boolean isTransferOwnershipAtReturn(Node node, ControlFlowGraph cfg) {
     if (node instanceof ReturnNode) {
       UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
@@ -503,6 +525,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         ExecutableElement executableElement = TreeUtils.elementFromDeclaration(method);
         return (getDeclAnnotation(executableElement, Owning.class) != null);
       }
+    }
+    return false;
+  }
+
+  boolean hasNotOwningAnno(Node node) {
+    if (node instanceof MethodInvocationNode) {
+      MethodInvocationTree mit = ((MethodInvocationNode) node).getTree();
+      ExecutableElement ee = TreeUtils.elementFromUse(mit);
+      return (getDeclAnnotation(ee, NotOwning.class) != null);
     }
     return false;
   }
@@ -697,7 +728,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
 
     if (report) {
-      checker.reportError(assign.assignTree, "missing.alwayscall", alwaysCallValue);
+      checker.reportError(assign.assignTree, "missing.alwayscall", alwaysCallValue);//assign.localVar.getType().toString()
     }
   }
 

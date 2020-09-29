@@ -9,6 +9,8 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.tree.JCTree;
+
+import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +24,7 @@ import org.checkerframework.checker.objectconstruction.framework.FrameworkSuppor
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -64,7 +67,7 @@ public class ObjectConstructionVisitor
 
     if (!isAssignedToLocal(this.getCurrentPath())
         && !atypeFactory.returnsThis(node)
-        && (atypeFactory.transferOwnershipAtReturn
+        && ((atypeFactory.transferOwnershipAtReturn && !hasNotOwningAnno(node))
             || isTransferOwnershipAtMethodInvocation(node))) {
       TypeMirror returnType = TreeUtils.typeOf(node);
 
@@ -75,7 +78,7 @@ public class ObjectConstructionVisitor
         AnnotationMirror cmAnno = annoType.getAnnotationInHierarchy(atypeFactory.TOP);
 
         if (!atypeFactory.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
-          checker.reportError(node, "missing.alwayscall", alwaysCallAnnoVal);
+          checker.reportError(node, "missing.alwayscall", alwaysCallAnnoVal); //returnType.toString()
         }
       }
     }
@@ -94,7 +97,12 @@ public class ObjectConstructionVisitor
 
   boolean isTransferOwnershipAtMethodInvocation(MethodInvocationTree tree) {
     ExecutableElement ee = TreeUtils.elementFromUse(tree);
-    return (ee.getAnnotation(Owning.class) != null);
+    return (atypeFactory.getDeclAnnotation(ee, Owning.class) != null);
+  }
+
+  boolean hasNotOwningAnno(MethodInvocationTree tree) {
+    ExecutableElement ee = TreeUtils.elementFromUse(tree);
+    return (atypeFactory.getDeclAnnotation(ee, NotOwning.class) != null);
   }
 
   @Override
@@ -102,7 +110,7 @@ public class ObjectConstructionVisitor
     if (!isAssignedToLocal(this.getCurrentPath())) {
       TypeMirror type = TreeUtils.typeOf(node);
       if (atypeFactory.hasAlwaysCall(type)) {
-        checker.reportError(node, "missing.alwayscall", getAlwaysCallValue(type));
+        checker.reportError(node, "missing.alwayscall", getAlwaysCallValue(type)); //type.toString()
       }
     }
     return super.visitNewClass(node, p);
@@ -127,6 +135,7 @@ public class ObjectConstructionVisitor
     Tree parent = parentPath.getLeaf();
     switch (parent.getKind()) {
       case PARENTHESIZED:
+      case TYPE_CAST:
         return isAssignedToLocal(parentPath);
       case CONDITIONAL_EXPRESSION:
         ConditionalExpressionTree cet = (ConditionalExpressionTree) parent;
@@ -142,7 +151,6 @@ public class ObjectConstructionVisitor
         return (lhs instanceof JCTree.JCIdent)
             ? (((JCTree.JCIdent) lhs).sym.getKind().equals(LOCAL_VARIABLE))
             : false;
-
       case RETURN:
       case VARIABLE:
         return true;

@@ -282,6 +282,7 @@ public class ACSocketTest
 
     void useCloseSocket(String address, int port) throws IOException {
         Socket sock = new Socket(address, port);
+        Socket s = getSocket(sock);
         closeSocket(sock);
     }
 
@@ -293,7 +294,7 @@ public class ACSocketTest
         sock.setSoTimeout(1000);
     }
 
-    void initiateConnection(SocketAddress endpoint, int timeout, SSLContext context) {
+    void initiateConnection(SocketAddress endpoint, int timeout, SSLContext context, final Long sid) {
         Socket sock = null;
         try {
             sock = context.getSocketFactory().createSocket();
@@ -306,18 +307,30 @@ public class ACSocketTest
 
             }
 
-            closeSocket(sock);
         } catch (ClassCastException e){
             closeSocket(sock);
             return;
         } catch (IOException e) {
-
             closeSocket(sock);
             return;
         }
+
+        try{
+            startConnection(sock);
+        }catch (IOException e) {
+            closeSocket(sock);
+        }
     }
 
+    private boolean startConnection(@Owning Socket s) throws IOException {
+        closeSocket(s);
+        return true;
+    }
 
+    private boolean startConnection(@Owning SSLSocket s) throws IOException {
+        closeSocket(s);
+        return true;
+    }
 
 
 
@@ -426,7 +439,7 @@ public class ACSocketTest
         return configureSSLServerSocket(sslServerSocket);
     }
 
-    private SSLServerSocket configureSSLServerSocket(SSLServerSocket socket) {
+    private SSLServerSocket configureSSLServerSocket(@Owning SSLServerSocket socket) {
         return socket;
     }
 
@@ -437,5 +450,17 @@ public class ACSocketTest
         SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();
     }
 
+    @NotOwning Socket getSocket(Socket s) {
+        return s;
+    }
+
+    SocketChannel createSock() throws IOException {
+        SocketChannel sock;
+        sock = SocketChannel.open();
+        sock.configureBlocking(false);
+        sock.socket().setSoLinger(false, -1);
+        sock.socket().setTcpNoDelay(true);
+        return sock;
+    }
 }
 

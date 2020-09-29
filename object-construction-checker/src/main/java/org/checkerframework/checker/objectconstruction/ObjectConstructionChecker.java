@@ -31,20 +31,20 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String AUTOVALUE_SUPPORT = "AUTOVALUE";
 
-  @Override
-  protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
-    LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
-        super.getImmediateSubcheckerClasses();
-    checkers.add(ReturnsReceiverChecker.class);
-
-    // BaseTypeChecker#hasOption calls this method (so that all subcheckers' options are
-    // considered),
-    // so the processingEnvironment must be checked for the option directly.
-    if (this.processingEnv.getOptions().containsKey(USE_VALUE_CHECKER)) {
-      checkers.add(ValueChecker.class);
-    }
-    return checkers;
-  }
+//  @Override
+//  protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
+//    LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
+//        super.getImmediateSubcheckerClasses();
+//    checkers.add(ReturnsReceiverChecker.class);
+//
+//    // BaseTypeChecker#hasOption calls this method (so that all subcheckers' options are
+//    // considered),
+//    // so the processingEnvironment must be checked for the option directly.
+//    if (this.processingEnv.getOptions().containsKey(USE_VALUE_CHECKER)) {
+//      checkers.add(ValueChecker.class);
+//    }
+//    return checkers;
+//  }
 
   /**
    * Overridden because the messages.properties file isn't being loaded, for some reason. I think it
@@ -60,6 +60,7 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     messages.setProperty(
         "predicate.invalid",
         "An unparseable predicate was found in an annotation. Predicates must be produced by this grammar: S --> method name | (S) | S && S | S || S. The message from the evaluator was: %s \\n");
+//    messages.setProperty("missing.alwayscall", "The type is: %s\n");
     return messages;
   }
 

@@ -102,8 +102,8 @@ class ServerSocket implements Closeable {
 package javax.net.ssl;
 
 class SSLSocketFactory extends SocketFactory {
-    @Owning Socket createSocket(Socket arg0, String arg1, int arg2, boolean arg3) throws IOException;
-    @Owning Socket createSocket(Socket arg0, InputStream arg1, boolean arg2) throws IOException;
+    @Owning Socket createSocket(@Owning Socket arg0, String arg1, int arg2, boolean arg3) throws IOException;
+    @Owning Socket createSocket(@Owning Socket arg0, InputStream arg1, boolean arg2) throws IOException;
 }
 
 package javax.net;
@@ -126,5 +126,12 @@ class ServerSocketFactory {
 }
 
 
+package java.io;
 
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
 
+//@AlwaysCall("close")
+public interface Closeable {
+    void close() throws Exception;
+}
