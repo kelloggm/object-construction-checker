@@ -96,3 +96,14 @@ task printClasspath {
         println sourceSets.main.runtimeClasspath.asPath
     }
 }
+
+apply plugin: 'java'
+
+sourceSets {
+    main {
+        resources {
+            // Stub files, message.properties, etc.
+            srcDirs += ['src/main/java']
+        }
+    }
+}
