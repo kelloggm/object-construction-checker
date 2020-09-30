@@ -678,11 +678,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   String getAlwaysCallValue(Element element) {
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
-//    boolean b = isFromStubFile(eType);
-//    AnnotatedTypeMirror.AnnotatedDeclaredType adt = fromElement(eType);
-//    Tree t = declarationFromElement(element);
-//    AnnotationMirror am = adt.getAnnotation(AlwaysCall.class);
-//    Set<AnnotationMirror> ammm = getDeclAnnotations(eType);
     AnnotationMirror alwaysCallAnnotation = getDeclAnnotation(eType, AlwaysCall.class);
 
     return (alwaysCallAnnotation != null)
