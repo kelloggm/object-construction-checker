@@ -5,7 +5,7 @@ import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 
-@AlwaysCall("close")
+//@AlwaysCall("close")
 class Socket implements Closeable {
     Socket();
     Socket(Proxy arg0);
@@ -67,7 +67,7 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
 
 
 
-@AlwaysCall("close")
+//@AlwaysCall("close")
 class ServerSocket implements Closeable {
     ServerSocket() throws IOException;
     ServerSocket(int arg0) throws IOException;
@@ -134,7 +134,7 @@ package java.io;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
-//@AlwaysCall("close")
+@AlwaysCall("close")
 public interface Closeable {
     void close() throws Exception;
 }
