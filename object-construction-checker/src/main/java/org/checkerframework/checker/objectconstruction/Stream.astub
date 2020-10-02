@@ -23,6 +23,77 @@ class DataOutputStream extends FilterOutputStream implements DataOutput {
     int size();
 }
 
+class FilterOutputStream extends OutputStream {
+    protected OutputStream out;
+    FilterOutputStream(@Owning OutputStream arg0);
+    void write(int arg0) throws IOException;
+    void write(byte[] arg0) throws IOException;
+    void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    void flush() throws IOException;
+    void close() throws IOException;
+}
+
+class PrintStream extends FilterOutputStream implements Appendable, Closeable {
+    PrintStream(@Owning OutputStream arg0);
+    PrintStream(@Owning OutputStream arg0, boolean arg1);
+    PrintStream(@Owning OutputStream arg0, boolean arg1, String arg2) throws UnsupportedEncodingException;
+    PrintStream(@Owning OutputStream arg0, boolean arg1, Charset arg2);
+    PrintStream(String arg0) throws FileNotFoundException;
+    PrintStream(String arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    PrintStream(String arg0, Charset arg1) throws IOException;
+    PrintStream(File arg0) throws FileNotFoundException;
+    PrintStream(File arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    PrintStream(File arg0, Charset arg1) throws IOException;
+    void flush();
+    void close();
+    boolean checkError();
+    protected void setError();
+    protected void clearError();
+    void write(int arg0);
+    void write(byte[] arg0, int arg1, int arg2);
+    void print(boolean arg0);
+    void print(char arg0);
+    void print(int arg0);
+    void print(long arg0);
+    void print(float arg0);
+    void print(double arg0);
+    void print(char[] arg0);
+    void print(String arg0);
+    void print(Object arg0);
+    void println();
+    void println(boolean arg0);
+    void println(char arg0);
+    void println(int arg0);
+    void println(long arg0);
+    void println(float arg0);
+    void println(double arg0);
+    void println(char[] arg0);
+    void println(String arg0);
+    void println(Object arg0);
+    PrintStream printf(String arg0, Object[] arg1);
+    PrintStream printf(Locale arg0, String arg1, Object[] arg2);
+    PrintStream format(String arg0, Object[] arg1);
+    PrintStream format(Locale arg0, String arg1, Object[] arg2);
+    PrintStream append(CharSequence arg0);
+    PrintStream append(CharSequence arg0, int arg1, int arg2);
+    PrintStream append(char arg0);
+}
+
+class BufferedReader extends Reader {
+    BufferedReader(@Owning Reader arg0, int arg1);
+    BufferedReader(@Owning Reader arg0);
+    int read() throws IOException;
+    int read(char[] arg0, int arg1, int arg2) throws IOException;
+    String readLine() throws IOException;
+    long skip(long arg0) throws IOException;
+    boolean ready() throws IOException;
+    boolean markSupported();
+    void mark(int arg0) throws IOException;
+    void reset() throws IOException;
+    void close() throws IOException;
+    Stream<String> lines();
+}
+
 class BufferedOutputStream extends FilterOutputStream {
     protected byte[] buf;
     protected int count;

@@ -162,7 +162,7 @@ public class ACSocketTest
             // Create input and output streams to read from and write to the server
             PrintStream out = new PrintStream( socket.getOutputStream() );
             BufferedReader in = new BufferedReader( new InputStreamReader( socket.getInputStream() ) );
-//            socket.close();
+            in.close();
         }
         catch( Exception e )
         {

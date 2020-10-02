@@ -12,7 +12,7 @@ public class SocketTest extends CheckerFrameworkPerDirectoryTest {
         org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
         "socket",
         "-Anomsgtext",
-        "-Astubs=stubs",
+        //        "-Astubs=stubs",
         "-AuseValueChecker",
         "-nowarn");
   }

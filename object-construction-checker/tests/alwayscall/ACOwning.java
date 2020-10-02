@@ -8,7 +8,11 @@ class ACOwning {
         void a() {}
     }
 
-    static void takeOwnership(@Owning Foo foo) {
+    Foo makeFoo() {
+        return new Foo();
+    }
+
+    static void takeOwnership(@Owning Foo foo, @Owning Foo f) {
         foo.a();
     }
 
@@ -21,7 +25,7 @@ class ACOwning {
 
     static void ownershipInCallee() {
         Foo f = new Foo();
-        takeOwnership(f);
+        takeOwnership(f, new Foo());
         // :: error: missing.alwayscall
         Foo g = new Foo();
         noOwnership(g);
@@ -41,5 +45,10 @@ class ACOwning {
     void owningAtReturnTest() {
         // :: error: missing.alwayscall
         Foo f = owningAtReturn();
+    }
+
+
+    void ownershipTest(){
+        takeOwnership(new Foo(), makeFoo());
     }
 }

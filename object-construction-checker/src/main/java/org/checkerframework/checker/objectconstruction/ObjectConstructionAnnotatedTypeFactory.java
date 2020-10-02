@@ -7,7 +7,6 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Type;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -46,7 +45,6 @@ import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverAnnotatedTypeFactory;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
-import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.ValueAnnotatedTypeFactory;
 import org.checkerframework.common.value.ValueChecker;
 import org.checkerframework.common.value.qual.StringVal;
@@ -200,13 +198,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    */
   boolean returnsThis(final MethodInvocationTree tree) {
     return false;
-//    ReturnsReceiverAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
-//    ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
-//    AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
-//    AnnotatedTypeMirror rrType =
-//        ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
-//    return (rrType != null && rrType.hasAnnotation(This.class))
-//        || hasOldReturnsReceiverAnnotation(tree);
+    //    ReturnsReceiverAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
+    //    ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
+    //    AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
+    //    AnnotatedTypeMirror rrType =
+    //        ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
+    //    return (rrType != null && rrType.hasAnnotation(This.class))
+    //        || hasOldReturnsReceiverAnnotation(tree);
   }
 
   /**
@@ -382,7 +380,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           Node lhs = ((AssignmentNode) node).getTarget();
           Node rhs = ((AssignmentNode) node).getExpression();
 
-          if(rhs instanceof TypeCastNode) {
+          if (rhs instanceof TypeCastNode) {
             rhs = ((TypeCastNode) rhs).getOperand();
           }
 
@@ -399,7 +397,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
             // the AssignmentNode to the newDefs.
             if ((rhs instanceof ObjectCreationNode)
-                    || (rhs instanceof MethodInvocationNode && !hasNotOwningAnno(rhs))) {
+                || (rhs instanceof MethodInvocationNode && !hasNotOwningAnno(rhs))) {
               newDefs.add(
                   new LocalVarWithAssignTree(
                       new LocalVariable((LocalVariableNode) lhs), node.getTree()));
@@ -420,7 +418,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
         // Remove the returned localVariableNode from newDefs.
         if (node instanceof ReturnNode
-            && (isTransferOwnershipAtReturn(node, cfg) || (transferOwnershipAtReturn && !hasNotOwningAnno(node, cfg)))) {
+            && (isTransferOwnershipAtReturn(node, cfg)
+                || (transferOwnershipAtReturn && !hasNotOwningAnno(node, cfg)))) {
           Node result = ((ReturnNode) node).getResult();
           if (result instanceof LocalVariableNode
               && isVarInDefs(newDefs, (LocalVariableNode) result)) {
@@ -428,10 +427,18 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
         }
 
-        if (node instanceof MethodInvocationNode) {
-          MethodInvocationNode invocationNode = (MethodInvocationNode) node;
-          List<Node> arguments = invocationNode.getArguments();
-          ExecutableElement executableElement = TreeUtils.elementFromUse(invocationNode.getTree());
+        if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
+          List<Node> arguments;
+          ExecutableElement executableElement;
+          if (node instanceof MethodInvocationNode) {
+            MethodInvocationNode invocationNode = (MethodInvocationNode) node;
+            arguments = invocationNode.getArguments();
+            executableElement = TreeUtils.elementFromUse(invocationNode.getTree());
+          } else {
+            arguments = ((ObjectCreationNode) node).getArguments();
+            executableElement = TreeUtils.elementFromUse(((ObjectCreationNode) node).getTree());
+          }
+
           List<? extends VariableElement> formals = executableElement.getParameters();
           if (arguments.size() != formals.size()) {
             // this could happen, e.g., with varargs, or with strange cases like generated Enum
@@ -442,6 +449,18 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
           for (int i = 0; i < arguments.size(); i++) {
             Node n = arguments.get(i);
+            if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
+              VariableElement formal = formals.get(i);
+              Set<AnnotationMirror> annotationMirrors = getDeclAnnotations(formal);
+              TypeMirror t = TreeUtils.typeOf(n.getTree());
+              if (hasAlwaysCall(t)
+                  && annotationMirrors.size() != 0
+                  && !annotationMirrors.stream()
+                      .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
+                checker.reportError(n, "missing.alwayscall", t.toString());
+              }
+            }
+
             if (n instanceof LocalVariableNode) {
               LocalVariableNode local = (LocalVariableNode) n;
               if (isVarInDefs(newDefs, local)) {
@@ -450,7 +469,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
                 VariableElement formal = formals.get(i);
                 Set<AnnotationMirror> annotationMirrors = getDeclAnnotations(formal);
 
-                if(annotationMirrors.stream().anyMatch(anno -> AnnotationUtils.areSameByClass(anno,Owning.class))) {
+                if (annotationMirrors.stream()
+                    .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
                   // transfer ownership!
                   newDefs.remove(getAssignmentTreeOfVar(newDefs, local));
                 }
@@ -693,7 +713,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    */
   private void checkAlwaysCall(
       LocalVarWithAssignTree assign, CFStore store, AnnotatedTypeMirror annotatedTypeMirror) {
-
     CFValue lhsCFValue = store.getValue(assign.localVar);
     String alwaysCallValue = getAlwaysCallValue(assign.localVar.getElement());
     AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
@@ -724,7 +743,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     if (report) {
       if (!errors.contains(assign)) {
         errors.add(assign);
-        checker.reportError(assign.assignTree, "missing.alwayscall", assign.localVar.getType().toString());
+        checker.reportError(
+            assign.assignTree, "missing.alwayscall", assign.localVar.getType().toString());
       }
     }
   }
@@ -1018,8 +1038,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         CalledMethodsPredicate.class,
         CalledMethodsTop.class);
   }
-
-
 
   /**
    * Returns the annotation type mirror for the type of {@code expressionTree} with default

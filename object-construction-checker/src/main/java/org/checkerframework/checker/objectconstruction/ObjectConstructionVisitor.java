@@ -9,8 +9,6 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.tree.JCTree;
-
-import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -151,6 +149,8 @@ public class ObjectConstructionVisitor
         return (lhs instanceof JCTree.JCIdent)
             ? (((JCTree.JCIdent) lhs).sym.getKind().equals(LOCAL_VARIABLE))
             : false;
+      case METHOD_INVOCATION:
+      case NEW_CLASS:
       case RETURN:
       case VARIABLE:
         return true;
