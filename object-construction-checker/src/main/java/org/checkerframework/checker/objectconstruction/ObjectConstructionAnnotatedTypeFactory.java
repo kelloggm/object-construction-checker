@@ -45,6 +45,7 @@ import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverAnnotatedTypeFactory;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
+import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.ValueAnnotatedTypeFactory;
 import org.checkerframework.common.value.ValueChecker;
 import org.checkerframework.common.value.qual.StringVal;
@@ -102,6 +103,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   private final boolean useValueChecker;
 
+  private final boolean useReturnsReceiverChecker;
+
   /** The collection of built-in framework support for the object construction checker. */
   private Collection<FrameworkSupport> frameworkSupports;
 
@@ -145,6 +148,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
 
     this.useValueChecker = checker.hasOption(ObjectConstructionChecker.USE_VALUE_CHECKER);
+    this.useReturnsReceiverChecker =
+        !checker.hasOption(ObjectConstructionChecker.DISABLE_RETURNS_RECEIVER);
     this.collectionsSingletonList =
         TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());
     addAliasedAnnotation(OLD_CALLED_METHODS, CalledMethods.class, true);
@@ -197,14 +202,16 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * <p>Package-private to permit calls from {@link ObjectConstructionTransfer}.
    */
   boolean returnsThis(final MethodInvocationTree tree) {
-    return false;
-    //    ReturnsReceiverAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
-    //    ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
-    //    AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
-    //    AnnotatedTypeMirror rrType =
-    //        ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
-    //    return (rrType != null && rrType.hasAnnotation(This.class))
-    //        || hasOldReturnsReceiverAnnotation(tree);
+    if (!useReturnsReceiverChecker) {
+      return false;
+    }
+    ReturnsReceiverAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
+    ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
+    AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
+    AnnotatedTypeMirror rrType =
+        ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
+    return (rrType != null && rrType.hasAnnotation(This.class))
+        || hasOldReturnsReceiverAnnotation(tree);
   }
 
   /**

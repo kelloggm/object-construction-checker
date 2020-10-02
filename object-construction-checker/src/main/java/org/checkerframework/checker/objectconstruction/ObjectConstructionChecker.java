@@ -1,7 +1,10 @@
 package org.checkerframework.checker.objectconstruction;
 
+import java.util.LinkedHashSet;
 import java.util.Properties;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
+import org.checkerframework.common.value.ValueChecker;
 import org.checkerframework.framework.qual.StubFiles;
 import org.checkerframework.framework.source.SupportedOptions;
 import org.checkerframework.framework.source.SuppressWarningsPrefix;
@@ -22,6 +25,8 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String USE_VALUE_CHECKER = "useValueChecker";
 
+  public static final String DISABLE_RETURNS_RECEIVER = "disableReturnsReceiver";
+
   public static final String COUNT_FRAMEWORK_BUILD_CALLS = "countFrameworkBuildCalls";
 
   public static final String DISABLED_FRAMEWORK_SUPPORTS = "disableFrameworkSupports";
@@ -30,20 +35,22 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String AUTOVALUE_SUPPORT = "AUTOVALUE";
 
-  //  @Override
-  //  protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
-  //    LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
-  //        super.getImmediateSubcheckerClasses();
-  //    checkers.add(ReturnsReceiverChecker.class);
-  //
-  //    // BaseTypeChecker#hasOption calls this method (so that all subcheckers' options are
-  //    // considered),
-  //    // so the processingEnvironment must be checked for the option directly.
-  //    if (this.processingEnv.getOptions().containsKey(USE_VALUE_CHECKER)) {
-  //      checkers.add(ValueChecker.class);
-  //    }
-  //    return checkers;
-  //  }
+  @Override
+  protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
+    LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
+        super.getImmediateSubcheckerClasses();
+    // BaseTypeChecker#hasOption calls this method (so that all subcheckers' options are
+    // considered),
+    // so the processingEnvironment must be checked for the option directly.
+    if (!this.processingEnv.getOptions().containsKey(DISABLE_RETURNS_RECEIVER)) {
+      checkers.add(ReturnsReceiverChecker.class);
+    }
+
+    if (this.processingEnv.getOptions().containsKey(USE_VALUE_CHECKER)) {
+      checkers.add(ValueChecker.class);
+    }
+    return checkers;
+  }
 
   /**
    * Overridden because the messages.properties file isn't being loaded, for some reason. I think it
