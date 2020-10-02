@@ -44,15 +44,20 @@ class ACRegularExitPointTest {
         m = new Foo();
         // :: error: missing.alwayscall
         Foo f = new Foo();
+        //TODO
+        // we can't pass this because we removed return receiver checker
+        // :: error: missing.alwayscall
         f.b();
     }
 
     void testStoringInLocalWrong() {
+        // :: error: missing.alwayscall
         Foo foo = makeFoo();
     }
 
     void testStoringInLocalWrong2(){
         Foo f;
+        // :: error: missing.alwayscall
         f = makeFoo();
     }
 
@@ -131,6 +136,7 @@ class ACRegularExitPointTest {
     }
 
     Foo ifElseWithReturnExit(boolean b, boolean c) {
+        // :: error: missing.alwayscall
         Foo f1 = makeFoo();
         // :: error: missing.alwayscall
         Foo f3 = new Foo();
@@ -143,6 +149,9 @@ class ACRegularExitPointTest {
             if(c){
                 f4.a();
             }else{
+                //TODO
+                // we can't pass this because we removed return receiver checker
+                // :: error: missing.alwayscall
                 f4.b();
             }
             return f1;

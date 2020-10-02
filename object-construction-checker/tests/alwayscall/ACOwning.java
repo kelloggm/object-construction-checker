@@ -25,6 +25,7 @@ class ACOwning {
 
     static void ownershipInCallee() {
         Foo f = new Foo();
+        // :: error: missing.alwayscall
         takeOwnership(f, new Foo());
         // :: error: missing.alwayscall
         Foo g = new Foo();
@@ -49,6 +50,7 @@ class ACOwning {
 
 
     void ownershipTest(){
+        // :: error: missing.alwayscall
         takeOwnership(new Foo(), makeFoo());
     }
 }

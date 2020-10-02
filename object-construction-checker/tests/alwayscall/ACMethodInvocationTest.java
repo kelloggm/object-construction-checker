@@ -27,6 +27,9 @@ class ACMethodInvocationTest {
 
     @Owning @CalledMethods({"b"}) Foo makeFooFinalize2(){
         Foo f = new Foo();
+        //TODO
+        // we can't pass this because we removed return receiver checker
+        // :: error: missing.alwayscall
         f.b();
         return f;
     }

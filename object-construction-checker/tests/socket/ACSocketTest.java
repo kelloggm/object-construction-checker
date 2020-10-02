@@ -159,7 +159,7 @@ public class ACSocketTest
             // :: error: missing.alwayscall
             Socket socket = new Socket( address, 80 );
 
-            // Create input and output streams to read from and write to the server
+            // :: error: missing.alwayscall
             PrintStream out = new PrintStream( socket.getOutputStream() );
             BufferedReader in = new BufferedReader( new InputStreamReader( socket.getInputStream() ) );
             in.close();
@@ -464,6 +464,7 @@ public class ACSocketTest
 
 
     private void updateSocketAddresses( SelectionKey sockKey ) {
+        // :: error: missing.alwayscall
         Socket socket = ((SocketChannel) sockKey.channel()).socket();
         SocketAddress localSocketAddress = socket.getLocalSocketAddress();
         SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();
@@ -475,7 +476,11 @@ public class ACSocketTest
 
     SocketChannel createSock() throws IOException {
         SocketChannel sock;
+        // :: error: missing.alwayscall
         sock = SocketChannel.open();
+        //TODO
+        // we can't pass this because we removed return receiver checker
+        // :: error: missing.alwayscall
         sock.configureBlocking(false);
         sock.socket().setSoLinger(false, -1);
         sock.socket().setTcpNoDelay(true);

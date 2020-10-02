@@ -182,6 +182,74 @@ class BufferedWriter extends Writer {
     void close() throws IOException;
 }
 
+class PrintWriter extends Writer {
+    protected Writer out;
+    PrintWriter(@Owning Writer arg0);
+    PrintWriter(@Owning Writer arg0, boolean arg1);
+    PrintWriter(@Owning OutputStream arg0);
+    PrintWriter(@Owning OutputStream arg0, boolean arg1);
+    PrintWriter(@Owning OutputStream arg0, boolean arg1, Charset arg2);
+    PrintWriter(String arg0) throws FileNotFoundException;
+    PrintWriter(String arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    PrintWriter(String arg0, Charset arg1) throws IOException;
+    PrintWriter(@Owning File arg0) throws FileNotFoundException;
+    PrintWriter(@Owning File arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    PrintWriter(@Owning File arg0, Charset arg1) throws IOException;
+    void flush();
+    void close();
+    boolean checkError();
+    protected void setError();
+    protected void clearError();
+    void write(int arg0);
+    void write(char[] arg0, int arg1, int arg2);
+    void write(char[] arg0);
+    void write(String arg0, int arg1, int arg2);
+    void write(String arg0);
+    void print(boolean arg0);
+    void print(char arg0);
+    void print(int arg0);
+    void print(long arg0);
+    void print(float arg0);
+    void print(double arg0);
+    void print(char[] arg0);
+    void print(String arg0);
+    void print(Object arg0);
+    void println();
+    void println(boolean arg0);
+    void println(char arg0);
+    void println(int arg0);
+    void println(long arg0);
+    void println(float arg0);
+    void println(double arg0);
+    void println(char[] arg0);
+    void println(String arg0);
+    void println(Object arg0);
+    PrintWriter printf(String arg0, Object[] arg1);
+    PrintWriter printf(Locale arg0, String arg1, Object[] arg2);
+    PrintWriter format(String arg0, Object[] arg1);
+    PrintWriter format(Locale arg0, String arg1, Object[] arg2);
+    PrintWriter append(CharSequence arg0);
+    PrintWriter append(CharSequence arg0, int arg1, int arg2);
+    PrintWriter append(char arg0);
+}
+
+class OutputStreamWriter extends Writer {
+    OutputStreamWriter(@Owning OutputStream arg0, String arg1) throws UnsupportedEncodingException;
+    OutputStreamWriter(@Owning OutputStream arg0);
+    OutputStreamWriter(@Owning OutputStream arg0, Charset arg1);
+    OutputStreamWriter(@Owning OutputStream arg0, CharsetEncoder arg1);
+    String getEncoding();
+    void write(int arg0) throws IOException;
+    void write(char[] arg0, int arg1, int arg2) throws IOException;
+    void write(String arg0, int arg1, int arg2) throws IOException;
+    Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
+    Writer append(CharSequence arg0) throws IOException;
+    void flush() throws IOException;
+    void close() throws IOException;
+}
+
+
+
 package java.security;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
