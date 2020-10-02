@@ -12,7 +12,7 @@ class ACOwning {
         return new Foo();
     }
 
-    static void takeOwnership(@Owning Foo foo, @Owning Foo f) {
+    static void takeOwnership(@Owning Foo foo, Foo f) {
         foo.a();
     }
 

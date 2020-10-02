@@ -454,10 +454,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               Set<AnnotationMirror> annotationMirrors = getDeclAnnotations(formal);
               TypeMirror t = TreeUtils.typeOf(n.getTree());
               if (hasAlwaysCall(t)
-                  && annotationMirrors.size() != 0
-                  && !annotationMirrors.stream()
-                      .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
-                checker.reportError(n, "missing.alwayscall", t.toString());
+                  && (annotationMirrors.size() == 0 || (annotationMirrors.size()!=0 && !annotationMirrors.stream()
+                      .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))))) {
+                checker.reportError(n.getTree(), "missing.alwayscall", t.toString());
               }
             }
 
