@@ -41,6 +41,11 @@ public class ACSocketTest
         }
     }
 
+    void tryWithResourcesTest(String address, int port) throws IOException {
+        try (Socket s = new Socket(address, port)) {
+
+        }
+    }
 
     void callMakeSocketAndClose(String address, int port){
         Socket socket = makeSocket(address, port);

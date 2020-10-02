@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
@@ -376,7 +377,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               && isVarInDefs(newDefs, (LocalVariableNode) receiver)) {
             if (getAlwaysCallValue(((LocalVariableNode) receiver).getElement())
                 .equals(method.getSimpleName().toString())) {
-              // If the method called on the receiver is the same as receiver's alwasyCallValue,
+              // If the method called on the receiver is the same as receiver's @AlwaysCall value,
               // then we can remove the receiver from the newDefs
               newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) receiver));
             }
@@ -391,7 +392,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             rhs = ((TypeCastNode) rhs).getOperand();
           }
 
-          if (lhs instanceof LocalVariableNode && hasAlwaysCall(lhs.getType())) {
+          if (lhs instanceof LocalVariableNode
+              && hasAlwaysCall(lhs.getType())
+              && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
 
             // Reassignment to the lhs
             if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
@@ -524,6 +527,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         propagate(new BlockWithLocals(succ, newDefs), visited, worklist);
       }
     }
+  }
+
+  /** checks if the variable has been declared in a try-with-resources header */
+  private boolean isTryWithResourcesVariable(LocalVariableNode lhs) {
+    Tree tree = lhs.getTree();
+    return tree != null
+        && TreeUtils.elementFromTree(tree).getKind().equals(ElementKind.RESOURCE_VARIABLE);
   }
 
   boolean hasNotOwningAnno(Node node, ControlFlowGraph cfg) {
