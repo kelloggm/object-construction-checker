@@ -409,7 +409,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
               LocalVarWithAssignTree latestAssignmentPair =
                   getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-              checkAlwaysCall(latestAssignmentPair, getStoreBefore(node), null);
+              checkAlwaysCall(latestAssignmentPair, getStoreBefore(node));
               newDefs.remove(latestAssignmentPair);
             }
 
@@ -517,7 +517,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               || succRegularStore.getValue(assign.localVar) == null) {
 
             if (nodes.size() == 0) { // If the cur block is special or conditional block
-              checkAlwaysCall(assign, succRegularStore, null);
+              checkAlwaysCall(assign, succRegularStore);
 
             } else { // If the cur block is Exception/Regular block then it checks AlwaysCall
               // annotation in the store right after the last node
@@ -525,7 +525,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               CFStore storeAfter = getStoreAfter(last);
               AnnotatedTypeMirror lastAType =
                   (last instanceof AssignmentNode) ? getAnnotatedType(last.getTree()) : null;
-              checkAlwaysCall(assign, storeAfter, lastAType);
+              checkAlwaysCall(assign, storeAfter);
             }
 
             toRemove.add(assign);
@@ -611,7 +611,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       for (Block tSucc : pair.getValue()) {
         if (tSucc instanceof SpecialBlock) {
           for (LocalVarWithAssignTree assignTree : defs) {
-            checkAlwaysCall(assignTree, storeAfter, null);
+            checkAlwaysCall(assignTree, storeAfter);
           }
         } else {
           propagate(new BlockWithLocals(tSucc, defs), visited, worklist);
@@ -744,8 +744,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * annotation of {@code assign.first} to do a subtyping check and reports an error if the check
    * fails.
    */
-  private void checkAlwaysCall(
-      LocalVarWithAssignTree assign, CFStore store, AnnotatedTypeMirror annotatedTypeMirror) {
+  private void checkAlwaysCall(LocalVarWithAssignTree assign, CFStore store) {
     CFValue lhsCFValue = store.getValue(assign.localVar);
     String alwaysCallValue = getAlwaysCallValue(assign.localVar.getElement());
     AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
@@ -760,15 +759,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               .orElse(TOP);
 
       if (this.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
-        report = false;
-      }
-
-    } else if (annotatedTypeMirror != null) {
-
-      // Sometimes getStoreAfter doesn't contain correct set of local variable nodes! Then, it
-      // checks the AlwaysCall condition by looking at AnnotatedTypeMirror
-      AnnotationMirror annotationMirror = annotatedTypeMirror.getAnnotationInHierarchy(TOP);
-      if (this.getQualifierHierarchy().isSubtype(annotationMirror, dummyCMAnno)) {
         report = false;
       }
     }
