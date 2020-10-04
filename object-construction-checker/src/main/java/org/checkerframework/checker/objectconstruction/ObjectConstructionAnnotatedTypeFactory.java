@@ -607,23 +607,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       if (isIgnoredExceptionType(((Type) pair.getKey()).tsym.getSimpleName())) {
         continue;
       }
+      CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
       for (Block tSucc : pair.getValue()) {
-        CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
         if (tSucc instanceof SpecialBlock) {
           for (LocalVarWithAssignTree assignTree : defs) {
             checkAlwaysCall(assignTree, storeAfter, null);
           }
         } else {
-          List<BlockImpl> successors = getSuccessors((BlockImpl) tSucc);
-          for (BlockImpl succ : successors) {
-            if ((succ instanceof SpecialBlock)) {
-              for (LocalVarWithAssignTree assignTree : defs) {
-                checkAlwaysCall(assignTree, storeAfter, null);
-              }
-            } else {
-              propagate(new BlockWithLocals(succ, defs), visited, worklist);
-            }
-          }
+          propagate(new BlockWithLocals(tSucc, defs), visited, worklist);
         }
       }
     }
