@@ -56,6 +56,7 @@ import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.BlockImpl;
 import org.checkerframework.dataflow.cfg.block.ConditionalBlock;
+import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlockImpl;
 import org.checkerframework.dataflow.cfg.block.RegularBlockImpl;
 import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
@@ -92,8 +93,6 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
-  public boolean transferOwnershipAtReturn = true;
-  public Set<LocalVarWithAssignTree> errors = new HashSet<>();
   /** The top annotation. Package private to permit access from the Transfer class. */
   final AnnotationMirror TOP;
 
@@ -122,6 +121,16 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    */
   private static final String OLD_NOT_CALLED_METHODS =
       "org.checkerframework.checker.builder.qual.NotCalledMethods";
+
+  ////
+  // fields for @AlwaysCall checking
+  ////
+
+  /** By default, should we transfer ownership to the caller when a variable is returned? */
+  public boolean transferOwnershipAtReturn = true;
+
+  /** {@code @AlwaysCall} errors reported thus far, to avoid duplicates */
+  private final Set<LocalVarWithAssignTree> reportedAlwaysCallErrors = new HashSet<>();
 
   /**
    * Default constructor matching super. Should be called automatically.
@@ -581,11 +590,16 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Does AlwaysCall check for all local variable nodes exist in {@code defs} if {@code
-   * exceptionBlock} is not NullPointerException or Throwable.
+   * Performs {@code @AlwaysCall} checking for exceptional successors of a block. Exceptional
+   * successors for {@code NullPointerException} and {@code Throwable} are ignored.
+   *
+   * @param exceptionBlock the block with exceptional successors.
+   * @param defs current locals to check
+   * @param visited already-visited state
+   * @param worklist current worklist
    */
   public void checkACInExceptionSuccessors(
-      ExceptionBlockImpl exceptionBlock,
+      ExceptionBlock exceptionBlock,
       Set<LocalVarWithAssignTree> defs,
       Set<BlockWithLocals> visited,
       Deque<BlockWithLocals> worklist) {
@@ -760,8 +774,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
 
     if (report) {
-      if (!errors.contains(assign)) {
-        errors.add(assign);
+      if (!reportedAlwaysCallErrors.contains(assign)) {
+        reportedAlwaysCallErrors.add(assign);
         checker.reportError(
             assign.assignTree, "missing.alwayscall", assign.localVar.getType().toString());
       }
@@ -783,6 +797,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
+  /**
+   * A pair of a local variable along with a tree in the corresponding method that "assigns" the
+   * variable. Besides a normal assignment, the tree may be a {@link VariableTree} in the case of a
+   * formal parameter
+   */
   private class LocalVarWithAssignTree {
     public LocalVariable localVar;
     public Tree assignTree;
