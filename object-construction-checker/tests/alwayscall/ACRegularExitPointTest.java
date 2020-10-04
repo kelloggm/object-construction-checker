@@ -44,9 +44,6 @@ class ACRegularExitPointTest {
         m = new Foo();
         // :: error: missing.alwayscall
         Foo f = new Foo();
-        //TODO
-        // we can't pass this because we removed return receiver checker
-        // :: error: missing.alwayscall
         f.b();
     }
 
@@ -149,9 +146,6 @@ class ACRegularExitPointTest {
             if(c){
                 f4.a();
             }else{
-                //TODO
-                // we can't pass this because we removed return receiver checker
-                // :: error: missing.alwayscall
                 f4.b();
             }
             return f1;
