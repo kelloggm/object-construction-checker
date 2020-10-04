@@ -590,45 +590,54 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Performs {@code @AlwaysCall} checking for exceptional successors of a block. Exceptional
-   * successors for {@code NullPointerException} and {@code Throwable} are ignored.
+   * Performs {@code @AlwaysCall} checking for exceptional successors of a block.
    *
    * @param exceptionBlock the block with exceptional successors.
    * @param defs current locals to check
    * @param visited already-visited state
    * @param worklist current worklist
    */
-  public void checkACInExceptionSuccessors(
+  private void checkACInExceptionSuccessors(
       ExceptionBlock exceptionBlock,
       Set<LocalVarWithAssignTree> defs,
       Set<BlockWithLocals> visited,
       Deque<BlockWithLocals> worklist) {
     Map<TypeMirror, Set<Block>> exSucc = exceptionBlock.getExceptionalSuccessors();
     for (Map.Entry<TypeMirror, Set<Block>> pair : exSucc.entrySet()) {
-      Name exceptionClassName = ((Type) pair.getKey()).tsym.getSimpleName();
-      if (!(exceptionClassName.contentEquals(Throwable.class.getSimpleName())
-          || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName()))) {
-        for (Block tSucc : pair.getValue()) {
-          CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
-          if (tSucc instanceof SpecialBlock) {
-            for (LocalVarWithAssignTree assignTree : defs) {
-              checkAlwaysCall(assignTree, storeAfter, null);
-            }
-          } else {
-            List<BlockImpl> successors = getSuccessors((BlockImpl) tSucc);
-            for (BlockImpl succ : successors) {
-              if ((succ instanceof SpecialBlock)) {
-                for (LocalVarWithAssignTree assignTree : defs) {
-                  checkAlwaysCall(assignTree, storeAfter, null);
-                }
-              } else {
-                propagate(new BlockWithLocals(succ, defs), visited, worklist);
+      if (isIgnoredExceptionType(((Type) pair.getKey()).tsym.getSimpleName())) {
+        continue;
+      }
+      for (Block tSucc : pair.getValue()) {
+        CFStore storeAfter = getStoreAfter(exceptionBlock.getNode());
+        if (tSucc instanceof SpecialBlock) {
+          for (LocalVarWithAssignTree assignTree : defs) {
+            checkAlwaysCall(assignTree, storeAfter, null);
+          }
+        } else {
+          List<BlockImpl> successors = getSuccessors((BlockImpl) tSucc);
+          for (BlockImpl succ : successors) {
+            if ((succ instanceof SpecialBlock)) {
+              for (LocalVarWithAssignTree assignTree : defs) {
+                checkAlwaysCall(assignTree, storeAfter, null);
               }
+            } else {
+              propagate(new BlockWithLocals(succ, defs), visited, worklist);
             }
           }
         }
       }
     }
+  }
+
+  /**
+   * Is {@code exceptionClassName} an exception type we are ignoring, to avoid excessive false
+   * positives? For now we ignore {@code java.lang.Throwable} and {@code NullPointerException}
+   */
+  private boolean isIgnoredExceptionType(Name exceptionClassName) {
+    boolean isThrowableOrNPE =
+        exceptionClassName.contentEquals(Throwable.class.getSimpleName())
+            || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName());
+    return isThrowableOrNPE;
   }
 
   /**
@@ -1062,10 +1071,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       return Collections.emptyList();
     }
     return AnnotationUtils.getElementValueArray(anno, "value", String.class, true);
-  }
-
-  private boolean hasAnnotation(Element element, Class<? extends Annotation> annotClass) {
-    return element.getAnnotation(annotClass) != null;
   }
 
   @Override
