@@ -473,11 +473,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               Set<AnnotationMirror> annotationMirrors = getDeclAnnotations(formal);
               TypeMirror t = TreeUtils.typeOf(n.getTree());
               if (hasAlwaysCall(t)
-                  && (annotationMirrors.size() == 0
-                      || (annotationMirrors.size() != 0
-                          && !annotationMirrors.stream()
-                              .anyMatch(
-                                  anno -> AnnotationUtils.areSameByClass(anno, Owning.class))))) {
+                  && !annotationMirrors.stream()
+                      .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
+                // TODO why is this logic here and not in the visitor?
                 checker.reportError(n.getTree(), "missing.alwayscall", t.toString());
               }
             }
