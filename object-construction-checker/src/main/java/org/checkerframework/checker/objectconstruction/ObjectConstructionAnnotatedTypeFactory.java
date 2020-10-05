@@ -409,7 +409,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
               LocalVarWithAssignTree latestAssignmentPair =
                   getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-              checkAlwaysCall(latestAssignmentPair, getStoreBefore(node));
+              checkAlwaysCall(
+                  latestAssignmentPair,
+                  getStoreBefore(node),
+                  "variable overwritten by assignment " + node.getTree());
               newDefs.remove(latestAssignmentPair);
             }
 
@@ -476,7 +479,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
                   && !annotationMirrors.stream()
                       .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
                 // TODO why is this logic here and not in the visitor?
-                checker.reportError(n.getTree(), "missing.alwayscall", t.toString());
+                checker.reportError(
+                    n.getTree(),
+                    "missing.alwayscall",
+                    t.toString(),
+                    "never assigned to a variable");
               }
             }
 
@@ -513,17 +520,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           // If the successor block is the exit block or if the variable is going out of scope
           if (succ instanceof SpecialBlockImpl
               || succRegularStore.getValue(assign.localVar) == null) {
-
+            // technically the variable may be going out of scope before the method exit, but that
+            // doesn't seem to provide additional helpful information
+            String outOfScopeReason = "regular method exit";
             if (nodes.size() == 0) { // If the cur block is special or conditional block
-              checkAlwaysCall(assign, succRegularStore);
+              checkAlwaysCall(assign, succRegularStore, outOfScopeReason);
 
             } else { // If the cur block is Exception/Regular block then it checks AlwaysCall
               // annotation in the store right after the last node
               Node last = nodes.get(nodes.size() - 1);
               CFStore storeAfter = getStoreAfter(last);
-              AnnotatedTypeMirror lastAType =
-                  (last instanceof AssignmentNode) ? getAnnotatedType(last.getTree()) : null;
-              checkAlwaysCall(assign, storeAfter);
+              checkAlwaysCall(assign, storeAfter, outOfScopeReason);
             }
 
             toRemove.add(assign);
@@ -609,7 +616,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       for (Block tSucc : pair.getValue()) {
         if (tSucc instanceof SpecialBlock) {
           for (LocalVarWithAssignTree assignTree : defs) {
-            checkAlwaysCall(assignTree, storeAfter);
+            checkAlwaysCall(
+                assignTree,
+                storeAfter,
+                "possible exceptional exit due to " + exceptionBlock.getNode().getTree());
           }
         } else {
           propagate(new BlockWithLocals(tSucc, defs), visited, worklist);
@@ -742,7 +752,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * annotation of {@code assign.first} to do a subtyping check and reports an error if the check
    * fails.
    */
-  private void checkAlwaysCall(LocalVarWithAssignTree assign, CFStore store) {
+  private void checkAlwaysCall(
+      LocalVarWithAssignTree assign, CFStore store, String outOfScopeReason) {
     CFValue lhsCFValue = store.getValue(assign.localVar);
     String alwaysCallValue = getAlwaysCallValue(assign.localVar.getElement());
     AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
@@ -765,7 +776,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       if (!reportedAlwaysCallErrors.contains(assign)) {
         reportedAlwaysCallErrors.add(assign);
         checker.reportError(
-            assign.assignTree, "missing.alwayscall", assign.localVar.getType().toString());
+            assign.assignTree,
+            "missing.alwayscall",
+            assign.localVar.getType().toString(),
+            outOfScopeReason);
       }
     }
   }
