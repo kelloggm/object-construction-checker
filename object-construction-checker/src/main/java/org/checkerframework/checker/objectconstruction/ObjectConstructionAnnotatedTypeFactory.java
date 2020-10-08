@@ -29,6 +29,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
@@ -73,12 +74,12 @@ import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.ElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
-import org.checkerframework.framework.util.MultiGraphQualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
@@ -196,9 +197,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   @Override
-  public QualifierHierarchy createQualifierHierarchy(
-      final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
-    return new ObjectConstructionQualifierHierarchy(factory);
+  public QualifierHierarchy createQualifierHierarchy() {
+    return new ObjectConstructionQualifierHierarchy(
+        this.getSupportedTypeQualifiers(), this.elements);
   }
 
   private ReturnsReceiverAnnotatedTypeFactory getReturnsRcvrAnnotatedTypeFactory() {
@@ -357,7 +358,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
       for (VariableTree param : method.getParameters()) {
         Element paramElement = TreeUtils.elementFromDeclaration(param);
-        if (hasAlwaysCall(ElementUtils.getType(paramElement)) && paramElement.getAnnotation(Owning.class) != null) {
+        if (hasAlwaysCall(ElementUtils.getType(paramElement))
+            && paramElement.getAnnotation(Owning.class) != null) {
           init.add(new LocalVarWithAssignTree(new LocalVariable(paramElement), param));
         }
       }
@@ -790,7 +792,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       return false;
     }
     AnnotationMirror alwaysCallAnno = getDeclAnnotation(eType, AlwaysCall.class);
-    return (alwaysCallAnno!= null && !AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false).equals(""));
+    return (alwaysCallAnno != null
+        && !AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false)
+            .equals(""));
   }
 
   private class BlockWithLocals {
@@ -923,10 +927,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
    * declaratively defined subtyping relationships, like our @CalledMethods annotation.
    */
-  private class ObjectConstructionQualifierHierarchy extends MultiGraphQualifierHierarchy {
-    public ObjectConstructionQualifierHierarchy(
-        final MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
-      super(factory);
+  private class ObjectConstructionQualifierHierarchy extends ElementQualifierHierarchy {
+
+    protected ObjectConstructionQualifierHierarchy(
+        Collection<Class<? extends Annotation>> qualifierClasses, Elements elements) {
+      super(qualifierClasses, elements);
     }
 
     @Override
