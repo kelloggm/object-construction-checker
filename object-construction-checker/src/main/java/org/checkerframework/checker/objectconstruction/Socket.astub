@@ -139,7 +139,7 @@ public interface Closeable {
     void close() throws Exception;
 }
 
-package java.land;
+package java.lang;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
