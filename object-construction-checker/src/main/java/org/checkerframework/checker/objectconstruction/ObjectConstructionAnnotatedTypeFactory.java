@@ -357,7 +357,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
       for (VariableTree param : method.getParameters()) {
         Element paramElement = TreeUtils.elementFromDeclaration(param);
-        if (paramElement.getAnnotation(Owning.class) != null) {
+        if (hasAlwaysCall(ElementUtils.getType(paramElement)) && paramElement.getAnnotation(Owning.class) != null) {
           init.add(new LocalVarWithAssignTree(new LocalVariable(paramElement), param));
         }
       }
@@ -578,18 +578,18 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   boolean hasNotOwningAnno(Node node) {
     if (node instanceof MethodInvocationNode) {
-      MethodInvocationTree mit = ((MethodInvocationNode) node).getTree();
-      ExecutableElement ee = TreeUtils.elementFromUse(mit);
-      return (getDeclAnnotation(ee, NotOwning.class) != null);
+      MethodInvocationTree methodInvocationTree = ((MethodInvocationNode) node).getTree();
+      ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
+      return (getDeclAnnotation(executableElement, NotOwning.class) != null);
     }
     return false;
   }
 
   boolean isTransferOwnershipAtMethodInvocation(Node node) {
     if (node instanceof MethodInvocationNode) {
-      MethodInvocationTree mit = ((MethodInvocationNode) node).getTree();
-      ExecutableElement ee = TreeUtils.elementFromUse(mit);
-      return (getDeclAnnotation(ee, Owning.class) != null);
+      MethodInvocationTree methodInvocationTree = ((MethodInvocationNode) node).getTree();
+      ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
+      return (getDeclAnnotation(executableElement, Owning.class) != null);
     }
     return false;
   }
@@ -786,7 +786,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   boolean hasAlwaysCall(TypeMirror type) {
     TypeElement eType = TypesUtils.getTypeElement(type);
-    return ((eType != null) && (getDeclAnnotation(eType, AlwaysCall.class) != null));
+    if (eType == null) {
+      return false;
+    }
+    AnnotationMirror alwaysCallAnno = getDeclAnnotation(eType, AlwaysCall.class);
+    return (alwaysCallAnno!= null && !AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false).equals(""));
   }
 
   private class BlockWithLocals {

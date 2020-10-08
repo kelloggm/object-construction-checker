@@ -1,0 +1,46 @@
+package java.io;
+
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@AlwaysCall{""}
+class ByteArrayInputStream extends InputStream {
+    protected byte[] buf;
+    protected int pos;
+    protected int mark;
+    protected int count;
+    ByteArrayInputStream(byte[] arg0);
+    ByteArrayInputStream(byte[] arg0, int arg1, int arg2);
+    int read();
+    int read(byte[] arg0, int arg1, int arg2);
+    byte[] readAllBytes();
+    int readNBytes(byte[] arg0, int arg1, int arg2);
+    long transferTo(OutputStream arg0) throws IOException;
+    long skip(long arg0);
+    int available();
+    boolean markSupported();
+    void mark(int arg0);
+    void reset();
+    void close() throws IOException;
+}
+
+@AlwaysCall{""}
+class ByteArrayOutputStream extends OutputStream {
+    protected byte[] buf;
+    protected int count;
+    ByteArrayOutputStream();
+    ByteArrayOutputStream(int arg0);
+    void write(int arg0);
+    void write(byte[] arg0, int arg1, int arg2);
+    void writeBytes(byte[] arg0);
+    void writeTo(OutputStream arg0) throws IOException;
+    void reset();
+    byte[] toByteArray();
+    int size();
+    String toString();
+    String toString(String arg0) throws UnsupportedEncodingException;
+    String toString(Charset arg0);
+    @java.lang.Deprecated
+    String toString(int arg0);
+    void close() throws IOException;
+}

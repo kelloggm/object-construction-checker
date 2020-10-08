@@ -53,4 +53,23 @@ class ACOwning {
         // :: error: missing.alwayscall
         takeOwnership(new Foo(), makeFoo());
     }
+
+    @AlwaysCall("")
+    private class SubFoo extends Foo{
+
+        void test() {
+            SubFoo f = new SubFoo();
+        }
+
+        void test2() {
+            // :: error: missing.alwayscall
+            Foo f = new Foo();
+        }
+
+        void test3() {
+            // :: error: missing.alwayscall
+            Foo f = new SubFoo();
+        }
+
+    }
 }
