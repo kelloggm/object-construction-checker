@@ -144,7 +144,8 @@ package java.lang;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
-@AlwaysCall("close")
+// This produces too much noise, for now. Investigate it later.
+// @AlwaysCall("close")
 public interface AutoCloseable {
     void close() throws Exception;
 }
