@@ -35,7 +35,7 @@ dependencies {
     implementation 'com.github.javaparser:javaparser-core:3.15.11'
 
     // Use JUnit test framework
-    testImplementation "junit:junit:4.13"
+    testImplementation "junit:junit:4.13.1"
 
     // CF testing infrastructure
     testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
