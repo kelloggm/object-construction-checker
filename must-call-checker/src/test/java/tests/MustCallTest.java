@@ -5,18 +5,18 @@ import java.util.List;
 import org.checkerframework.framework.test.CheckerFrameworkPerDirectoryTest;
 import org.junit.runners.Parameterized.Parameters;
 
-public class AlwaysCallTest extends CheckerFrameworkPerDirectoryTest {
-  public AlwaysCallTest(List<File> testFiles) {
+public class MustCallTest extends CheckerFrameworkPerDirectoryTest {
+  public MustCallTest(List<File> testFiles) {
     super(
         testFiles,
-        org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
-        "alwayscall",
+        org.checkerframework.checker.mustcall.MustCallChecker.class,
+        "mustcall",
         "-Anomsgtext",
         "-nowarn");
   }
 
   @Parameters
   public static String[] getTestDirs() {
-    return new String[] {"alwayscall"};
+    return new String[] {"mustcall"};
   }
 }

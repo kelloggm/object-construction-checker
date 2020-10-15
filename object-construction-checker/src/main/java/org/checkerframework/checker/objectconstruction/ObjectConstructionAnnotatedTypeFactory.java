@@ -31,12 +31,13 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupportUtils;
+import org.checkerframework.checker.objectconstruction.framework.FrameworkSupportUtils.Framework;
 import org.checkerframework.checker.objectconstruction.framework.LombokSupport;
-import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
@@ -124,14 +125,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       "org.checkerframework.checker.builder.qual.NotCalledMethods";
 
   ////
-  // fields for @AlwaysCall checking
+  // fields for @MustCall checking
   ////
 
   /** By default, should we transfer ownership to the caller when a variable is returned? */
   public boolean transferOwnershipAtReturn = true;
 
-  /** {@code @AlwaysCall} errors reported thus far, to avoid duplicates */
-  private final Set<LocalVarWithAssignTree> reportedAlwaysCallErrors = new HashSet<>();
+  /** {@code @MustCall} errors reported thus far, to avoid duplicates */
+  private final Set<LocalVarWithAssignTree> reportedMustCallErrors = new HashSet<>();
 
   /**
    * Default constructor matching super. Should be called automatically.
@@ -142,7 +143,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     super(checker);
     TOP = AnnotationBuilder.fromClass(elements, CalledMethodsTop.class);
     BOTTOM = AnnotationBuilder.fromClass(elements, CalledMethodsBottom.class);
-    EnumSet<FrameworkSupportUtils.Framework> frameworkSet =
+    EnumSet<Framework> frameworkSet =
         FrameworkSupportUtils.getFrameworkSet(
             checker.getOption(ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS));
     frameworkSupports = new ArrayList<FrameworkSupport>();
@@ -335,13 +336,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   @Override
   public void postAnalyze(ControlFlowGraph cfg) {
-    alwaysCallTraverse(cfg);
+    mustCallTraverse(cfg);
     super.postAnalyze(cfg);
   }
 
   /**
    * This function traverses the given method CFG and reports an error if "f" isn't called on any
-   * local variable node whose class type has @AlwaysCall(f) annotation before the variable goes out
+   * local variable node whose class type has @MustCall(f) annotation before the variable goes out
    * of scope. The traverse is a standard worklist algorithm. Worklist and visited entries are
    * BlockWithLocals objects that contain a set of (LocalVariableNode, Tree) pairs for each block. A
    * pair (n, T) represents a local variable node "n" and the latest AssignmentTree "T" that assigns
@@ -349,7 +350,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    *
    * @param cfg the control flow graph of a method
    */
-  private void alwaysCallTraverse(ControlFlowGraph cfg) {
+  private void mustCallTraverse(ControlFlowGraph cfg) {
     // add any owning parameters to initial set
     Set<LocalVarWithAssignTree> init = new HashSet<>();
     UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
@@ -358,7 +359,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
       for (VariableTree param : method.getParameters()) {
         Element paramElement = TreeUtils.elementFromDeclaration(param);
-        if (hasAlwaysCall(ElementUtils.getType(paramElement))
+        if (hasMustCall(ElementUtils.getType(paramElement))
             && paramElement.getAnnotation(Owning.class) != null) {
           init.add(new LocalVarWithAssignTree(new LocalVariable(paramElement), param));
         }
@@ -386,9 +387,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
           if (receiver instanceof LocalVariableNode
               && isVarInDefs(newDefs, (LocalVariableNode) receiver)) {
-            if (getAlwaysCallValue(((LocalVariableNode) receiver).getElement())
+            if (getMustCallValue(((LocalVariableNode) receiver).getElement())
                 .equals(method.getSimpleName().toString())) {
-              // If the method called on the receiver is the same as receiver's @AlwaysCall value,
+              // If the method called on the receiver is the same as receiver's @MustCall value,
               // then we can remove the receiver from the newDefs
               newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) receiver));
             }
@@ -404,14 +405,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
 
           if (lhs instanceof LocalVariableNode
-              && hasAlwaysCall(lhs.getType())
+              && hasMustCall(lhs.getType())
               && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
 
             // Reassignment to the lhs
             if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
               LocalVarWithAssignTree latestAssignmentPair =
                   getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-              checkAlwaysCall(
+              checkMustCall(
                   latestAssignmentPair,
                   getStoreBefore(node),
                   "variable overwritten by assignment " + node.getTree());
@@ -477,13 +478,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               VariableElement formal = formals.get(i);
               Set<AnnotationMirror> annotationMirrors = getDeclAnnotations(formal);
               TypeMirror t = TreeUtils.typeOf(n.getTree());
-              if (hasAlwaysCall(t)
+              if (hasMustCall(t)
                   && !annotationMirrors.stream()
                       .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
                 // TODO why is this logic here and not in the visitor?
                 checker.reportError(
                     n.getTree(),
-                    "missing.alwayscall",
+                    "required.method.not.called",
                     t.toString(),
                     "never assigned to a variable");
               }
@@ -526,13 +527,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             // doesn't seem to provide additional helpful information
             String outOfScopeReason = "regular method exit";
             if (nodes.size() == 0) { // If the cur block is special or conditional block
-              checkAlwaysCall(assign, succRegularStore, outOfScopeReason);
+              checkMustCall(assign, succRegularStore, outOfScopeReason);
 
-            } else { // If the cur block is Exception/Regular block then it checks AlwaysCall
+            } else { // If the cur block is Exception/Regular block then it checks MustCall
               // annotation in the store right after the last node
               Node last = nodes.get(nodes.size() - 1);
               CFStore storeAfter = getStoreAfter(last);
-              checkAlwaysCall(assign, storeAfter, outOfScopeReason);
+              checkMustCall(assign, storeAfter, outOfScopeReason);
             }
 
             toRemove.add(assign);
@@ -597,7 +598,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Performs {@code @AlwaysCall} checking for exceptional successors of a block.
+   * Performs {@code @MustCall} checking for exceptional successors of a block.
    *
    * @param exceptionBlock the block with exceptional successors.
    * @param defs current locals to check
@@ -618,7 +619,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       for (Block tSucc : pair.getValue()) {
         if (tSucc instanceof SpecialBlock) {
           for (LocalVarWithAssignTree assignTree : defs) {
-            checkAlwaysCall(
+            checkMustCall(
                 assignTree,
                 storeAfter,
                 "possible exceptional exit due to " + exceptionBlock.getNode().getTree());
@@ -733,32 +734,30 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Returns the String value of @AlwaysCall annotation declared on the class type of {@code
-   * element}. Returns null if the class type of {@code element} doesn't have @AlwaysCall
-   * annotation.
+   * Returns the String value of @MustCall annotation declared on the class type of {@code element}.
+   * Returns null if the class type of {@code element} doesn't have @MustCall annotation.
    */
   @Nullable
-  String getAlwaysCallValue(Element element) {
+  String getMustCallValue(Element element) {
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
-    AnnotationMirror alwaysCallAnnotation = getDeclAnnotation(eType, AlwaysCall.class);
+    AnnotationMirror mustCallAnnotation = getDeclAnnotation(eType, MustCall.class);
 
-    return (alwaysCallAnnotation != null)
-        ? AnnotationUtils.getElementValue(alwaysCallAnnotation, "value", String.class, false)
+    return (mustCallAnnotation != null)
+        ? AnnotationUtils.getElementValue(mustCallAnnotation, "value", String.class, false)
         : null;
   }
 
   /**
-   * Creates the appropriate @CalledMethods annotation that corresponds to the @AlwaysCall
-   * annotation declared on the class type of {@code assign.first}. Then, it gets @CalledMethod
-   * annotation of {@code assign.first} to do a subtyping check and reports an error if the check
-   * fails.
+   * Creates the appropriate @CalledMethods annotation that corresponds to the @MustCall annotation
+   * declared on the class type of {@code assign.first}. Then, it gets @CalledMethod annotation of
+   * {@code assign.first} to do a subtyping check and reports an error if the check fails.
    */
-  private void checkAlwaysCall(
+  private void checkMustCall(
       LocalVarWithAssignTree assign, CFStore store, String outOfScopeReason) {
     CFValue lhsCFValue = store.getValue(assign.localVar);
-    String alwaysCallValue = getAlwaysCallValue(assign.localVar.getElement());
-    AnnotationMirror dummyCMAnno = createCalledMethods(alwaysCallValue);
+    String mustCallValue = getMustCallValue(assign.localVar.getElement());
+    AnnotationMirror dummyCMAnno = createCalledMethods(mustCallValue);
 
     boolean report = true;
 
@@ -775,26 +774,25 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
 
     if (report) {
-      if (!reportedAlwaysCallErrors.contains(assign)) {
-        reportedAlwaysCallErrors.add(assign);
+      if (!reportedMustCallErrors.contains(assign)) {
+        reportedMustCallErrors.add(assign);
         checker.reportError(
             assign.assignTree,
-            "missing.alwayscall",
+            "required.method.not.called",
             assign.localVar.getType().toString(),
             outOfScopeReason);
       }
     }
   }
 
-  boolean hasAlwaysCall(TypeMirror type) {
+  boolean hasMustCall(TypeMirror type) {
     TypeElement eType = TypesUtils.getTypeElement(type);
     if (eType == null) {
       return false;
     }
-    AnnotationMirror alwaysCallAnno = getDeclAnnotation(eType, AlwaysCall.class);
-    return (alwaysCallAnno != null
-        && !AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false)
-            .equals(""));
+    AnnotationMirror mustCallAnno = getDeclAnnotation(eType, MustCall.class);
+    return (mustCallAnno != null
+        && !AnnotationUtils.getElementValue(mustCallAnno, "value", String.class, false).equals(""));
   }
 
   private class BlockWithLocals {

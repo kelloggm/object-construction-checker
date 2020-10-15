@@ -18,8 +18,8 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
-import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
@@ -69,15 +69,18 @@ public class ObjectConstructionVisitor
             || isTransferOwnershipAtMethodInvocation(node))) {
       TypeMirror returnType = TreeUtils.typeOf(node);
 
-      if (atypeFactory.hasAlwaysCall(returnType)) {
-        String alwaysCallAnnoVal = getAlwaysCallValue(returnType);
-        AnnotationMirror dummyCMAnno = atypeFactory.createCalledMethods(alwaysCallAnnoVal);
+      if (atypeFactory.hasMustCall(returnType)) {
+        String mustCallAnnoVal = getMustCallValue(returnType);
+        AnnotationMirror dummyCMAnno = atypeFactory.createCalledMethods(mustCallAnnoVal);
         AnnotatedTypeMirror annoType = atypeFactory.getAnnotatedType(node);
         AnnotationMirror cmAnno = annoType.getAnnotationInHierarchy(atypeFactory.TOP);
 
         if (!atypeFactory.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
           checker.reportError(
-              node, "missing.alwayscall", returnType.toString(), "never assigned to a variable");
+              node,
+              "required.method.not.called",
+              returnType.toString(),
+              "never assigned to a variable");
         }
       }
     }
@@ -108,20 +111,20 @@ public class ObjectConstructionVisitor
   public Void visitNewClass(NewClassTree node, Void p) {
     if (!isAssignedToLocal(this.getCurrentPath())) {
       TypeMirror type = TreeUtils.typeOf(node);
-      if (atypeFactory.hasAlwaysCall(type)) {
+      if (atypeFactory.hasMustCall(type)) {
         checker.reportError(
-            node, "missing.alwayscall", type.toString(), "never assigned to a variable");
+            node, "required.method.not.called", type.toString(), "never assigned to a variable");
       }
     }
     return super.visitNewClass(node, p);
   }
 
-  private String getAlwaysCallValue(TypeMirror type) {
+  private String getMustCallValue(TypeMirror type) {
     TypeElement eType = TypesUtils.getTypeElement(type);
-    AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
+    AnnotationMirror mustCallAnno = atypeFactory.getDeclAnnotation(eType, MustCall.class);
 
-    return (alwaysCallAnno != null)
-        ? AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false)
+    return (mustCallAnno != null)
+        ? AnnotationUtils.getElementValue(mustCallAnno, "value", String.class, false)
         : null;
   }
 

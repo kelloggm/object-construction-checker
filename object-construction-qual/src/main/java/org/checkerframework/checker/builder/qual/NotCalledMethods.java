@@ -5,11 +5,11 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop;
 
 /**
  * An annotation speculatively used by Lombok's lombok.config checkerframework = true option. It has
- * no meaning to the Object Construction Checker, which treats it as {@link
- * org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop}.
+ * no meaning to the Object Construction Checker, which treats it as {@link CalledMethodsTop}.
  *
  * <p>A similar annotation might be supported in the future.
  */

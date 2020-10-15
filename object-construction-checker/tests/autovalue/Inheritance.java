@@ -1,5 +1,5 @@
 import com.google.auto.value.AutoValue;
-import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.This;
 
 class Inheritance {

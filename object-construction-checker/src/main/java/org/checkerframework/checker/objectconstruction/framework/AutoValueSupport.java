@@ -25,6 +25,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.objectconstruction.ObjectConstructionAnnotatedTypeFactory;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.util.AnnotatedTypes;
@@ -45,9 +46,7 @@ public class AutoValueSupport implements FrameworkSupport {
   }
 
   /**
-   * For frameworks to add any necessary @{@link
-   * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotation to a constructor
-   * call
+   * For frameworks to add any necessary @{@link CalledMethods} annotation to a constructor call
    *
    * @param tree AST for the call
    * @param type type of the call expression
@@ -84,8 +83,7 @@ public class AutoValueSupport implements FrameworkSupport {
 
   /**
    * For {@code build} methods on {@code Builder} types, the framework support should determine the
-   * required properties and add a corresponding {@link
-   * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotation to the receiver.
+   * required properties and add a corresponding {@link CalledMethods} annotation to the receiver.
    *
    * @param t a method that is possibly the {@code build} method for a builder. The only guaranteed
    *     condition is that the enclosing class for the method is itself an inner class.

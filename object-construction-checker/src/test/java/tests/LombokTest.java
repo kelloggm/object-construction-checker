@@ -2,6 +2,7 @@ package tests;
 
 import java.io.File;
 import java.util.List;
+import org.checkerframework.checker.objectconstruction.ObjectConstructionChecker;
 import org.checkerframework.framework.test.CheckerFrameworkPerDirectoryTest;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -28,7 +29,7 @@ public class LombokTest extends CheckerFrameworkPerDirectoryTest {
   public LombokTest(List<File> testFiles) {
     super(
         testFiles,
-        org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
+        ObjectConstructionChecker.class,
         "lombok",
         "-Anomsgtext",
         "-nowarn",

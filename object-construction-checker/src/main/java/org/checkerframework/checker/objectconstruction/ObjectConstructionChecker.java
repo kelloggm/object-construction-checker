@@ -20,7 +20,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
   ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
 })
-@StubFiles({"Socket.astub", "NotOwning.astub", "Stream.astub", "AlwaysCallEmpty.astub"})
+@StubFiles({"Socket.astub", "NotOwning.astub", "Stream.astub", "NoObligationStreams.astub"})
 public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String USE_VALUE_CHECKER = "useValueChecker";
@@ -67,8 +67,8 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
         "predicate.invalid",
         "An unparseable predicate was found in an annotation. Predicates must be produced by this grammar: S --> method name | (S) | S && S | S || S. The message from the evaluator was: %s \\n");
     messages.setProperty(
-        "missing.alwayscall",
-        "@AlwaysCall method for variable/expression not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
+        "required.method.not.called",
+        "@MustCall method for variable/expression not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
     return messages;
   }
 

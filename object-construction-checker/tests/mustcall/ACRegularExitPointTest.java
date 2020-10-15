@@ -1,11 +1,11 @@
-import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import java.util.function.Function;
 import java.io.IOException;
 
 class ACRegularExitPointTest {
 
-    @AlwaysCall("a")
+    @MustCall("a")
     class Foo {
         void a() {}
         @This Foo b() {
@@ -40,21 +40,21 @@ class ACRegularExitPointTest {
 
     void makeFooFinalizeWrong(){
         Foo m;
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         m = new Foo();
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f = new Foo();
         f.b();
     }
 
     void testStoringInLocalWrong() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo foo = makeFoo();
     }
 
     void testStoringInLocalWrong2(){
         Foo f;
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         f = makeFoo();
     }
 
@@ -64,7 +64,7 @@ class ACRegularExitPointTest {
     }
 
     void testStoringInLocalWrong3() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo foo = new Foo();
     }
 
@@ -85,7 +85,7 @@ class ACRegularExitPointTest {
     void innerFuncWrong(Foo f){
         Runnable r = new Runnable(){
             public void run(){
-                // :: error: missing.alwayscall
+                // :: error: required.method.not.called
                 Foo g = new Foo();
             };
         };
@@ -109,7 +109,7 @@ class ACRegularExitPointTest {
         Foo f = makeFoo();
         f.a();
         Function<Foo, @CalledMethods({"a"}) Foo> innerfunc = st ->{
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             Foo fn1 = new Foo();
             Foo fn2 = makeFoo();
             fn2.a();
@@ -126,22 +126,22 @@ class ACRegularExitPointTest {
             Foo f1 = new Foo();
             f1.a();
         } else {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             Foo f2 = new Foo();
         }
 
     }
 
     Foo ifElseWithReturnExit(boolean b, boolean c) {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f1 = makeFoo();
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f3 = new Foo();
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f4 = new Foo();
 
         if (b) {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             Foo f2 = new Foo();
             if(c){
                 f4.a();
@@ -150,7 +150,7 @@ class ACRegularExitPointTest {
             }
             return f1;
         }else {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             Foo f2 = new Foo();
             f2 = new Foo();
             f2.a();
@@ -166,28 +166,28 @@ class ACRegularExitPointTest {
             f1 = new Foo();
             f1.a();
         } else {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             f2 = new Foo();
         }
     }
 
     void ifElseWithInitialization(boolean b) {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f2 = new Foo();
         Foo f11 = null;
         if (b) {
             f11 = makeFoo();
             f11.a();
         } else {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             f2 = new Foo();
         }
     }
 
     void ifWithInitialization(boolean b) {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f1 = new Foo();
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f2 = new Foo();
         if (b) {
             f1.a();
@@ -209,7 +209,7 @@ class ACRegularExitPointTest {
             f1 = new Foo();
             f1.a();
         } else {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             f2 = new Foo();
         }
     }
@@ -219,17 +219,17 @@ class ACRegularExitPointTest {
     void testLoop() {
         Foo f = null;
         while (true) {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             f = new Foo();
         }
     }
 
 
     void overWrittingVarInLoop() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f = new Foo();
         while (true) {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             f = new Foo();
         }
     }
@@ -239,7 +239,7 @@ class ACRegularExitPointTest {
         Foo f = null;
         while (true) {
             if (b) {
-                // :: error: missing.alwayscall
+                // :: error: required.method.not.called
                 f = new Foo();
             } else {
                 f = new Foo();
@@ -250,7 +250,7 @@ class ACRegularExitPointTest {
 
 
     void replaceVarWithNull(boolean b, boolean c) {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f = new Foo();
         if (b) {
             f = null;
@@ -265,7 +265,7 @@ class ACRegularExitPointTest {
     void ownershipTransfer(){
         Foo f1 = new Foo();
         //TODO this is a false positive but we're not going to handle it for now
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f2 = f1;
         Foo f3 = f2.b();
         f3.a();
@@ -298,12 +298,12 @@ class ACRegularExitPointTest {
     }
 
     void testSubFoo() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f = new SubFoo();
     }
 
     void testSubFoo2() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         SubFoo f = new SubFoo();
     }
 

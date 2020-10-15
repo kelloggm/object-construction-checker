@@ -16,6 +16,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.objectconstruction.ObjectConstructionAnnotatedTypeFactory;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -63,8 +64,7 @@ public class LombokSupport implements FrameworkSupport {
 
   /**
    * For {@code build} methods on {@code Builder} types, the framework support should determine the
-   * required properties and add a corresponding {@link
-   * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotation to the receiver.
+   * required properties and add a corresponding {@link CalledMethods} annotation to the receiver.
    *
    * @param t a method that is possibly the {@code build} method for a builder. The only guaranteed
    *     condition is that the enclosing class for the method is itself an inner class.

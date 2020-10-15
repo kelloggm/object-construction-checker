@@ -1,0 +1,74 @@
+plugins {
+    // Apply the java plugin to add support for Java
+    id 'java-library'
+}
+
+sourceCompatibility = 1.8
+
+configurations {
+    // for putting Error Prone javac in bootclasspath for running tests
+    errorproneJavac
+}
+
+dependencies {
+
+    implementation "org.checkerframework:checker:${versions.checkerFramework}"
+    implementation "com.google.guava:guava:29.0-jre"
+    compileOnly "com.google.errorprone:javac:9+181-r4173-1"
+
+    // If / when other code depends on this checker, we will likely want to make these
+    // api dependencies
+    implementation project(":must-call-qual")
+
+    // Use JUnit test framework
+    testImplementation "junit:junit:4.13"
+
+    // CF testing infrastructure
+    testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
+
+    errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
+
+}
+
+tasks.withType(JavaCompile).all {
+    options.compilerArgs.add("-Xlint:all")
+}
+
+// run google java format
+spotless {
+    // uncomment this line to temporarily disable spotless (i.e. when debugging)
+    // enforceCheck = false
+    java {
+        googleJavaFormat()
+    }
+}
+
+test {
+    inputs.files("tests/mustcall")
+    if (!JavaVersion.current().java9Compatible) {
+        jvmArgs "-Xbootclasspath/p:${configurations.errorproneJavac.asPath}"
+    }
+}
+
+clean.doFirst {
+    delete "${rootDir}/must-call-checker/tests/build/"
+}
+
+apply from: rootProject.file("gradle-mvn-push.gradle")
+
+task printClasspath {
+    doLast {
+        println sourceSets.main.runtimeClasspath.asPath
+    }
+}
+
+apply plugin: 'java'
+
+sourceSets {
+    main {
+        resources {
+            // Stub files, message.properties, etc.
+            srcDirs += ['src/main/java']
+        }
+    }
+}

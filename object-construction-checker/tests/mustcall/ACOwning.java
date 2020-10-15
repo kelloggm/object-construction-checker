@@ -1,9 +1,9 @@
-import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 class ACOwning {
 
-    @AlwaysCall("a")
+    @MustCall("a")
     static class Foo {
         void a() {}
     }
@@ -18,16 +18,16 @@ class ACOwning {
 
     static void noOwnership(Foo foo) {}
 
-    // :: error: missing.alwayscall
+    // :: error: required.method.not.called
     static void takeOwnershipWrong(@Owning Foo foo) {
 
     }
 
     static void ownershipInCallee() {
         Foo f = new Foo();
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         takeOwnership(f, new Foo());
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo g = new Foo();
         noOwnership(g);
     }
@@ -44,17 +44,17 @@ class ACOwning {
 
 
     void owningAtReturnTest() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo f = owningAtReturn();
     }
 
 
     void ownershipTest(){
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         takeOwnership(new Foo(), makeFoo());
     }
 
-    @AlwaysCall("")
+    @MustCall({})
     private class SubFoo extends Foo{
 
         void test() {
@@ -62,12 +62,12 @@ class ACOwning {
         }
 
         void test2() {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             Foo f = new Foo();
         }
 
         void test3() {
-            // :: error: missing.alwayscall
+            // :: error: required.method.not.called
             Foo f = new SubFoo();
         }
 

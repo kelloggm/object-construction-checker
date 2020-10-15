@@ -1,0 +1,15 @@
+package java.io;
+
+import org.checkerframework.checker.mustcall.qual.*;
+
+@MustCall({})
+class ByteArrayInputStream { }
+
+@MustCall({})
+class ByteArrayOutputStream { }
+
+@MustCall({})
+class StringReader { }
+
+@MustCall({})
+class StringWriter { }

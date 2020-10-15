@@ -2,7 +2,7 @@
 // No one should ever write that annotation, but Lombok generates it as of version 1.18.10.
 
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
-import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.mustcall.qual.*;
 
 class OldInherited {
     @ReturnsReceiver

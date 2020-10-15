@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation indicating ownership should be transferred to the parameter or field, for the purposes
- * of AlwaysCall checking.
+ * of MustCall checking.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})

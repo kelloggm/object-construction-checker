@@ -27,6 +27,10 @@ dependencies {
     // api dependencies
     implementation project(":object-construction-qual")
 
+    // For MustCall support
+    implementation project(":must-call-qual")
+    implementation project(":must-call-checker")
+
     // For the @CalledMethodsPredicate evaluation
     implementation "org.springframework:spring-expression:5.2.8.RELEASE"
 

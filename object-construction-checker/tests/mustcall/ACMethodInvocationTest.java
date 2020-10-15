@@ -1,10 +1,10 @@
-import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 
 class ACMethodInvocationTest {
 
-    @AlwaysCall("a")
+    @MustCall("a")
     class Foo {
         void a() {}
         @This Foo b() {
@@ -34,24 +34,24 @@ class ACMethodInvocationTest {
     //TODO
     void CallMethodsInSequence() {
         // won't pass yet due to dataflow issue
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         makeFoo().a();
     }
 
     //TODO
     void CallMethodsInSequence2() {
         // won't pass yet due to dataflow issue
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         makeFoo().b().a();
     }
 
     void testFluentAPIWrong() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         makeFoo().b();
     }
 
     void testFluentAPIWrong2() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         makeFoo();
     }
 
@@ -61,12 +61,12 @@ class ACMethodInvocationTest {
 
 
     void invokeMethodWithCallBWrong() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         makeFooFinalize2();
     }
 
     void invokeMethodAndCallCWrong() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         makeFoo().c();
     }
 
@@ -79,9 +79,9 @@ class ACMethodInvocationTest {
     Foo testField3;
 
     void testStoringInField() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         testField1 = makeFoo();
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         testField2 = new Foo();
 
         testField3 = makeFooFinalize();

@@ -9,6 +9,8 @@
 
 rootProject.name = 'object-construction-checker'
 
+include ':must-call-checker'
+include ':must-call-qual'
 include ':object-construction-checker'
 include ':object-construction-qual'
 include ':test-lib-java'

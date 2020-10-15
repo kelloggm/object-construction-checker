@@ -4,6 +4,8 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import java.util.Collection;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
+import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.javacutil.BugInCF;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
@@ -21,9 +23,8 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 /**
  * This class contains static methods that parse and evaluate the arguments of {@link
- * org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate} annotations, so that
- * they can be compared to each other and to {@link
- * org.checkerframework.checker.objectconstruction.qual.CalledMethods} annotations.
+ * CalledMethodsPredicate} annotations, so that they can be compared to each other and to {@link
+ * CalledMethods} annotations.
  */
 public class CalledMethodsPredicateEvaluator {
 
