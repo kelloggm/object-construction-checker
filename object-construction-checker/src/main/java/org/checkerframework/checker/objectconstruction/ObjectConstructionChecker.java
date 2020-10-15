@@ -2,6 +2,7 @@ package org.checkerframework.checker.objectconstruction;
 
 import java.util.LinkedHashSet;
 import java.util.Properties;
+import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
 import org.checkerframework.common.value.ValueChecker;
@@ -19,6 +20,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   ObjectConstructionChecker.USE_VALUE_CHECKER,
   ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
   ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
+  ObjectConstructionChecker.CHECK_MUST_CALL
 })
 @StubFiles({"Socket.astub", "NotOwning.astub", "Stream.astub", "NoObligationStreams.astub"})
 public class ObjectConstructionChecker extends BaseTypeChecker {
@@ -30,6 +32,8 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
   public static final String COUNT_FRAMEWORK_BUILD_CALLS = "countFrameworkBuildCalls";
 
   public static final String DISABLED_FRAMEWORK_SUPPORTS = "disableFrameworkSupports";
+
+  public static final String CHECK_MUST_CALL = "checkMustCall";
 
   public static final String LOMBOK_SUPPORT = "LOMBOK";
 
@@ -49,6 +53,11 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     if (this.processingEnv.getOptions().containsKey(USE_VALUE_CHECKER)) {
       checkers.add(ValueChecker.class);
     }
+
+    if (this.processingEnv.getOptions().containsKey(CHECK_MUST_CALL)) {
+      checkers.add(MustCallChecker.class);
+    }
+
     return checkers;
   }
 

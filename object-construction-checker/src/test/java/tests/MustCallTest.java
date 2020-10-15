@@ -8,7 +8,13 @@ import org.junit.runners.Parameterized.Parameters;
 
 public class MustCallTest extends CheckerFrameworkPerDirectoryTest {
   public MustCallTest(List<File> testFiles) {
-    super(testFiles, ObjectConstructionChecker.class, "mustcall", "-Anomsgtext", "-nowarn");
+    super(
+        testFiles,
+        ObjectConstructionChecker.class,
+        "mustcall",
+        "-Anomsgtext",
+        "-AcheckMustCall",
+        "-nowarn");
   }
 
   @Parameters

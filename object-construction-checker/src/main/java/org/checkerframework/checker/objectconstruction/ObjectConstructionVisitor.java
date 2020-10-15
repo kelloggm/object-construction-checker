@@ -15,10 +15,8 @@ import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
@@ -31,7 +29,6 @@ import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.TypesUtils;
 import org.springframework.expression.spel.SpelParseException;
 
 public class ObjectConstructionVisitor
@@ -63,15 +60,17 @@ public class ObjectConstructionVisitor
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
 
-    if (!isAssignedToLocal(this.getCurrentPath())
+    if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)
+        && !isAssignedToLocal(this.getCurrentPath())
         && !atypeFactory.returnsThis(node)
         && ((atypeFactory.transferOwnershipAtReturn && !hasNotOwningAnno(node))
             || isTransferOwnershipAtMethodInvocation(node))) {
-      TypeMirror returnType = TreeUtils.typeOf(node);
 
-      if (atypeFactory.hasMustCall(returnType)) {
-        String mustCallAnnoVal = getMustCallValue(returnType);
-        AnnotationMirror dummyCMAnno = atypeFactory.createCalledMethods(mustCallAnnoVal);
+      if (atypeFactory.hasMustCall(node)) {
+        TypeMirror returnType = TreeUtils.typeOf(node);
+        List<String> mustCallAnnoVal = atypeFactory.getMustCallValue(node);
+        AnnotationMirror dummyCMAnno =
+            atypeFactory.createCalledMethods(mustCallAnnoVal.toArray(new String[0]));
         AnnotatedTypeMirror annoType = atypeFactory.getAnnotatedType(node);
         AnnotationMirror cmAnno = annoType.getAnnotationInHierarchy(atypeFactory.TOP);
 
@@ -109,23 +108,15 @@ public class ObjectConstructionVisitor
 
   @Override
   public Void visitNewClass(NewClassTree node, Void p) {
-    if (!isAssignedToLocal(this.getCurrentPath())) {
-      TypeMirror type = TreeUtils.typeOf(node);
-      if (atypeFactory.hasMustCall(type)) {
+    if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)
+        && !isAssignedToLocal(this.getCurrentPath())) {
+      if (atypeFactory.hasMustCall(node)) {
+        TypeMirror type = TreeUtils.typeOf(node);
         checker.reportError(
             node, "required.method.not.called", type.toString(), "never assigned to a variable");
       }
     }
     return super.visitNewClass(node, p);
-  }
-
-  private String getMustCallValue(TypeMirror type) {
-    TypeElement eType = TypesUtils.getTypeElement(type);
-    AnnotationMirror mustCallAnno = atypeFactory.getDeclAnnotation(eType, MustCall.class);
-
-    return (mustCallAnno != null)
-        ? AnnotationUtils.getElementValue(mustCallAnno, "value", String.class, false)
-        : null;
   }
 
   private boolean isAssignedToLocal(final TreePath treePath) {
@@ -152,8 +143,7 @@ public class ObjectConstructionVisitor
       case ASSIGNMENT: // check if the left hand is a local variable
         final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
         return (lhs instanceof JCTree.JCIdent)
-            ? (((JCTree.JCIdent) lhs).sym.getKind().equals(LOCAL_VARIABLE))
-            : false;
+            && (((JCTree.JCIdent) lhs).sym.getKind().equals(LOCAL_VARIABLE));
       case METHOD_INVOCATION:
       case NEW_CLASS:
       case RETURN:

@@ -31,6 +31,8 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.builder.qual.ReturnsReceiver;
+import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
+import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.framework.AutoValueSupport;
@@ -51,6 +53,7 @@ import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
 import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.ValueAnnotatedTypeFactory;
 import org.checkerframework.common.value.ValueChecker;
+import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.common.value.qual.StringVal;
 import org.checkerframework.dataflow.analysis.FlowExpressions.LocalVariable;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
@@ -87,7 +90,6 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -336,7 +338,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   @Override
   public void postAnalyze(ControlFlowGraph cfg) {
-    mustCallTraverse(cfg);
+    if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)) {
+      mustCallTraverse(cfg);
+    }
     super.postAnalyze(cfg);
   }
 
@@ -359,8 +363,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
       for (VariableTree param : method.getParameters()) {
         Element paramElement = TreeUtils.elementFromDeclaration(param);
-        if (hasMustCall(ElementUtils.getType(paramElement))
-            && paramElement.getAnnotation(Owning.class) != null) {
+        if (hasMustCall(param) && paramElement.getAnnotation(Owning.class) != null) {
           init.add(new LocalVarWithAssignTree(new LocalVariable(paramElement), param));
         }
       }
@@ -405,7 +408,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
 
           if (lhs instanceof LocalVariableNode
-              && hasMustCall(lhs.getType())
+              && hasMustCall(lhs.getTree())
               && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
 
             // Reassignment to the lhs
@@ -478,7 +481,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               VariableElement formal = formals.get(i);
               Set<AnnotationMirror> annotationMirrors = getDeclAnnotations(formal);
               TypeMirror t = TreeUtils.typeOf(n.getTree());
-              if (hasMustCall(t)
+              if (hasMustCall(n.getTree())
                   && !annotationMirrors.stream()
                       .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
                 // TODO why is this logic here and not in the visitor?
@@ -510,7 +513,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
       }
 
       if (curBlockLocals.block.getType() == Block.BlockType.EXCEPTION_BLOCK) {
-        checkACInExceptionSuccessors(
+        checkMustCallInExceptionSuccessors(
             (ExceptionBlockImpl) curBlockLocals.block, newDefs, visited, worklist);
       }
 
@@ -605,7 +608,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * @param visited already-visited state
    * @param worklist current worklist
    */
-  private void checkACInExceptionSuccessors(
+  private void checkMustCallInExceptionSuccessors(
       ExceptionBlock exceptionBlock,
       Set<LocalVarWithAssignTree> defs,
       Set<BlockWithLocals> visited,
@@ -735,17 +738,30 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
   /**
    * Returns the String value of @MustCall annotation declared on the class type of {@code element}.
-   * Returns null if the class type of {@code element} doesn't have @MustCall annotation.
    */
-  @Nullable
-  String getMustCallValue(Element element) {
-    TypeMirror type = element.asType();
-    TypeElement eType = TypesUtils.getTypeElement(type);
-    AnnotationMirror mustCallAnnotation = getDeclAnnotation(eType, MustCall.class);
+  List<String> getMustCallValue(Element element) {
+    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
+        getTypeFactoryOfSubchecker(MustCallChecker.class);
+    AnnotationMirror mustCallAnnotation =
+        mustCallAnnotatedTypeFactory.getAnnotatedType(element).getAnnotation(MustCall.class);
 
     return (mustCallAnnotation != null)
-        ? AnnotationUtils.getElementValue(mustCallAnnotation, "value", String.class, false)
-        : null;
+        ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
+        : new ArrayList<>(0);
+  }
+
+  /**
+   * Returns the String value of @MustCall annotation declared on the class type of {@code tree}.
+   */
+  List<String> getMustCallValue(Tree tree) {
+    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
+        getTypeFactoryOfSubchecker(MustCallChecker.class);
+    AnnotationMirror mustCallAnnotation =
+        mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
+
+    return (mustCallAnnotation != null)
+        ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
+        : new ArrayList<>(0);
   }
 
   /**
@@ -756,8 +772,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private void checkMustCall(
       LocalVarWithAssignTree assign, CFStore store, String outOfScopeReason) {
     CFValue lhsCFValue = store.getValue(assign.localVar);
-    String mustCallValue = getMustCallValue(assign.localVar.getElement());
-    AnnotationMirror dummyCMAnno = createCalledMethods(mustCallValue);
+    List<String> mustCallValue = getMustCallValue(assign.localVar.getElement());
+    AnnotationMirror dummyCMAnno = createCalledMethods(mustCallValue.toArray(new String[0]));
 
     boolean report = true;
 
@@ -785,14 +801,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
-  boolean hasMustCall(TypeMirror type) {
-    TypeElement eType = TypesUtils.getTypeElement(type);
-    if (eType == null) {
-      return false;
-    }
-    AnnotationMirror mustCallAnno = getDeclAnnotation(eType, MustCall.class);
+  boolean hasMustCall(Tree t) {
+    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
+        getTypeFactoryOfSubchecker(MustCallChecker.class);
+    AnnotationMirror mustCallAnno =
+        mustCallAnnotatedTypeFactory.getAnnotatedType(t).getAnnotation(MustCall.class);
     return (mustCallAnno != null
-        && !AnnotationUtils.getElementValue(mustCallAnno, "value", String.class, false).equals(""));
+        && !ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnno).isEmpty());
   }
 
   private class BlockWithLocals {
