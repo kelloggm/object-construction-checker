@@ -390,7 +390,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
           if (receiver instanceof LocalVariableNode
               && isVarInDefs(newDefs, (LocalVariableNode) receiver)) {
-            if (getMustCallValue(((LocalVariableNode) receiver).getElement())
+            if (getMustCallValue(((LocalVariableNode) receiver).getTree())
                 .equals(method.getSimpleName().toString())) {
               // If the method called on the receiver is the same as receiver's @MustCall value,
               // then we can remove the receiver from the newDefs
@@ -739,16 +739,26 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   /**
    * Returns the String value of @MustCall annotation declared on the class type of {@code element}.
    */
-  List<String> getMustCallValue(Element element) {
+  /*List<String> getMustCallValue(Element element) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(element).getAnnotation(MustCall.class);
 
-    return (mustCallAnnotation != null)
+    System.out.println("getting the must call value for an element: " + element);
+    System.out.println("mustCallAnnotation: " + mustCallAnnotation);
+
+    List<String> mustCallValues = (mustCallAnnotation != null)
         ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
         : new ArrayList<>(0);
-  }
+
+    for (String s : mustCallValues) {
+      System.out.println("must call " + s);
+    }
+    System.out.println();
+
+    return mustCallValues;
+  }*/
 
   /**
    * Returns the String value of @MustCall annotation declared on the class type of {@code tree}.
@@ -759,9 +769,19 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
 
-    return (mustCallAnnotation != null)
-        ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
-        : new ArrayList<>(0);
+    System.out.println("getting the must call value for a tree: " + tree);
+    System.out.println("mustCallAnnotation: " + mustCallAnnotation);
+
+    List<String> mustCallValues = (mustCallAnnotation != null)
+            ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
+            : new ArrayList<>(0);
+
+    for (String s : mustCallValues) {
+      System.out.println("must call " + s);
+    }
+    System.out.println();
+
+    return mustCallValues;
   }
 
   /**
@@ -772,7 +792,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private void checkMustCall(
       LocalVarWithAssignTree assign, CFStore store, String outOfScopeReason) {
     CFValue lhsCFValue = store.getValue(assign.localVar);
-    List<String> mustCallValue = getMustCallValue(assign.localVar.getElement());
+    List<String> mustCallValue = getMustCallValue(assign.assignTree);
     AnnotationMirror dummyCMAnno = createCalledMethods(mustCallValue.toArray(new String[0]));
 
     boolean report = true;
