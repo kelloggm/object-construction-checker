@@ -1,4 +1,4 @@
-import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 
 /* The simplest inference test case Martin could think of */
 class SimpleInference {

@@ -1,6 +1,6 @@
 import com.google.auto.value.AutoValue;
 import java.util.Optional;
-import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.nullness.qual.*;
 
 /**
