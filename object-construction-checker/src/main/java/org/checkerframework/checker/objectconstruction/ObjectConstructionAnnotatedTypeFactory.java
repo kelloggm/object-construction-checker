@@ -390,8 +390,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
           if (receiver instanceof LocalVariableNode
               && isVarInDefs(newDefs, (LocalVariableNode) receiver)) {
-            if (getMustCallValue(((LocalVariableNode) receiver).getTree())
-                .equals(method.getSimpleName().toString())) {
+            List<String> mustCallVal = getMustCallValue(((LocalVariableNode) receiver).getTree());
+            if (mustCallVal.size() == 1 && mustCallVal.get(0).equals(method.getSimpleName().toString())) {
               // If the method called on the receiver is the same as receiver's @MustCall value,
               // then we can remove the receiver from the newDefs
               newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) receiver));

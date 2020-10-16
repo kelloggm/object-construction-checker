@@ -244,10 +244,6 @@ class ACRegularExitPointTest {
                 // :: error: required.method.not.called
                 frodo = new Foo();
             } else {
-                // This might not look like an error, but at this point this assignment might be
-                // overwriting a Foo created in a previous loop iteration which has not had a() called
-                // on it, so the error is expected.
-                // :: error: required.method.not.called
                 frodo = new Foo();
                 frodo.a();
             }
