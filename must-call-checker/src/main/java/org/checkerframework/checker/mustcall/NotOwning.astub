@@ -2,10 +2,12 @@ package java.net;
 
 
 import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 package java.nio.channels;
 
+@MustCall("close")
 class SocketChannel extends AbstractSelectableChannel implements ByteChannel, ScatteringByteChannel, GatheringByteChannel, NetworkChannel {
     protected SocketChannel(SelectorProvider arg0);
     static SocketChannel open() throws IOException;
@@ -30,6 +32,7 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
     SocketAddress getLocalAddress() throws IOException;
 }
 
+@MustCall("close")
 class ServerSocketChannel extends AbstractSelectableChannel implements NetworkChannel {
     protected ServerSocketChannel(SelectorProvider arg0);
     static ServerSocketChannel open() throws IOException;

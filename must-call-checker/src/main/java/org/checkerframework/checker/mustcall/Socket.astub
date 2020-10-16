@@ -2,10 +2,11 @@ package java.net;
 
 
 import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 
-//@MustCall("close")
+@MustCall("close")
 class Socket implements Closeable {
     Socket();
     Socket(Proxy arg0);
@@ -67,7 +68,7 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
 
 
 
-//@MustCall("close")
+@MustCall("close")
 class ServerSocket implements Closeable {
     ServerSocket() throws IOException;
     ServerSocket(int arg0) throws IOException;

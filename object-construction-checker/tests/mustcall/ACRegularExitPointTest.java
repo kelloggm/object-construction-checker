@@ -15,6 +15,7 @@ class ACRegularExitPointTest {
         void c(@CalledMethods({"a"}) Foo this) {}
     }
 
+    @MustCall("a")
     class SubFoo extends Foo {
 
     }
@@ -237,14 +238,18 @@ class ACRegularExitPointTest {
 
 
     void loopWithNestedBranches(boolean b) {
-        Foo f = null;
+        Foo frodo = null;
         while (true) {
             if (b) {
                 // :: error: required.method.not.called
-                f = new Foo();
+                frodo = new Foo();
             } else {
-                f = new Foo();
-                f.a();
+                // This might not look like an error, but at this point this assignment might be
+                // overwriting a Foo created in a previous loop iteration which has not had a() called
+                // on it, so the error is expected.
+                // :: error: required.method.not.called
+                frodo = new Foo();
+                frodo.a();
             }
         }
     }
@@ -307,7 +312,4 @@ class ACRegularExitPointTest {
         // :: error: required.method.not.called
         SubFoo f = new SubFoo();
     }
-
-
-
 }

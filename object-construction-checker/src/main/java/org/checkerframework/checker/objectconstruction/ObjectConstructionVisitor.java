@@ -29,6 +29,7 @@ import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 import org.springframework.expression.spel.SpelParseException;
 
 public class ObjectConstructionVisitor
@@ -66,7 +67,9 @@ public class ObjectConstructionVisitor
         && ((atypeFactory.transferOwnershipAtReturn && !hasNotOwningAnno(node))
             || isTransferOwnershipAtMethodInvocation(node))) {
 
-      if (atypeFactory.hasMustCall(node)) {
+      // Calls to super() can be disregarded; the object under construction should inherit
+      // the MustCall responsibility of its super class.
+      if (!TreeUtils.isSuperConstructorCall(node) && atypeFactory.hasMustCall(node)) {
         TypeMirror returnType = TreeUtils.typeOf(node);
         List<String> mustCallAnnoVal = atypeFactory.getMustCallValue(node);
         AnnotationMirror dummyCMAnno =

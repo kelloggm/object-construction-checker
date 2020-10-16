@@ -1,4 +1,5 @@
 import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -32,8 +33,8 @@ public class ACSocketTest
         {
             // :: error: required.method.not.called
             Socket socket2 = new Socket(address, port);
-            Socket socket = new Socket(address, port);
-            socket.close();
+            Socket specialSocket = new Socket(address, port);
+            specialSocket.close();
         }
         catch(IOException i)
         {
@@ -339,6 +340,7 @@ public class ACSocketTest
 
 
 
+    @MustCall({"close"})
     class PrependableSocket extends Socket {
 
         public PrependableSocket(SocketImpl base) throws IOException {
@@ -469,7 +471,8 @@ public class ACSocketTest
 
 
     private void updateSocketAddresses( SelectionKey sockKey ) {
-        // :: error: required.method.not.called
+        // TODO: SocketChannel#socket is marked as not owning, so I don't know why an error was expected here?
+        // error: required.method.not.called
         Socket socket = ((SocketChannel) sockKey.channel()).socket();
         SocketAddress localSocketAddress = socket.getLocalSocketAddress();
         SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();
@@ -483,9 +486,6 @@ public class ACSocketTest
         SocketChannel sock;
         // :: error: required.method.not.called
         sock = SocketChannel.open();
-        //TODO
-        // we can't pass this because we removed return receiver checker
-        // :: error: required.method.not.called
         sock.configureBlocking(false);
         sock.socket().setSoLinger(false, -1);
         sock.socket().setTcpNoDelay(true);

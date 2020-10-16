@@ -6,17 +6,27 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
+
+import com.sun.source.tree.Tree;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallTop;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.ElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * The annotated type factory for the must call checker. Primarily responsible for the subtyping
@@ -25,10 +35,10 @@ import org.checkerframework.javacutil.AnnotationUtils;
 public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /** The top annotation. */
-  private final AnnotationMirror TOP;
+  final AnnotationMirror TOP;
 
   /** The bottom annotation. */
-  private final AnnotationMirror BOTTOM;
+  final AnnotationMirror BOTTOM;
 
   /**
    * Default constructor matching super. Should be called automatically.
@@ -40,6 +50,31 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     TOP = AnnotationBuilder.fromClass(elements, MustCallTop.class);
     BOTTOM = createMustCall();
     this.postInit();
+  }
+
+  @Override
+  protected void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
+    //requireCloseForCloseable(type);
+    super.addComputedTypeAnnotations(tree, type, iUseFlow);
+  }
+
+  @Override
+  public void addComputedTypeAnnotations(Element elt, AnnotatedTypeMirror type) {
+    //requireCloseForCloseable(type);
+    super.addComputedTypeAnnotations(elt, type);
+  }
+
+  private void requireCloseForCloseable(AnnotatedTypeMirror type) {
+    if (type.getUnderlyingType().getKind() == TypeKind.DECLARED) {
+      List<? extends TypeMirror> superTypes = types.directSupertypes(type.getUnderlyingType());
+      for (TypeMirror t : superTypes) {
+        if (t.getKind() == TypeKind.DECLARED) {
+          if (TypesUtils.getQualifiedName((DeclaredType) t).contentEquals("java.lang.Closeable")) {
+            type.replaceAnnotation(createMustCall("close"));
+          }
+        }
+      }
+    }
   }
 
   /**

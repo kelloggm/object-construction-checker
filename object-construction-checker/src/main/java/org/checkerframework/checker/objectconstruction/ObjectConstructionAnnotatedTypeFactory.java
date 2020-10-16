@@ -408,7 +408,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
 
           if (lhs instanceof LocalVariableNode
-              && hasMustCall(lhs.getTree())
               && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
 
             // Reassignment to the lhs
@@ -745,17 +744,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(element).getAnnotation(MustCall.class);
 
-    System.out.println("getting the must call value for an element: " + element);
-    System.out.println("mustCallAnnotation: " + mustCallAnnotation);
-
     List<String> mustCallValues = (mustCallAnnotation != null)
         ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
         : new ArrayList<>(0);
-
-    for (String s : mustCallValues) {
-      System.out.println("must call " + s);
-    }
-    System.out.println();
 
     return mustCallValues;
   }*/
@@ -769,18 +760,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
 
-    System.out.println("getting the must call value for a tree: " + tree);
-    System.out.println("mustCallAnnotation: " + mustCallAnnotation);
-
     List<String> mustCallValues = (mustCallAnnotation != null)
             ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
             : new ArrayList<>(0);
-
-    for (String s : mustCallValues) {
-      System.out.println("must call " + s);
-    }
-    System.out.println();
-
     return mustCallValues;
   }
 
@@ -791,12 +773,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    */
   private void checkMustCall(
       LocalVarWithAssignTree assign, CFStore store, String outOfScopeReason) {
-    CFValue lhsCFValue = store.getValue(assign.localVar);
     List<String> mustCallValue = getMustCallValue(assign.assignTree);
     AnnotationMirror dummyCMAnno = createCalledMethods(mustCallValue.toArray(new String[0]));
 
     boolean report = true;
 
+    CFValue lhsCFValue = store.getValue(assign.localVar);
     if (lhsCFValue != null) { // When store contains the lhs
       AnnotationMirror cmAnno =
           lhsCFValue.getAnnotations().stream()
@@ -822,12 +804,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   boolean hasMustCall(Tree t) {
-    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
-        getTypeFactoryOfSubchecker(MustCallChecker.class);
-    AnnotationMirror mustCallAnno =
-        mustCallAnnotatedTypeFactory.getAnnotatedType(t).getAnnotation(MustCall.class);
-    return (mustCallAnno != null
-        && !ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnno).isEmpty());
+    return !getMustCallValue(t).isEmpty();
   }
 
   private class BlockWithLocals {
@@ -852,6 +829,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     public LocalVarWithAssignTree(LocalVariable localVarNode, Tree assignTree) {
       this.localVar = localVarNode;
       this.assignTree = assignTree;
+    }
+
+    @Override
+    public String toString() {
+      return "(LocalVarWithAssignTree: localVar: " + localVar + " |||| assignTree: " + assignTree + ")";
     }
 
     @Override

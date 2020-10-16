@@ -2,10 +2,11 @@ package java.net;
 
 
 import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 
-//@MustCall("close")
+@MustCall("close")
 class Socket implements Closeable {
     Socket();
     Socket(Proxy arg0);
@@ -67,7 +68,7 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
 
 
 
-//@MustCall("close")
+@MustCall("close")
 class ServerSocket implements Closeable {
     ServerSocket() throws IOException;
     ServerSocket(int arg0) throws IOException;
@@ -101,9 +102,6 @@ class ServerSocket implements Closeable {
 
 package javax.net.ssl;
 
-import org.checkerframework.checker.objectconstruction.qual.*;
-import org.checkerframework.common.returnsreceiver.qual.*;
-
 class SSLSocketFactory extends SocketFactory {
     Socket createSocket(@Owning Socket arg0, String arg1, int arg2, boolean arg3) throws IOException;
     Socket createSocket(@Owning Socket arg0, InputStream arg1, boolean arg2) throws IOException;
@@ -131,18 +129,12 @@ class ServerSocketFactory {
 
 package java.io;
 
-import org.checkerframework.checker.objectconstruction.qual.*;
-import org.checkerframework.common.returnsreceiver.qual.*;
-
 @MustCall("close")
 public interface Closeable {
     void close() throws Exception;
 }
 
 package java.lang;
-
-import org.checkerframework.checker.objectconstruction.qual.*;
-import org.checkerframework.common.returnsreceiver.qual.*;
 
 // This produces too much noise, for now. Investigate it later.
 // @MustCall("close")

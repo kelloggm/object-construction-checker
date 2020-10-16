@@ -56,6 +56,7 @@ class ACOwning {
     }
 
     @MustCall({})
+    // :: error: super.invocation.invalid
     private class SubFoo extends Foo{
 
         void test() {
@@ -68,7 +69,6 @@ class ACOwning {
         }
 
         void test3() {
-            // :: error: required.method.not.called
             Foo f = new SubFoo();
         }
 
