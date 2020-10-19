@@ -261,7 +261,11 @@ class OutputStreamWriter extends Writer {
     void close() throws IOException;
 }
 
+@MustCall("close")
+class Reader { }
 
+@MustCall("close")
+class Writer { }
 
 package java.security;
 
