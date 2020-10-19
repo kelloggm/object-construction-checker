@@ -20,7 +20,7 @@ configurations {
 dependencies {
 
     implementation "org.checkerframework:checker:${versions.checkerFramework}"
-    implementation "com.google.guava:guava:29.0-jre"
+    implementation "com.google.guava:guava:30.0-jre"
     compileOnly "com.google.errorprone:javac:9+181-r4173-1"
 
     // If / when other code depends on this checker, we will likely want to make these
