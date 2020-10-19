@@ -2,6 +2,7 @@ package org.checkerframework.checker.mustcall;
 
 import static org.checkerframework.common.value.ValueCheckerUtils.getValueOfAnnotationWithStringArgument;
 
+import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
@@ -14,14 +15,11 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-
-import com.sun.source.tree.Tree;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallTop;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.ElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
@@ -54,13 +52,13 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @Override
   protected void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
-    //requireCloseForCloseable(type);
+    // requireCloseForCloseable(type);
     super.addComputedTypeAnnotations(tree, type, iUseFlow);
   }
 
   @Override
   public void addComputedTypeAnnotations(Element elt, AnnotatedTypeMirror type) {
-    //requireCloseForCloseable(type);
+    // requireCloseForCloseable(type);
     super.addComputedTypeAnnotations(elt, type);
   }
 

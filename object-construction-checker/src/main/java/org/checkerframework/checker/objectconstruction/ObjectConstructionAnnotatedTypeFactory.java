@@ -78,6 +78,7 @@ import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.ElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
@@ -148,7 +149,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     EnumSet<Framework> frameworkSet =
         FrameworkSupportUtils.getFrameworkSet(
             checker.getOption(ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS));
-    frameworkSupports = new ArrayList<FrameworkSupport>();
+    frameworkSupports = new ArrayList<>();
 
     for (FrameworkSupportUtils.Framework framework : frameworkSet) {
       switch (framework) {
@@ -221,9 +222,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
     ReturnsReceiverAnnotatedTypeFactory rrATF = getReturnsRcvrAnnotatedTypeFactory();
     ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
-    AnnotatedTypeMirror methodATm = rrATF.getAnnotatedType(methodEle);
-    AnnotatedTypeMirror rrType =
-        ((AnnotatedTypeMirror.AnnotatedExecutableType) methodATm).getReturnType();
+    AnnotatedExecutableType methodATm = rrATF.getAnnotatedType(methodEle);
+    AnnotatedTypeMirror rrType = methodATm.getReturnType();
     return (rrType != null && rrType.hasAnnotation(This.class))
         || hasOldReturnsReceiverAnnotation(tree);
   }
@@ -391,7 +391,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           if (receiver instanceof LocalVariableNode
               && isVarInDefs(newDefs, (LocalVariableNode) receiver)) {
             List<String> mustCallVal = getMustCallValue(((LocalVariableNode) receiver).getTree());
-            if (mustCallVal.size() == 1 && mustCallVal.get(0).equals(method.getSimpleName().toString())) {
+            // TODO: I think this will cause false positives if there is more than one value in the
+            // @MustCall annotation
+
+            if (mustCallVal.size() == 1
+                && mustCallVal.get(0).equals(method.getSimpleName().toString())) {
               // If the method called on the receiver is the same as receiver's @MustCall value,
               // then we can remove the receiver from the newDefs
               newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) receiver));
@@ -481,8 +485,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               Set<AnnotationMirror> annotationMirrors = getDeclAnnotations(formal);
               TypeMirror t = TreeUtils.typeOf(n.getTree());
               if (hasMustCall(n.getTree())
-                  && !annotationMirrors.stream()
-                      .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
+                  && annotationMirrors.stream()
+                      .noneMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
                 // TODO why is this logic here and not in the visitor?
                 checker.reportError(
                     n.getTree(),
@@ -726,8 +730,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private void propagate(
       BlockWithLocals state, Set<BlockWithLocals> visited, Deque<BlockWithLocals> worklist) {
 
-    if (!visited.stream()
-        .anyMatch(
+    if (visited.stream()
+        .noneMatch(
             pair ->
                 pair.block.equals(state.block) && pair.localSetInfo.equals(state.localSetInfo))) {
       visited.add(state);
@@ -760,7 +764,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
 
-    List<String> mustCallValues = (mustCallAnnotation != null)
+    List<String> mustCallValues =
+        (mustCallAnnotation != null)
             ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
             : new ArrayList<>(0);
     return mustCallValues;
@@ -822,7 +827,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * variable. Besides a normal assignment, the tree may be a {@link VariableTree} in the case of a
    * formal parameter
    */
-  private class LocalVarWithAssignTree {
+  private static class LocalVarWithAssignTree {
     public LocalVariable localVar;
     public Tree assignTree;
 
@@ -833,7 +838,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     @Override
     public String toString() {
-      return "(LocalVarWithAssignTree: localVar: " + localVar + " |||| assignTree: " + assignTree + ")";
+      return "(LocalVarWithAssignTree: localVar: "
+          + localVar
+          + " |||| assignTree: "
+          + assignTree
+          + ")";
     }
 
     @Override
