@@ -4,6 +4,7 @@ import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
+@MustCall("close")
 class DataOutputStream extends FilterOutputStream implements DataOutput {
     protected int written;
     DataOutputStream(@Owning OutputStream arg0);
@@ -24,6 +25,7 @@ class DataOutputStream extends FilterOutputStream implements DataOutput {
     int size();
 }
 
+@MustCall("close")
 class FilterOutputStream extends OutputStream {
     protected OutputStream out;
     FilterOutputStream(@Owning OutputStream arg0);
@@ -34,6 +36,7 @@ class FilterOutputStream extends OutputStream {
     void close() throws IOException;
 }
 
+@MustCall("close")
 class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     PrintStream(@Owning OutputStream arg0);
     PrintStream(@Owning OutputStream arg0, boolean arg1);
@@ -80,6 +83,7 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     @NotOwning PrintStream append(char arg0);
 }
 
+@MustCall("close")
 class BufferedReader extends Reader {
     BufferedReader(@Owning Reader arg0, int arg1);
     BufferedReader(@Owning Reader arg0);
@@ -95,6 +99,7 @@ class BufferedReader extends Reader {
     Stream<String> lines();
 }
 
+@MustCall("close")
 class BufferedOutputStream extends FilterOutputStream {
     protected byte[] buf;
     protected int count;
@@ -105,6 +110,7 @@ class BufferedOutputStream extends FilterOutputStream {
     void flush() throws IOException;
 }
 
+@MustCall("close")
 class DataInputStream extends FilterInputStream implements DataInput {
     DataInputStream(@Owning InputStream arg0);
     int read(byte[] arg0) throws IOException;
@@ -128,6 +134,7 @@ String readLine() throws IOException;
     static String readUTF(DataInput arg0) throws IOException;
 }
 
+@MustCall("close")
 class FilterInputStream extends InputStream {
     protected InputStream in;
     protected FilterInputStream(@Owning InputStream arg0);
@@ -142,6 +149,7 @@ class FilterInputStream extends InputStream {
     boolean markSupported();
 }
 
+@MustCall("close")
 class BufferedInputStream extends FilterInputStream {
     protected byte[] buf;
     protected int count;
@@ -160,6 +168,7 @@ class BufferedInputStream extends FilterInputStream {
     void close() throws IOException;
 }
 
+@MustCall("close")
 class InputStreamReader extends Reader {
     InputStreamReader(@Owning InputStream arg0);
     InputStreamReader(@Owning InputStream arg0, String arg1) throws UnsupportedEncodingException;
@@ -172,6 +181,7 @@ class InputStreamReader extends Reader {
     void close() throws IOException;
 }
 
+@MustCall("close")
 class BufferedWriter extends Writer {
     BufferedWriter(@Owning Writer arg0);
     BufferedWriter(@Owning Writer arg0, int arg1);
@@ -183,6 +193,7 @@ class BufferedWriter extends Writer {
     void close() throws IOException;
 }
 
+@MustCall("close")
 class PrintWriter extends Writer {
     protected Writer out;
     PrintWriter(@Owning Writer arg0);
@@ -234,6 +245,7 @@ class PrintWriter extends Writer {
     PrintWriter append(char arg0);
 }
 
+@MustCall("close")
 class OutputStreamWriter extends Writer {
     OutputStreamWriter(@Owning OutputStream arg0, String arg1) throws UnsupportedEncodingException;
     OutputStreamWriter(@Owning OutputStream arg0);
@@ -256,6 +268,7 @@ package java.security;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
+@MustCall("close")
 class DigestOutputStream extends FilterOutputStream {
     protected MessageDigest digest;
     DigestOutputStream(@Owning OutputStream arg0, MessageDigest arg1);
