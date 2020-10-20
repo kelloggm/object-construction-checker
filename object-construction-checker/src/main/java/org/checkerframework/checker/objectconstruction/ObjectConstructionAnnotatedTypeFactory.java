@@ -484,13 +484,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
               VariableElement formal = formals.get(i);
               Set<AnnotationMirror> annotationMirrors = getDeclAnnotations(formal);
               TypeMirror t = TreeUtils.typeOf(n.getTree());
-              if (hasMustCall(n.getTree())
+              List<String> mustCallVal = getMustCallValue(n.getTree());
+              if (!mustCallVal.isEmpty()
                   && annotationMirrors.stream()
                       .noneMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
                 // TODO why is this logic here and not in the visitor?
                 checker.reportError(
                     n.getTree(),
                     "required.method.not.called",
+                    formatMissingMustCallMethods(mustCallVal),
                     t.toString(),
                     "never assigned to a variable");
               }
@@ -802,10 +804,21 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         checker.reportError(
             assign.assignTree,
             "required.method.not.called",
+            formatMissingMustCallMethods(mustCallValue),
             assign.localVar.getType().toString(),
             outOfScopeReason);
       }
     }
+  }
+
+  /**
+   * Formats a list of must-call method names to be printed in an error message.
+   *
+   * @param mustCallVal the list of must-call strings
+   * @return a formatted string
+   */
+  String formatMissingMustCallMethods(List<String> mustCallVal) {
+    return mustCallVal.stream().reduce("", (s, acc) -> "".equals(acc) ? s : acc + ", " + s);
   }
 
   boolean hasMustCall(Tree t) {

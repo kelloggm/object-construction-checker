@@ -80,6 +80,7 @@ public class ObjectConstructionVisitor
           checker.reportError(
               node,
               "required.method.not.called",
+              atypeFactory.formatMissingMustCallMethods(mustCallAnnoVal),
               returnType.toString(),
               "never assigned to a variable");
         }
@@ -112,10 +113,15 @@ public class ObjectConstructionVisitor
   public Void visitNewClass(NewClassTree node, Void p) {
     if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)
         && !isAssignedToLocal(this.getCurrentPath())) {
-      if (atypeFactory.hasMustCall(node)) {
+      List<String> mustCallVal = atypeFactory.getMustCallValue(node);
+      if (!mustCallVal.isEmpty()) {
         TypeMirror type = TreeUtils.typeOf(node);
         checker.reportError(
-            node, "required.method.not.called", type.toString(), "never assigned to a variable");
+            node,
+            "required.method.not.called",
+            atypeFactory.formatMissingMustCallMethods(mustCallVal),
+            type.toString(),
+            "never assigned to a variable");
       }
     }
     return super.visitNewClass(node, p);
