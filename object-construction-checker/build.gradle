@@ -83,7 +83,7 @@ spotless {
 }
 
 test {
-    inputs.files("tests/basic", "tests/cve", "tests/lombok", "tests/autovalue")
+    inputs.files("tests/basic", "tests/cve", "tests/lombok", "tests/autovalue", "tests/disableframeworks", "tests/mustcall", "tests/socket")
     if (!JavaVersion.current().java9Compatible) {
         jvmArgs "-Xbootclasspath/p:${configurations.errorproneJavac.asPath}"
     }
