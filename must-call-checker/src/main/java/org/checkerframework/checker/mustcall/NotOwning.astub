@@ -44,3 +44,9 @@ class ServerSocketChannel extends AbstractSelectableChannel implements NetworkCh
     SocketChannel accept() throws IOException;
     SocketAddress getLocalAddress() throws IOException;
 }
+
+package java.nio.channels.spi;
+
+@MustCall("close")
+class AbstractSelectableChannel {
+}

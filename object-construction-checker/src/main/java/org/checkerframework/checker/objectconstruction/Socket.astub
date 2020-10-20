@@ -107,6 +107,12 @@ class SSLSocketFactory extends SocketFactory {
     Socket createSocket(@Owning Socket arg0, InputStream arg1, boolean arg2) throws IOException;
 }
 
+@MustCall("close")
+class SSLSocket { }
+
+@MustCall("close")
+class SSLServerSocket { }
+
 package javax.net;
 
 class SocketFactory {
