@@ -471,7 +471,6 @@ public class ACSocketTest
 
 
     private void updateSocketAddresses( SelectionKey sockKey ) {
-        // TODO: SocketChannel#socket is marked as not owning, so I don't know why an error was expected here?
         // error: required.method.not.called
         Socket socket = ((SocketChannel) sockKey.channel()).socket();
         SocketAddress localSocketAddress = socket.getLocalSocketAddress();

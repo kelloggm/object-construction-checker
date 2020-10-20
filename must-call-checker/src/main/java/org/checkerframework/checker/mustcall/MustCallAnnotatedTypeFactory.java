@@ -62,7 +62,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /**
    * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
-   * declaratively defined subtyping relationships, like our @CalledMethods annotation.
+   * declaratively defined subtyping relationships, like our @MustCall annotation.
    */
   private class MustCallQualifierHierarchy extends ElementQualifierHierarchy {
 
