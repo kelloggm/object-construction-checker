@@ -11,7 +11,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutab
 
 /**
  * The visitor for the MustCall checker. This visitor is similar to BaseTypeVisitor, but overrides
- * methods that don't work well with the MustCall type hierarchy because it uses the bottom type as
+ * methods that don't work well with the MustCall type hierarchy because it doesn't use the top type as
  * the default type.
  */
 public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactory> {
