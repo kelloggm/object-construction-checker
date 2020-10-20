@@ -10,9 +10,9 @@ import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 
 /**
- * The visitor for the MustCall checker. This visitor is similar to BaseTypeVisitor,
- * but overrides methods that don't work well with the MustCall type hierarchy because
- * it uses the bottom type as the default type.
+ * The visitor for the MustCall checker. This visitor is similar to BaseTypeVisitor, but overrides
+ * methods that don't work well with the MustCall type hierarchy because it uses the bottom type as
+ * the default type.
  */
 public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactory> {
 
@@ -67,8 +67,7 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
    *
    * <p>Skipping this check in the MustCall checker is safe, because the MustCall checker is not
    * concerned with annotation arguments (which must be literals, and therefore won't have (or be
-   * able to fulfill) must-call
-   * obligations).
+   * able to fulfill) must-call obligations).
    */
   @Override
   public Void visitAnnotation(AnnotationTree node, Void p) {
