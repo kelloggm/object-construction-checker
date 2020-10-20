@@ -138,18 +138,12 @@ class ServerSocketFactory {
 
 package java.io;
 
-import org.checkerframework.checker.objectconstruction.qual.*;
-import org.checkerframework.common.returnsreceiver.qual.*;
-
 @MustCall("close")
 public interface Closeable {
     void close() throws Exception;
 }
 
 package java.lang;
-
-import org.checkerframework.checker.objectconstruction.qual.*;
-import org.checkerframework.common.returnsreceiver.qual.*;
 
 // This produces too much noise, for now. Investigate it later.
 // @MustCall("close")

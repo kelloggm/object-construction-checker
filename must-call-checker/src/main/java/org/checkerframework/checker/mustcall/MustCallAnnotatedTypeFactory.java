@@ -50,31 +50,6 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.postInit();
   }
 
-  @Override
-  protected void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
-    // requireCloseForCloseable(type);
-    super.addComputedTypeAnnotations(tree, type, iUseFlow);
-  }
-
-  @Override
-  public void addComputedTypeAnnotations(Element elt, AnnotatedTypeMirror type) {
-    // requireCloseForCloseable(type);
-    super.addComputedTypeAnnotations(elt, type);
-  }
-
-  private void requireCloseForCloseable(AnnotatedTypeMirror type) {
-    if (type.getUnderlyingType().getKind() == TypeKind.DECLARED) {
-      List<? extends TypeMirror> superTypes = types.directSupertypes(type.getUnderlyingType());
-      for (TypeMirror t : superTypes) {
-        if (t.getKind() == TypeKind.DECLARED) {
-          if (TypesUtils.getQualifiedName((DeclaredType) t).contentEquals("java.lang.Closeable")) {
-            type.replaceAnnotation(createMustCall("close"));
-          }
-        }
-      }
-    }
-  }
-
   /**
    * Creates a @MustCall annotation whose values are the given strings.
    *
