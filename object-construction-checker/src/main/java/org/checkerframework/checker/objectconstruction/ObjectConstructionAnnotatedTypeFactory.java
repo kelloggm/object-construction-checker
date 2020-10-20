@@ -785,17 +785,21 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     boolean report = true;
 
+    AnnotationMirror cmAnno;
+
     CFValue lhsCFValue = store.getValue(assign.localVar);
     if (lhsCFValue != null) { // When store contains the lhs
-      AnnotationMirror cmAnno =
+      cmAnno =
           lhsCFValue.getAnnotations().stream()
               .filter(anno -> AnnotationUtils.areSameByClass(anno, CalledMethods.class))
               .findAny()
               .orElse(TOP);
+    } else {
+      cmAnno = getAnnotatedType(assign.localVar.getElement()).getAnnotationInHierarchy(TOP);
+    }
 
-      if (this.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
-        report = false;
-      }
+    if (this.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
+      report = false;
     }
 
     if (report) {
