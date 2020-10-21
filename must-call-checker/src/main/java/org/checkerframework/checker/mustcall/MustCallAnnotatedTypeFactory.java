@@ -2,21 +2,32 @@ package org.checkerframework.checker.mustcall;
 
 import static org.checkerframework.common.value.ValueCheckerUtils.getValueOfAnnotationWithStringArgument;
 
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.MemberReferenceTree;
+import com.sun.source.tree.MethodInvocationTree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallTop;
+import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.ElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * The annotated type factory for the must call checker. Primarily responsible for the subtyping
@@ -40,6 +51,32 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     TOP = AnnotationBuilder.fromClass(elements, MustCallTop.class);
     BOTTOM = createMustCall();
     this.postInit();
+  }
+
+  /** Treat non-owning method parameters as @MustCallTop to avoid false positives. */
+  @Override
+  public void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
+    ExecutableElement declaration;
+    if (tree instanceof MethodInvocationTree) {
+      declaration = TreeUtils.elementFromUse((MethodInvocationTree) tree);
+    } else if (tree instanceof MemberReferenceTree) {
+      declaration = (ExecutableElement) TreeUtils.elementFromTree(tree);
+    } else {
+      throw new BugInCF("unexpected type of method tree: " + tree.getKind());
+    }
+    for (int i = 0; i < type.getParameterTypes().size(); i++) {
+      Element paramDecl = declaration.getParameters().get(i);
+      if (paramDecl.getAnnotation(NotOwning.class) != null) {
+        AnnotatedTypeMirror paramType = type.getParameterTypes().get(i);
+        paramType.replaceAnnotation(TOP);
+        // Descend into a varargs array
+        if (declaration.isVarArgs() && i == declaration.getParameters().size() - 1) {
+          AnnotatedTypeMirror componentType = ((AnnotatedArrayType) paramType).getComponentType();
+          componentType.replaceAnnotation(TOP);
+        }
+      }
+    }
+    super.methodFromUsePreSubstitution(tree, type);
   }
 
   /**

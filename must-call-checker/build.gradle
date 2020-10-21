@@ -26,6 +26,9 @@ dependencies {
     // CF testing infrastructure
     testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
 
+    // For @NotOwning/@Owning annotations
+    implementation project(":object-construction-qual")
+
     errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
 
 }
