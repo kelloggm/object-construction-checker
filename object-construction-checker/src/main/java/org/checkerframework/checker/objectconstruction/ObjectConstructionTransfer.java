@@ -154,7 +154,6 @@ public class ObjectConstructionTransfer extends CFTransfer {
             .toArray(new String[0]);
     List<? extends VariableElement> parameters = elt.getParameters();
     int varArgsPos = parameters.size() - 1;
-    // are we passing an array, or multiple arguments?
     Node varArgActual = node.getArguments().get(varArgsPos);
     // In the CFG, explicit passing of multiple arguments in the varargs position is represented via
     // an ArrayCreationNode.  This is the only case we handle for now.
