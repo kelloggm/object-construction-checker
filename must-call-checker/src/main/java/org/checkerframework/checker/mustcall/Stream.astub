@@ -80,10 +80,10 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     void println(char[] arg0);
     void println(@NotOwning String s);
     void println(@NotOwning Object arg0);
-    PrintStream printf(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
-    PrintStream printf(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
-    PrintStream format(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
-    PrintStream format(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    @NotOwning PrintStream printf(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    @NotOwning PrintStream printf(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    @NotOwning PrintStream format(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    @NotOwning PrintStream format(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
     @NotOwning PrintStream append(@NotOwning CharSequence arg0);
     @NotOwning PrintStream append(@NotOwning CharSequence arg0, int arg1, int arg2);
     @NotOwning PrintStream append(char arg0);
@@ -242,13 +242,13 @@ class PrintWriter extends Writer {
     void println(char[] arg0);
     void println(String arg0);
     void println(Object arg0);
-    PrintWriter printf(String arg0, Object[] arg1);
-    PrintWriter printf(Locale arg0, String arg1, Object[] arg2);
-    PrintWriter format(String arg0, Object[] arg1);
-    PrintWriter format(Locale arg0, String arg1, Object[] arg2);
-    PrintWriter append(CharSequence arg0);
-    PrintWriter append(CharSequence arg0, int arg1, int arg2);
-    PrintWriter append(char arg0);
+    @NotOwning PrintWriter printf(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    @NotOwning PrintWriter printf(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    @NotOwning PrintWriter format(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    @NotOwning PrintWriter format(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    @NotOwning PrintWriter append(@NotOwning CharSequence arg0);
+    @NotOwning PrintWriter append(@NotOwning CharSequence arg0, int arg1, int arg2);
+    @NotOwning PrintWriter append(char arg0);
 }
 
 @MustCall("close")
@@ -261,8 +261,8 @@ class OutputStreamWriter extends Writer {
     void write(int arg0) throws IOException;
     void write(char[] arg0, int arg1, int arg2) throws IOException;
     void write(String arg0, int arg1, int arg2) throws IOException;
-    Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
-    Writer append(CharSequence arg0) throws IOException;
+    @NotOwning Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
+    @NotOwning Writer append(CharSequence arg0) throws IOException;
     void flush() throws IOException;
     void close() throws IOException;
 }
@@ -271,7 +271,11 @@ class OutputStreamWriter extends Writer {
 class Reader { }
 
 @MustCall("close")
-class Writer { }
+class Writer {
+    @NotOwning Writer append(CharSequence arg0) throws IOException;
+    @NotOwning Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
+    @NotOwning Writer append(char arg0) throws IOException;
+}
 
 package java.security;
 

@@ -16,6 +16,12 @@ class SelectionKey {
 }
 
 @MustCall("close")
+class FileChannel {
+    @NotOwning FileChannel position(long arg0) throws IOException;
+    @NotOwning FileChannel truncate(long arg0) throws IOException;
+}
+
+@MustCall("close")
 class SocketChannel extends AbstractSelectableChannel implements ByteChannel, ScatteringByteChannel, GatheringByteChannel, NetworkChannel {
     protected SocketChannel(SelectorProvider arg0);
     static SocketChannel open() throws IOException;
