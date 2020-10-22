@@ -20,7 +20,13 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
   ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
 })
-@StubFiles({"Socket.astub", "NotOwning.astub", "Stream.astub", "AlwaysCallEmpty.astub", "IOUtils.astub"})
+@StubFiles({
+  "Socket.astub",
+  "NotOwning.astub",
+  "Stream.astub",
+  "AlwaysCallEmpty.astub",
+  "IOUtils.astub"
+})
 public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String USE_VALUE_CHECKER = "useValueChecker";
@@ -63,6 +69,9 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
     messages.setProperty(
         "finalizer.invocation.invalid",
         "This finalizer cannot be invoked, because the following methods have not been called: %s\n");
+    messages.setProperty(
+        "ensuresvarargs.annotation.invalid",
+        "@EnsuresCalledMethodsVarArgs cannot be written on a non-varargs method");
     messages.setProperty(
         "predicate.invalid",
         "An unparseable predicate was found in an annotation. Predicates must be produced by this grammar: S --> method name | (S) | S && S | S || S. The message from the evaluator was: %s \\n");

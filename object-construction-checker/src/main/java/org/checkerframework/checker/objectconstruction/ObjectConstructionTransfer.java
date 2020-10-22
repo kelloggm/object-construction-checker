@@ -2,6 +2,7 @@ package org.checkerframework.checker.objectconstruction;
 
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,14 +10,18 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
 import org.checkerframework.dataflow.analysis.FlowExpressions;
 import org.checkerframework.dataflow.analysis.FlowExpressions.Receiver;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
+import org.checkerframework.dataflow.cfg.node.ArrayCreationNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.flow.CFAnalysis;
@@ -25,6 +30,7 @@ import org.checkerframework.framework.flow.CFTransfer;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * The transfer function for the object construction type system. Its primary job is to refine the
@@ -47,6 +53,8 @@ public class ObjectConstructionTransfer extends CFTransfer {
       final MethodInvocationNode node, final TransferInput<CFValue, CFStore> input) {
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(node, input);
 
+    handleEnsuresCalledMethodVarArgs(node, result);
+
     Node receiver = node.getTarget().getReceiver();
 
     // in the event that the method we're visiting is static
@@ -55,32 +63,12 @@ public class ObjectConstructionTransfer extends CFTransfer {
     }
 
     AnnotatedTypeMirror currentType = atypefactory.getReceiverType(node.getTree());
-    AnnotationMirror type;
-    if (currentType == null || !currentType.isAnnotatedInHierarchy(atypefactory.TOP)) {
-      type = atypefactory.TOP;
-    } else {
-      type = currentType.getAnnotationInHierarchy(atypefactory.TOP);
-    }
-
-    // Don't attempt to strengthen @CalledMethodsPredicate annotations, because that would
-    // require reasoning about the predicate itself. Instead, start over from top.
-    if (AnnotationUtils.areSameByClass(type, CalledMethodsPredicate.class)) {
-      type = atypefactory.TOP;
-    }
-
-    if (AnnotationUtils.areSame(type, atypefactory.BOTTOM)) {
-      return result;
-    }
-
     String methodName = node.getTarget().getMethod().getSimpleName().toString();
     methodName = atypefactory.adjustMethodNameUsingValueChecker(methodName, node.getTree());
-
-    List<String> currentMethods =
-        ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(type);
-    List<String> newList =
-        Stream.concat(Stream.of(methodName), currentMethods.stream()).collect(Collectors.toList());
-
-    AnnotationMirror newType = atypefactory.createCalledMethods(newList.toArray(new String[0]));
+    AnnotationMirror newType = getUpdatedCalledMethodsType(currentType, methodName);
+    if (newType == null) {
+      return result;
+    }
 
     // For some reason, visitMethodInvocation returns a conditional store. I think this is to
     // support conditional post-condition annotations, based on the comments in CFAbstractTransfer.
@@ -123,6 +111,66 @@ public class ObjectConstructionTransfer extends CFTransfer {
 
     return new ConditionalTransferResult<>(
         result.getResultValue(), thenStore, elseStore, exceptionalStores);
+  }
+
+  private AnnotationMirror getUpdatedCalledMethodsType(
+      AnnotatedTypeMirror currentType, String... methodNames) {
+    AnnotationMirror type;
+    if (currentType == null || !currentType.isAnnotatedInHierarchy(atypefactory.TOP)) {
+      type = atypefactory.TOP;
+    } else {
+      type = currentType.getAnnotationInHierarchy(atypefactory.TOP);
+    }
+
+    // Don't attempt to strengthen @CalledMethodsPredicate annotations, because that would
+    // require reasoning about the predicate itself. Instead, start over from top.
+    if (AnnotationUtils.areSameByClass(type, CalledMethodsPredicate.class)) {
+      type = atypefactory.TOP;
+    }
+
+    if (AnnotationUtils.areSame(type, atypefactory.BOTTOM)) {
+      return null;
+    }
+
+    List<String> currentMethods =
+        ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(type);
+    List<String> newList =
+        Stream.concat(Arrays.stream(methodNames), currentMethods.stream())
+            .collect(Collectors.toList());
+
+    AnnotationMirror newType = atypefactory.createCalledMethods(newList.toArray(new String[0]));
+    return newType;
+  }
+
+  private void handleEnsuresCalledMethodVarArgs(
+      MethodInvocationNode node, TransferResult<CFValue, CFStore> result) {
+    ExecutableElement elt = TreeUtils.elementFromUse(node.getTree());
+    AnnotationMirror annot = atypefactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarArgs.class);
+    if (annot == null) {
+      return;
+    }
+    String[] ensuredMethodNames =
+        AnnotationUtils.getElementValueArray(annot, "value", String.class, true)
+            .toArray(new String[0]);
+    List<? extends VariableElement> parameters = elt.getParameters();
+    int varArgsPos = parameters.size() - 1;
+    // are we passing an array, or multiple arguments?
+    Node varArgActual = node.getArguments().get(varArgsPos);
+    // In the CFG, explicit passing of multiple arguments in the varargs position is represented via
+    // an ArrayCreationNode.  This is the only case we handle for now.
+    if (varArgActual instanceof ArrayCreationNode) {
+      ArrayCreationNode arrayCreationNode = (ArrayCreationNode) varArgActual;
+      // add in the called method to all the vararg arguments
+      CFStore thenStore = result.getThenStore();
+      CFStore elseStore = result.getElseStore();
+      for (Node arg : arrayCreationNode.getInitializers()) {
+        AnnotatedTypeMirror currentType = atypefactory.getAnnotatedType(arg.getTree());
+        AnnotationMirror newType = getUpdatedCalledMethodsType(currentType, ensuredMethodNames);
+        Receiver receiverReceiver = FlowExpressions.internalReprOf(atypefactory, arg);
+        thenStore.insertValue(receiverReceiver, newType);
+        elseStore.insertValue(receiverReceiver, newType);
+      }
+    }
   }
 
   private Map<TypeMirror, CFStore> makeExceptionalStores(

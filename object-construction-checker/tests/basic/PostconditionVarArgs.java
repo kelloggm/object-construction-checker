@@ -17,6 +17,7 @@ class PostconditionVarArgs {
   }
 
   @EnsuresCalledMethodsVarArgs("b")
+  // :: error: ensuresvarargs.annotation.invalid
   static void callBBadAnnot(PostconditionVarArgs x) {
     x.b();
   }
@@ -62,7 +63,8 @@ class PostconditionVarArgs {
   static void invokeCallBAndCArray() {
     PostconditionVarArgs y = new PostconditionVarArgs();
     PostconditionVarArgs z = new PostconditionVarArgs();
-    callBAndC(new PostconditionVarArgs[] {y, z});
+    PostconditionVarArgs[] argsArray = {y, z};
+    callBAndC(argsArray);
     // because we don't handle arrays
     // :: error: finalizer.invocation.invalid
     y.build();
