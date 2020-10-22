@@ -74,7 +74,7 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
         "@EnsuresCalledMethodsVarArgs cannot be written on a non-varargs method");
     messages.setProperty(
         "ensuresvarargs.unverified",
-        "@EnsuresCalledMethodsVarArgs cannot be verified yet.  Please suppress this warning.");
+        "@EnsuresCalledMethodsVarArgs cannot be verified yet.  Please check that the implementation of the method actually does call the given methods on the varargs parameters by hand, and then suppress the warning.");
     messages.setProperty(
         "predicate.invalid",
         "An unparseable predicate was found in an annotation. Predicates must be produced by this grammar: S --> method name | (S) | S && S | S || S. The message from the evaluator was: %s \\n");
