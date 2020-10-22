@@ -26,6 +26,12 @@ class DataOutputStream extends FilterOutputStream implements DataOutput {
 }
 
 @MustCall("close")
+class OutputStream { }
+
+@MustCall("close")
+class InputStream { }
+
+@MustCall("close")
 class FilterOutputStream extends OutputStream {
     protected OutputStream out;
     FilterOutputStream(@Owning OutputStream arg0);

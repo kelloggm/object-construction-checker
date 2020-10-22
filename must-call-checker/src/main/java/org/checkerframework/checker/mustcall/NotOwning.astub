@@ -109,3 +109,10 @@ class Logger {
     void trace​(Marker marker, @NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
     void trace​(Marker marker, @NotOwning String msg, @NotOwning Throwable t);
 }
+
+package java.lang;
+
+class System {
+    void print(@NotOwning String s);
+    void println(@NotOwning String s);
+}
