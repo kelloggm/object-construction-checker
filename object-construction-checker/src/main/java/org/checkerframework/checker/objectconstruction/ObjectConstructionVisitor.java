@@ -69,7 +69,6 @@ public class ObjectConstructionVisitor
   @Override
   public Void visitMethod(MethodTree node, Void p) {
     ExecutableElement elt = TreeUtils.elementFromDeclaration(node);
-    Set<AnnotationMirror> declAnnotations = atypeFactory.getDeclAnnotations(elt);
     AnnotationMirror annot = atypeFactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarArgs.class);
     if (annot != null) {
       if (!elt.isVarArgs()) {
