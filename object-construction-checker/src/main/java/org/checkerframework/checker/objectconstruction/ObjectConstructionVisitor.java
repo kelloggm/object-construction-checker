@@ -5,6 +5,7 @@ import static javax.lang.model.element.ElementKind.LOCAL_VARIABLE;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
@@ -22,6 +23,7 @@ import org.checkerframework.checker.objectconstruction.framework.FrameworkSuppor
 import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -56,8 +58,26 @@ public class ObjectConstructionVisitor
             node, new DiagMessage(Diagnostic.Kind.ERROR, "predicate.invalid", e.getMessage()));
         return null;
       }
+    } else if (AnnotationUtils.areSameByClass(anno, EnsuresCalledMethodsVarArgs.class)) {
+      // we can't verify these yet.  emit an error (which will have to be suppressed) for now
+      checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "ensuresvarargs.unverified"));
+      return null;
     }
     return super.visitAnnotation(node, p);
+  }
+
+  @Override
+  public Void visitMethod(MethodTree node, Void p) {
+    ExecutableElement elt = TreeUtils.elementFromDeclaration(node);
+    AnnotationMirror annot = atypeFactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarArgs.class);
+    if (annot != null) {
+      if (!elt.isVarArgs()) {
+        checker.report(
+            node, new DiagMessage(Diagnostic.Kind.ERROR, "ensuresvarargs.annotation.invalid"));
+        return null;
+      }
+    }
+    return super.visitMethod(node, p);
   }
 
   @Override
