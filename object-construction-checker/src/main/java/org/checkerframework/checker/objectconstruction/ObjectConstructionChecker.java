@@ -20,7 +20,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
   ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
 })
-@StubFiles({"Socket.astub", "NotOwning.astub", "Stream.astub", "AlwaysCallEmpty.astub"})
+@StubFiles({"Socket.astub", "NotOwning.astub", "Stream.astub", "AlwaysCallEmpty.astub", "IOUtils.astub"})
 public class ObjectConstructionChecker extends BaseTypeChecker {
 
   public static final String USE_VALUE_CHECKER = "useValueChecker";

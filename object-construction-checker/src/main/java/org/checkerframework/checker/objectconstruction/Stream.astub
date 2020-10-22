@@ -70,10 +70,10 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     void println(char[] arg0);
     void println(String arg0);
     void println(Object arg0);
-    PrintStream printf(String arg0, Object[] arg1);
-    PrintStream printf(Locale arg0, String arg1, Object[] arg2);
-    PrintStream format(String arg0, Object[] arg1);
-    PrintStream format(Locale arg0, String arg1, Object[] arg2);
+    @NotOwning PrintStream printf(String arg0, Object[] arg1);
+    @NotOwning PrintStream printf(Locale arg0, String arg1, Object[] arg2);
+    @NotOwning PrintStream format(String arg0, Object[] arg1);
+    @NotOwning PrintStream format(Locale arg0, String arg1, Object[] arg2);
     @NotOwning PrintStream append(CharSequence arg0);
     @NotOwning PrintStream append(CharSequence arg0, int arg1, int arg2);
     @NotOwning PrintStream append(char arg0);
@@ -224,13 +224,13 @@ class PrintWriter extends Writer {
     void println(char[] arg0);
     void println(String arg0);
     void println(Object arg0);
-    PrintWriter printf(String arg0, Object[] arg1);
-    PrintWriter printf(Locale arg0, String arg1, Object[] arg2);
-    PrintWriter format(String arg0, Object[] arg1);
-    PrintWriter format(Locale arg0, String arg1, Object[] arg2);
-    PrintWriter append(CharSequence arg0);
-    PrintWriter append(CharSequence arg0, int arg1, int arg2);
-    PrintWriter append(char arg0);
+    @NotOwning PrintWriter printf(String arg0, Object[] arg1);
+    @NotOwning PrintWriter printf(Locale arg0, String arg1, Object[] arg2);
+    @NotOwning PrintWriter format(String arg0, Object[] arg1);
+    @NotOwning PrintWriter format(Locale arg0, String arg1, Object[] arg2);
+    @NotOwning PrintWriter append(CharSequence arg0);
+    @NotOwning PrintWriter append(CharSequence arg0, int arg1, int arg2);
+    @NotOwning PrintWriter append(char arg0);
 }
 
 class OutputStreamWriter extends Writer {
@@ -242,12 +242,28 @@ class OutputStreamWriter extends Writer {
     void write(int arg0) throws IOException;
     void write(char[] arg0, int arg1, int arg2) throws IOException;
     void write(String arg0, int arg1, int arg2) throws IOException;
-    Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
-    Writer append(CharSequence arg0) throws IOException;
+    @NotOwning Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
+    @NotOwning Writer append(CharSequence arg0) throws IOException;
     void flush() throws IOException;
     void close() throws IOException;
 }
 
+class Writer implements Appendable, Closeable, Flushable {
+    protected Object lock;
+    static Writer nullWriter();
+    protected Writer();
+    protected Writer(Object arg0);
+    void write(int arg0) throws IOException;
+    void write(char[] arg0) throws IOException;
+    void write(char[] arg0, int arg1, int arg2) throws IOException;
+    void write(String arg0) throws IOException;
+    void write(String arg0, int arg1, int arg2) throws IOException;
+    @NotOwning Writer append(CharSequence arg0) throws IOException;
+    @NotOwning Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
+    @NotOwning Writer append(char arg0) throws IOException;
+    void flush() throws IOException;
+    void close() throws IOException;
+}
 
 
 package java.security;
@@ -266,5 +282,39 @@ class DigestOutputStream extends FilterOutputStream {
     String toString();
 }
 
+package java.nio.channels;
 
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
 
+class FileChannel extends AbstractInterruptibleChannel implements SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel {
+    protected FileChannel();
+    static FileChannel open(Path arg0, Set<? extends OpenOption> arg1, FileAttribute<?>[] arg2) throws IOException;
+    static FileChannel open(Path arg0, OpenOption[] arg1) throws IOException;
+    int read(ByteBuffer arg0) throws IOException;
+    long read(ByteBuffer[] arg0, int arg1, int arg2) throws IOException;
+    long read(ByteBuffer[] arg0) throws IOException;
+    int write(ByteBuffer arg0) throws IOException;
+    long write(ByteBuffer[] arg0, int arg1, int arg2) throws IOException;
+    long write(ByteBuffer[] arg0) throws IOException;
+    long position() throws IOException;
+    @NotOwning FileChannel position(long arg0) throws IOException;
+    long size() throws IOException;
+    @NotOwning FileChannel truncate(long arg0) throws IOException;
+    void force(boolean arg0) throws IOException;
+    long transferTo(long arg0, long arg1, WritableByteChannel arg2) throws IOException;
+    long transferFrom(ReadableByteChannel arg0, long arg1, long arg2) throws IOException;
+    int read(ByteBuffer arg0, long arg1) throws IOException;
+    int write(ByteBuffer arg0, long arg1) throws IOException;
+    MappedByteBuffer map(MapMode arg0, long arg1, long arg2) throws IOException;
+    FileLock lock(long arg0, long arg1, boolean arg2) throws IOException;
+    FileLock lock() throws IOException;
+    FileLock tryLock(long arg0, long arg1, boolean arg2) throws IOException;
+    FileLock tryLock() throws IOException;
+}
+class FileChannel$MapMode {
+    static final MapMode READ_ONLY;
+    static final MapMode READ_WRITE;
+    static final MapMode PRIVATE;
+    String toString();
+}

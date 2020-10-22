@@ -86,4 +86,18 @@ class ACMethodInvocationTest {
 
         testField3 = makeFooFinalize();
     }
+
+    void tryCatchFinally(){
+        Foo f = null;
+        try {
+            f = new Foo();
+            try {
+                throw new RuntimeException();
+            } catch (Exception e) {
+
+            }
+        } finally {
+            f.a();
+        }
+    }
 }
