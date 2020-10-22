@@ -8,7 +8,7 @@ class PostconditionVarArgs {
 
   void c() {}
 
-  // TODO suppress warnings
+  // :: error: ensuresvarargs.unverified
   @EnsuresCalledMethodsVarArgs("b")
   static void callB(PostconditionVarArgs... x) {
     for (PostconditionVarArgs p : x) {
@@ -22,7 +22,7 @@ class PostconditionVarArgs {
     x.b();
   }
 
-  // TODO suppress warnings
+  // :: error: ensuresvarargs.unverified
   @EnsuresCalledMethodsVarArgs({"b", "c"})
   static void callBAndC(PostconditionVarArgs... x) {
     for (PostconditionVarArgs p : x) {

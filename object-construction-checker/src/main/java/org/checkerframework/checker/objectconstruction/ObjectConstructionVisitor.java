@@ -58,6 +58,10 @@ public class ObjectConstructionVisitor
             node, new DiagMessage(Diagnostic.Kind.ERROR, "predicate.invalid", e.getMessage()));
         return null;
       }
+    } else if (AnnotationUtils.areSameByClass(anno, EnsuresCalledMethodsVarArgs.class)) {
+      // we can't verify these yet.  emit an error (which will have to be suppressed) for now
+      checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "ensuresvarargs.unverified"));
+      return null;
     }
     return super.visitAnnotation(node, p);
   }
