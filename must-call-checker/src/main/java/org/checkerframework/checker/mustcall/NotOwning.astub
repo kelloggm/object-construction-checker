@@ -8,7 +8,12 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 package java.nio.channels;
 
 @MustCall("close")
-class SelectableChannel { }
+class SelectableChannel {
+}
+
+class SelectionKey {
+    @NotOwning SelectableChannel channel();
+}
 
 @MustCall("close")
 class SocketChannel extends AbstractSelectableChannel implements ByteChannel, ScatteringByteChannel, GatheringByteChannel, NetworkChannel {
@@ -52,6 +57,7 @@ package java.nio.channels.spi;
 
 @MustCall("close")
 class AbstractSelectableChannel {
+    @NotOwning SelectableChannel configureBlocking(boolean b);
 }
 
 @MustCall("close")
