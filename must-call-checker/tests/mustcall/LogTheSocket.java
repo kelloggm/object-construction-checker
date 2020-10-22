@@ -68,4 +68,8 @@ class LogTheSocket {
         sock.socket().setTcpNoDelay(true);
         return sock;
     }
+
+    void testPrintln(ServerSocket s) {
+        System.out.println(s);
+    }
 }

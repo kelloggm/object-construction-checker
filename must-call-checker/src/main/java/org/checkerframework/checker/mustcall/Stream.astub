@@ -68,8 +68,8 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     void print(float arg0);
     void print(double arg0);
     void print(char[] arg0);
-    void print(String arg0);
-    void print(Object arg0);
+    void print(@NotOwning String s);
+    void print(@NotOwning Object arg0);
     void println();
     void println(boolean arg0);
     void println(char arg0);
@@ -78,14 +78,14 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     void println(float arg0);
     void println(double arg0);
     void println(char[] arg0);
-    void println(String arg0);
-    void println(Object arg0);
-    PrintStream printf(String arg0, Object[] arg1);
-    PrintStream printf(Locale arg0, String arg1, Object[] arg2);
-    PrintStream format(String arg0, Object[] arg1);
-    PrintStream format(Locale arg0, String arg1, Object[] arg2);
-    @NotOwning PrintStream append(CharSequence arg0);
-    @NotOwning PrintStream append(CharSequence arg0, int arg1, int arg2);
+    void println(@NotOwning String s);
+    void println(@NotOwning Object arg0);
+    PrintStream printf(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    PrintStream printf(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    PrintStream format(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    PrintStream format(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    @NotOwning PrintStream append(@NotOwning CharSequence arg0);
+    @NotOwning PrintStream append(@NotOwning CharSequence arg0, int arg1, int arg2);
     @NotOwning PrintStream append(char arg0);
 }
 

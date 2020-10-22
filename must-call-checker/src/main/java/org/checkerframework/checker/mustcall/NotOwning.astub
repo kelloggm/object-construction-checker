@@ -112,7 +112,6 @@ class Logger {
 
 package java.lang;
 
-class System {
-    void print(@NotOwning String s);
-    void println(@NotOwning String s);
+class StringBuilder {
+    StringBuilder append(@NotOwning String s);
 }

@@ -66,7 +66,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
     for (int i = 0; i < type.getParameterTypes().size(); i++) {
       Element paramDecl = declaration.getParameters().get(i);
-      if (paramDecl.getAnnotation(NotOwning.class) != null) {
+      if (getDeclAnnotation(paramDecl, NotOwning.class) != null) {
         AnnotatedTypeMirror paramType = type.getParameterTypes().get(i);
         paramType.replaceAnnotation(TOP);
         // Descend into a varargs array
