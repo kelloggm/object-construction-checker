@@ -16,6 +16,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallTop;
+import org.checkerframework.checker.mustcall.qual.PolyMustCall;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -41,6 +42,9 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The bottom annotation. */
   final AnnotationMirror BOTTOM;
 
+  /** The polymorphic qualifier */
+  final AnnotationMirror POLY;
+
   /**
    * Default constructor matching super. Should be called automatically.
    *
@@ -50,6 +54,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     super(checker);
     TOP = AnnotationBuilder.fromClass(elements, MustCallTop.class);
     BOTTOM = createMustCall();
+    POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
     this.postInit();
   }
 
@@ -126,6 +131,12 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         return BOTTOM;
       }
 
+      if (isPolymorphicQualifier(a1) && isPolymorphicQualifier(a2)) {
+        return a1;
+      } else if (isPolymorphicQualifier(a1) || isPolymorphicQualifier(a2)) {
+        return BOTTOM;
+      }
+
       if (AnnotationUtils.areSame(a1, TOP)) {
         return a2;
       }
@@ -150,6 +161,12 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         return TOP;
       }
 
+      if (isPolymorphicQualifier(a1) && isPolymorphicQualifier(a2)) {
+        return a1;
+      } else if (isPolymorphicQualifier(a1) || isPolymorphicQualifier(a2)) {
+        return TOP;
+      }
+
       Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
       Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
       a1Val.addAll(a2Val);
@@ -169,6 +186,14 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       if (AnnotationUtils.areSame(superAnno, TOP)) {
         return true;
       } else if (AnnotationUtils.areSame(subAnno, TOP)) {
+        return false;
+      }
+
+      if (isPolymorphicQualifier(subAnno)) {
+        return isPolymorphicQualifier(superAnno);
+      } else if (isPolymorphicQualifier(superAnno)) {
+        // Polymorphic annotations are only a supertype of other polymorphic annotations and
+        // the bottom type, both of which have already been checked above.
         return false;
       }
 
