@@ -165,6 +165,9 @@ public class ObjectConstructionTransfer extends CFTransfer {
       for (Node arg : arrayCreationNode.getInitializers()) {
         AnnotatedTypeMirror currentType = atypefactory.getAnnotatedType(arg.getTree());
         AnnotationMirror newType = getUpdatedCalledMethodsType(currentType, ensuredMethodNames);
+        if (newType == null) {
+          continue;
+        }
         Receiver receiverReceiver = FlowExpressions.internalReprOf(atypefactory, arg);
         thenStore.insertValue(receiverReceiver, newType);
         elseStore.insertValue(receiverReceiver, newType);
