@@ -19,6 +19,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   ObjectConstructionChecker.USE_VALUE_CHECKER,
   ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
   ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
+  ObjectConstructionChecker.DISABLE_RETURNS_RECEIVER
 })
 @StubFiles({
   "Socket.astub",
