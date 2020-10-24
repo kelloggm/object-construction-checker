@@ -25,7 +25,11 @@ import org.checkerframework.javacutil.AnnotationUtils;
  */
 public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactory> {
 
-  /** @param checker the type-checker associated with this visitor */
+  /**
+   * Creates a new MustCallVisitor.
+   *
+   * @param checker the type-checker associated with this visitor
+   */
   public MustCallVisitor(BaseTypeChecker checker) {
     super(checker);
   }
