@@ -17,6 +17,10 @@ import org.checkerframework.framework.qual.TypeUseLocation;
  * <p>The subtyping relationship is:
  *
  * <pre>{@code @MustCall({"m1"}) <: @MustCall({"m1", "m2"})}</pre>
+ *
+ * <p>For example, an object with an obligation to call only "m1" can be passed to a method
+ * that whose argument has an obligation to call both "m1" and "m2", because if both
+ * "m1" and "m2" are called, then "m1" must also have been called.
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
