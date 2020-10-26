@@ -16,7 +16,7 @@ import org.checkerframework.framework.qual.TypeUseLocation;
  *
  * <p>The subtyping relationship is:
  *
- * <pre>{@code @MustCall({"m1"}) :> @MustCall({"m1", "m2"})}</pre>
+ * <pre>{@code @MustCall({"m1"}) <: @MustCall({"m1", "m2"})}</pre>
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
