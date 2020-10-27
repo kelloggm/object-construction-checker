@@ -12,62 +12,61 @@ public class TypeArgs {
         f2(flag ? real : other);
     }
 
-    <@MustCall({"carly"}) Q extends @MustCall({"carly"}) Object> void f2(
-            Generic<? extends Q> parm) {}
+    <@MustCall({"carly"}) Q extends @MustCall({"carly"}) Object> void f2(Generic<? extends Q> parm) {}
 
     interface Generic<F> {}
 
     void m3(
-            @MustCall() Object a,
+            @MustCall({}) Object a,
             @MustCall({"foo"}) Object b,
             @MustCall({"bar"}) Object c,
             @MustCall({"foo", "bar"}) Object d) {
         requireNothing1(a);
         requireNothing2(a);
+        // :: error: (type.argument.type.incompatible)
         requireNothing1(b);
+        // :: error: (argument.type.incompatible)
         requireNothing2(b);
+        // :: error: (type.argument.type.incompatible)
         requireNothing1(c);
+        // :: error: (argument.type.incompatible)
         requireNothing2(c);
+        // :: error: (type.argument.type.incompatible)
         requireNothing1(d);
+        // :: error: (argument.type.incompatible)
         requireNothing2(d);
 
-        // :: error: (type.argument.type.incompatible)
         requireFoo1(a);
-        // :: error: (type.argument.type.incompatible)
         requireFoo2(a);
         requireFoo1(b);
         requireFoo2(b);
         // :: error: (type.argument.type.incompatible)
         requireFoo1(c);
-        // :: error: (type.argument.type.incompatible)
+        // :: error: (argument.type.incompatible)
         requireFoo2(c);
+        // :: error: (type.argument.type.incompatible)
         requireFoo1(d);
+        // :: error: (argument.type.incompatible)
         requireFoo2(d);
 
-        // :: error: (type.argument.type.incompatible)
         requireBar1(a);
-        // :: error: (type.argument.type.incompatible)
         requireBar2(a);
         // :: error: (type.argument.type.incompatible)
         requireBar1(b);
-        // :: error: (type.argument.type.incompatible)
+        // :: error: (argument.type.incompatible)
         requireBar2(b);
         requireBar1(c);
         requireBar2(c);
+        // :: error: (type.argument.type.incompatible)
         requireBar1(d);
+        // :: error: (argument.type.incompatible)
         requireBar2(d);
 
-        // :: error: (type.argument.type.incompatible)
         requireFooBar1(a);
-        // :: error: (type.argument.type.incompatible)
         requireFooBar2(a);
-        // :: error: (type.argument.type.incompatible)
         requireFooBar1(b);
-        // :: error: (type.argument.type.incompatible)
         requireFooBar2(b);
-        // :: error: (type.argument.type.incompatible)
         requireFooBar1(c);
-        // :: error: (type.argument.type.incompatible)
         requireFooBar2(c);
         requireFooBar1(d);
         requireFooBar2(d);

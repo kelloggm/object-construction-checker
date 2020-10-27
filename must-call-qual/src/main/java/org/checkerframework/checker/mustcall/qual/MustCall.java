@@ -18,16 +18,16 @@ import org.checkerframework.framework.qual.TypeUseLocation;
  *
  * <pre>{@code @MustCall({"m1"}) <: @MustCall({"m1", "m2"})}</pre>
  *
- * <p>For example, an object with an obligation to call only "m1" can be passed to a method
- * that whose argument has an obligation to call both "m1" and "m2", because if both
- * "m1" and "m2" are called, then "m1" must also have been called.
+ * <p>For example, an object with an obligation to call only "m1" can be passed to a method that
+ * whose argument has an obligation to call both "m1" and "m2", because if both "m1" and "m2" are
+ * called, then "m1" must also have been called.
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({MustCallTop.class})
 @DefaultQualifierInHierarchy
-@DefaultFor({TypeUseLocation.EXCEPTION_PARAMETER, TypeUseLocation.IMPLICIT_UPPER_BOUND})
+@DefaultFor({TypeUseLocation.EXCEPTION_PARAMETER})
 public @interface MustCall {
   /**
    * Methods that must be called, on any expression whose type is annotated.

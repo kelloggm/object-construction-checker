@@ -1,22 +1,13 @@
 package org.checkerframework.checker.mustcall;
 
 import com.sun.source.tree.AnnotationTree;
-import com.sun.source.tree.Tree;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Name;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
-import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
-import org.checkerframework.framework.type.AnnotatedTypeParameterBounds;
-import org.checkerframework.javacutil.AnnotationUtils;
 
 /**
  * The visitor for the MustCall checker. This visitor is similar to BaseTypeVisitor, but overrides
@@ -85,72 +76,5 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
   @Override
   public Void visitAnnotation(AnnotationTree node, Void p) {
     return null;
-  }
-
-  /**
-   * Only check type arguments that are bottom, to avoid false positives.
-   *
-   * <p>Without this code, the checker issues false positives at any point where a type with a
-   * non-default @MustCall annotation is used as a type argument. For example, if the user writes
-   * {@code List<Socket>} (and Socket is must-call close), then without this code a
-   * type.argument.type.incompatible error is issued. These errors are spurious, because the List of
-   * Sockets does in fact have a responsibility to close each of those sockets.
-   */
-  protected void checkTypeArguments(
-      Tree toptree,
-      List<? extends AnnotatedTypeParameterBounds> paramBounds,
-      List<? extends AnnotatedTypeMirror> typeargs,
-      List<? extends Tree> typeargTrees,
-      Name typeOrMethodName,
-      List<?> paramNames) {
-    List<Integer> indicesToRemove = new ArrayList<>();
-    for (int i = 0; i < typeargs.size(); i++) {
-      AnnotatedTypeMirror atm = typeargs.get(i);
-      if (containsNonDefaultAnnotation(atm)) {
-        indicesToRemove.add(i);
-      }
-    }
-    // The lists are unmodifiable, so new lists have to be constructed
-    // rather than removing from the old ones.
-    List<AnnotatedTypeParameterBounds> paramBoundsWithoutNonDefault = new ArrayList<>();
-    List<AnnotatedTypeMirror> typeargsWithoutNonDefault = new ArrayList<>();
-    for (int i = 0; i < typeargs.size(); i++) {
-      if (!indicesToRemove.contains(i)) {
-        paramBoundsWithoutNonDefault.add(paramBounds.get(i));
-        typeargsWithoutNonDefault.add(typeargs.get(i));
-      }
-    }
-    super.checkTypeArguments(
-        toptree,
-        paramBoundsWithoutNonDefault,
-        typeargsWithoutNonDefault,
-        typeargTrees,
-        typeOrMethodName,
-        paramNames);
-  }
-
-  /**
-   * Does a deep scan of the annotated type for any non-default (that is, non-bottom) annotation.
-   * Returns true iff the type or one of its component types contains a non-default type.
-   */
-  private boolean containsNonDefaultAnnotation(final AnnotatedTypeMirror type) {
-    switch (type.getKind()) {
-      case DECLARED:
-        AnnotatedDeclaredType declaredType = (AnnotatedDeclaredType) type;
-        for (AnnotatedTypeMirror typearg : declaredType.getTypeArguments()) {
-          if (containsNonDefaultAnnotation(typearg)) {
-            return true;
-          }
-        }
-        return !AnnotationUtils.areSame(
-            type.getAnnotationInHierarchy(atypeFactory.TOP), atypeFactory.BOTTOM);
-      case ARRAY:
-        AnnotatedArrayType arrayType = (AnnotatedArrayType) type;
-        return containsNonDefaultAnnotation(arrayType.getComponentType())
-            || !AnnotationUtils.areSame(
-                type.getAnnotationInHierarchy(atypeFactory.TOP), atypeFactory.BOTTOM);
-      default:
-        return false;
-    }
   }
 }
