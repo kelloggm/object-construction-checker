@@ -26,8 +26,11 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
   }
 
   /**
-   * Typically issues a warning if the result type of the constructor is not top. This is not a
-   * problem for the must call hierarchy, which expects the type of all constructors to be {@code
+   * Does not issue any warnings.
+   *
+   * <p>This method typically issues a warning if the result type of the constructor is not top,
+   * because in top-default type systems that indicates a potential problem. The must call checker
+   * does not need this warning, because it expects the type of all constructors to be {@code
    * MustCall({})} (by default) or some other {@code MustCall} type, not the top type.
    *
    * @param constructorType AnnotatedExecutableType for the constructor
@@ -52,24 +55,14 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
   }
 
   /**
-   * The Checker Framework's default implementation of this method defers to {@code
-   * #getExceptionParameterLowerBoundAnnotations}. That is a bug; this method should always return
-   * the set containing top, regardless of what that method returns. This implementation does so.
+   * Does not issue any warnings.
    *
-   * @return a set containing only the @MustCallTop annotation
-   */
-  @Override
-  protected Set<? extends AnnotationMirror> getThrowUpperBoundAnnotations() {
-    return Collections.singleton(atypeFactory.TOP);
-  }
-
-  /**
-   * Annotation arguments are treated as return locations for the purposes of defaulting, rather
+   * <p>Annotation arguments are treated as return locations for the purposes of defaulting, rather
    * than parameter locations. This causes them to default incorrectly when the annotation is
    * defined in bytecode. See https://github.com/typetools/checker-framework/issues/3178 for an
    * explanation of why this is necessary to avoid false positives.
    *
-   * <p>Skipping this check in the MustCall checker is safe, because the MustCall checker is not
+   * <p>Skipping this check in the MustCall checker is sound, because the MustCall checker is not
    * concerned with annotation arguments (which must be literals, and therefore won't have (or be
    * able to fulfill) must-call obligations).
    */
