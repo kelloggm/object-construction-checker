@@ -8,9 +8,10 @@ import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
  * The top qualifier in the Must Call type hierarchy. It represents a type that must have all of its
- * methods called on it. It should rarely (if ever) be written by a programmer.
+ * methods called on it. It should rarely (if ever) be written by a programmer, because the checker
+ * cannot prove the property it represents.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({})
-public @interface MustCallTop {}
+public @interface MustCallAll {}
