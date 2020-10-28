@@ -14,7 +14,7 @@ plugins {
 ext.versions = [
     checkerFramework: "3.7.0",
     autoValue       : "1.6.5",
-    lombok          : "1.18.12",
+    lombok          : "1.18.16",
 ]
 
 subprojects { project ->

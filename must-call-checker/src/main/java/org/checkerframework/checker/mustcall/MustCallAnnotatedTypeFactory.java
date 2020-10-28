@@ -15,8 +15,8 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.mustcall.qual.MustCallTop;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
+import org.checkerframework.checker.mustcall.qual.MustCallAny;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -39,7 +39,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The top annotation. */
   final AnnotationMirror TOP;
 
-  /** The bottom annotation. */
+  /** The bottom annotation, which is the default in unannotated code. */
   final AnnotationMirror BOTTOM;
 
   /** The polymorphic qualifier */
@@ -52,7 +52,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    */
   public MustCallAnnotatedTypeFactory(final BaseTypeChecker checker) {
     super(checker);
-    TOP = AnnotationBuilder.fromClass(elements, MustCallTop.class);
+    TOP = AnnotationBuilder.fromClass(elements, MustCallAny.class);
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
     this.postInit();
@@ -85,10 +85,10 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Creates a @MustCall annotation whose values are the given strings.
+   * Creates a {@link MustCall} annotation whose values are the given strings.
    *
-   * @param val the methods that have been called
-   * @return an annotation indicating that the given methods have been called
+   * @param val the methods that should be called
+   * @return an annotation indicating that the given methods should be called
    */
   public AnnotationMirror createMustCall(final String... val) {
     AnnotationBuilder builder = new AnnotationBuilder(processingEnv, MustCall.class);
@@ -104,7 +104,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /**
    * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
-   * declaratively defined subtyping relationships, like our @MustCall annotation.
+   * declaratively-defined subtyping relationships, like our @MustCall annotation.
    */
   private class MustCallQualifierHierarchy extends ElementQualifierHierarchy {
 
@@ -119,14 +119,15 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     /**
-     * GLB in this type system is set union of the arguments of the two annotations, unless one of
-     * them is bottom, in which case the result is also bottom.
+     * GLB in this type system is set intersection of the arguments of the two annotations, unless
+     * one of the annotations is top (if so, the result is the other annotation).
      */
     @Override
     public AnnotationMirror greatestLowerBound(
         final AnnotationMirror a1, final AnnotationMirror a2) {
 
-      // shortcut for the common case
+      // Shortcut for the common case, because bottom is the default and the intersection of
+      // any set with the empty set (i.e. bottom) is also the empty set.
       if (AnnotationUtils.areSame(a1, BOTTOM) || AnnotationUtils.areSame(a2, BOTTOM)) {
         return BOTTOM;
       }

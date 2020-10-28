@@ -7,10 +7,12 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * The top qualifier in the Must Call type hierarchy. It represents a type that must have all of its
- * methods called on it, and should rarely (if ever) be written by a programmer.
+ * The top qualifier in the Must Call type hierarchy. It represents a type that might have an
+ * obligation to call any set of methods, and therefore represents every object. This type should
+ * rarely be written by programmers, because the Must Call type system should be used to track
+ * specific MustCall obligations using {@link MustCall}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({})
-public @interface MustCallTop {}
+public @interface MustCallAny {}

@@ -26,7 +26,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   "Socket.astub",
   "NotOwning.astub",
   "Stream.astub",
-  "AlwaysCallEmpty.astub",
+  "NoObligationStreams.astub",
   "IOUtils.astub"
 })
 public class ObjectConstructionChecker extends BaseTypeChecker {

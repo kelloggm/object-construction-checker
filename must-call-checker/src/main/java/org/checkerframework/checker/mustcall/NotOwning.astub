@@ -134,3 +134,17 @@ package java.lang;
 class StringBuilder {
     StringBuilder append(@NotOwning String s);
 }
+
+package java.util;
+
+interface List<E> {
+    E remove(@NotOwning Object o);
+}
+
+interface Map<K, V> {
+    V remove(@NotOwning Object k);
+}
+
+class HashMap<K, V> {
+    V remove(@NotOwning Object k);
+}
