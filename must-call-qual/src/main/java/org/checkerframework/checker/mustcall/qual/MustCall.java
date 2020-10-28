@@ -22,8 +22,8 @@ import org.checkerframework.framework.qual.TypeUseLocation;
  * <pre>{@code @MustCall({"m1"}) <: @MustCall({"m1", "m2"})}</pre>
  *
  * <p>For example, an object with an obligation to call "m1" can be passed to a method whose
- * argument has an obligation to call both "m1" and "m2", because if both "m1" and "m2" are eventually called,
- * then "m1" must also have been called.
+ * argument has an obligation to call both "m1" and "m2", because if both "m1" and "m2" are
+ * eventually called, then "m1" must also have been called.
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
