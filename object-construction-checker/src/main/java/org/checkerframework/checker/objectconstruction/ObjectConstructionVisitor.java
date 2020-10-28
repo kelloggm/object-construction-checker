@@ -163,7 +163,7 @@ public class ObjectConstructionVisitor
   }
 
   private boolean isAssignedToFieldwithOwning(final TreePath treePath) {
-    Element lhsElement = getLeftHandSideOfAssign(treePath);
+    Element lhsElement = getLeftHandSideOfAssign(treePath, null);
     if (lhsElement!=null && lhsElement.getKind().equals(FIELD)) {
       return (atypeFactory.getDeclAnnotation(lhsElement, Owning.class) != null);
     }
@@ -171,9 +171,9 @@ public class ObjectConstructionVisitor
     return false;
   }
 
-  private Element getLeftHandSideOfAssign(final TreePath treePath) {
+  private Element getLeftHandSideOfAssign(final TreePath treePath, Element element) {
     TreePath parentPath = treePath.getParentPath();
-    Element lhsElement = null;
+    Element lhsElement = element;
 
     if (parentPath == null) {
       return null;
@@ -181,16 +181,30 @@ public class ObjectConstructionVisitor
 
     Tree parent = parentPath.getLeaf();
 
-    if (parent.getKind().equals(Tree.Kind.ASSIGNMENT)) {
-      final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
-      lhsElement = TreeUtils.elementFromTree((lhs).getTree());
+    switch (parent.getKind()) {
+      case PARENTHESIZED:
+      case TYPE_CAST:
+        return getLeftHandSideOfAssign(parentPath, lhsElement);
+      case CONDITIONAL_EXPRESSION:
+        ConditionalExpressionTree cet = (ConditionalExpressionTree) parent;
+        if (cet.getCondition() == treePath.getLeaf()) {
+          // The assignment context for the condition is simply boolean.
+          // No point in going on.
+          return lhsElement;
+        }
+        // Otherwise use the context of the ConditionalExpressionTree.
+        return getLeftHandSideOfAssign(parentPath, lhsElement);
+      case ASSIGNMENT: // check if the left hand is a local variable
+        final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
+        lhsElement = TreeUtils.elementFromTree((lhs).getTree());
+        return lhsElement;
+        default:
+          return lhsElement;
     }
-
-    return lhsElement;
   }
 
   private void checkOwningFeild(final TreePath treePath, Tree node) {
-    Element fieldElement = getLeftHandSideOfAssign(treePath);
+    Element fieldElement = getLeftHandSideOfAssign(treePath, null);
     Element enclosingElemnt =  fieldElement.getEnclosingElement();
     String fieldElAnno = atypeFactory.getAlwaysCallValue(fieldElement);
     String enclosingElAnno = atypeFactory.getAlwaysCallValue(enclosingElemnt);
@@ -244,7 +258,7 @@ public class ObjectConstructionVisitor
         // Otherwise use the context of the ConditionalExpressionTree.
         return isAssignedToLocal(parentPath);
       case ASSIGNMENT: // check if the left hand is a local variable
-        Element lhsElement = getLeftHandSideOfAssign(treePath);
+        Element lhsElement = getLeftHandSideOfAssign(treePath, null);
         return lhsElement.getKind().equals(LOCAL_VARIABLE);
       case VARIABLE:
       case METHOD_INVOCATION:

@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.Optional;
 import javax.net.ssl.*;
 import java.nio.channels.*;
+import java.io.Closeable;
 
 public class ACSocketTest
 {
@@ -490,6 +491,28 @@ public class ACSocketTest
         sock.socket().setSoLinger(false, -1);
         sock.socket().setTcpNoDelay(true);
         return sock;
+    }
+
+    static class TcpPeerServer implements Closeable {
+
+        private final @Owning ServerSocket serverSocket;
+
+        public TcpPeerServer(int socketWriteTimeout,
+                                  InetSocketAddress bindAddr,
+                                  int backlogLength) throws IOException {
+            this.serverSocket = (socketWriteTimeout > 0) ?
+                    ServerSocketChannel.open().socket() : new ServerSocket();
+        }
+
+        @Override
+        @EnsuresCalledMethods(value = "this.serverSocket", methods = "close")
+        public void close() throws IOException {
+            try {
+                serverSocket.close();
+            } catch(IOException e) {
+
+            }
+        }
     }
 }
 
