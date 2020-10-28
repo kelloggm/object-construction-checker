@@ -1,9 +1,16 @@
 ### MustCall Checker
 
 The MustCall Checker tracks the obligations that an object might have to call particular methods
-before it is deallocated. For example, an object whose static type is `java.net.Socket` might
+before it is deallocated. For example, an object whose type is `java.net.Socket` might
 have an obligation to call the `close()` method, to release the socket. Or, a builder object
-might have an obligation to call the `build()` method. The MustCall Checker does **not** check that
+might have an obligation to call the `build()` method. We say that an object `obj` has a
+*must-call obligation* to call some method `foo` if there exists an execution path on which
+it is an error for `obj.foo()` not to be invoked before `obj` is deallocated. As a shorthand,
+the documentation for this checker sometimes shortens this to "`obj` must call `foo`" or similar,
+to refer to the worst case in which `obj` is actually an object that has to call `foo` (even if
+`obj` sometimes dynamically does not actually need to call `foo`, such as when `obj` is `null`).
+
+The MustCall Checker does **not** check that
 these methods have actually been called; rather, it is responsible only for tracking which methods
 might need to be called.
 

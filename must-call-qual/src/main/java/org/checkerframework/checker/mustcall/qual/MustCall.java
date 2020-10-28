@@ -28,7 +28,7 @@ import org.checkerframework.framework.qual.TypeUseLocation;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({MustCallAll.class})
+@SubtypeOf({MustCallAny.class})
 @DefaultQualifierInHierarchy
 @DefaultFor({TypeUseLocation.EXCEPTION_PARAMETER})
 public @interface MustCall {

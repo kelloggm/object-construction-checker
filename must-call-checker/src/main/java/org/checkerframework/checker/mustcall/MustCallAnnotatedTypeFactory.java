@@ -15,7 +15,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.mustcall.qual.MustCallAll;
+import org.checkerframework.checker.mustcall.qual.MustCallAny;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -48,7 +48,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    */
   public MustCallAnnotatedTypeFactory(final BaseTypeChecker checker) {
     super(checker);
-    TOP = AnnotationBuilder.fromClass(elements, MustCallAll.class);
+    TOP = AnnotationBuilder.fromClass(elements, MustCallAny.class);
     BOTTOM = createMustCall();
     this.postInit();
   }
