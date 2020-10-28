@@ -11,16 +11,18 @@ import org.checkerframework.framework.qual.SubtypeOf;
 import org.checkerframework.framework.qual.TypeUseLocation;
 
 /**
- * If an expression has type {@code @MustCall({"m1", "m2"})}, then its value has an obligation to
- * eventually call methods {@code m1} and {@code m2} before any exit point or de-allocation.
+ * If an expression has type {@code @MustCall({"m1", "m2"})}, then its value might have an
+ * obligation to eventually call methods {@code m1}, {@code m2}, both, or neither before any exit
+ * point or de-allocation. The value cannot have an obligation to call any methods that are not
+ * named in the annotation.
  *
  * <p>The subtyping relationship is:
  *
  * <pre>{@code @MustCall({"m1"}) <: @MustCall({"m1", "m2"})}</pre>
  *
- * <p>For example, an object with an obligation to call only "m1" can be passed to a method that
- * whose argument has an obligation to call both "m1" and "m2", because if both "m1" and "m2" are
- * called, then "m1" must also have been called.
+ * <p>For example, an object with an obligation to call only "m1" can be passed to a method whose
+ * argument has an obligation to call both "m1" and "m2", because if both "m1" and "m2" are called,
+ * then "m1" must also have been called.
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
