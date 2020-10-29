@@ -11,18 +11,17 @@ import org.checkerframework.framework.qual.SubtypeOf;
 import org.checkerframework.framework.qual.TypeUseLocation;
 
 /**
- * If an expression has type {@code @MustCall({"m1", "m2"})}, then the Object Construction
- * Checker's {@code -AcheckMustCall} mode will enforce that the methods "m1" and "m2" are
- * called on the annotated value before it is deallocated.
+ * If an expression has type {@code @MustCall({"m1", "m2"})}, then the Object Construction Checker's
+ * {@code -AcheckMustCall} mode will enforce that the methods "m1" and "m2" are called on the
+ * annotated value before it is deallocated.
  *
  * <p>The subtyping relationship is:
  *
  * <pre>{@code @MustCall({"m1"}) <: @MustCall({"m1", "m2"})}</pre>
  *
- * <p>In practice, this means that value of a type that is annotated with {@code @MustCall({"m1", "m2"})}
- * may be obligated to call "m1", "m2", both, or neither before it is deallocated.
- * Such a value is guaranteed not to be obligated to
- * call any other methods.
+ * <p>In practice, this means that value of a type that is annotated with {@code @MustCall({"m1",
+ * "m2"})} may be obligated to call "m1", "m2", both, or neither before it is deallocated. Such a
+ * value is guaranteed not to be obligated to call any other methods.
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
