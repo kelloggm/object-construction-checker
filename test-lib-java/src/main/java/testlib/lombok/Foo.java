@@ -3,7 +3,7 @@ package testlib.lombok;
 import lombok.Builder;
 import lombok.NonNull;
 
-//@Builder
+@Builder
 public class Foo {
     @NonNull
     String requiredProperty;
