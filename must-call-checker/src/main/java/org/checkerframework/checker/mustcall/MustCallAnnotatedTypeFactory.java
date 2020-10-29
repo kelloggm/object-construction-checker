@@ -53,7 +53,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.postInit();
   }
 
-  /** Treat non-owning method parameters as @MustCallTop to avoid false positives. */
+  /** Treat non-owning method parameters as @MustCallAny to avoid false positives. */
   @Override
   public void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
     ExecutableElement declaration;
