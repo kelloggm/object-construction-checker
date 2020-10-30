@@ -98,7 +98,7 @@ public class ObjectConstructionVisitor
       TypeMirror returnType = TreeUtils.typeOf(node);
 
       if (atypeFactory.hasAlwaysCall(returnType)) {
-        if (isAssignedToFieldwithOwning(this.getCurrentPath())) {
+        if (isAssignedToOwningField(this.getCurrentPath())) {
           checkOwningFeild(this.getCurrentPath(), node);
         } else {
 
@@ -142,7 +142,7 @@ public class ObjectConstructionVisitor
     if (!isAssignedToLocal(this.getCurrentPath())) {
       TypeMirror type = TreeUtils.typeOf(node);
       if (atypeFactory.hasAlwaysCall(type)) {
-        if (isAssignedToFieldwithOwning(this.getCurrentPath())) {
+        if (isAssignedToOwningField(this.getCurrentPath())) {
           checkOwningFeild(this.getCurrentPath(), node);
         } else {
           checker.reportError(
@@ -162,7 +162,7 @@ public class ObjectConstructionVisitor
         : null;
   }
 
-  private boolean isAssignedToFieldwithOwning(final TreePath treePath) {
+  private boolean isAssignedToOwningField(final TreePath treePath) {
     Element lhsElement = getLeftHandSideOfAssign(treePath, null);
     if (lhsElement!=null && lhsElement.getKind().equals(FIELD)) {
       return (atypeFactory.getDeclAnnotation(lhsElement, Owning.class) != null);
@@ -196,7 +196,7 @@ public class ObjectConstructionVisitor
         return getLeftHandSideOfAssign(parentPath, lhsElement);
       case ASSIGNMENT: // check if the left hand is a local variable
         final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
-        lhsElement = TreeUtils.elementFromTree((lhs).getTree());
+        lhsElement = TreeUtils.elementFromTree(lhs.getTree());
         return lhsElement;
         default:
           return lhsElement;
@@ -221,6 +221,7 @@ public class ObjectConstructionVisitor
             List<Pair<Symbol.MethodSymbol,Attribute>> list =  ((Attribute.Compound) annotationMirror).values;
             if (list.get(0).snd.getValue().toString().contains(fieldElement.getSimpleName().toString())) {
               if (((Attribute.Array) list.get(1).snd).getValue().head.getValue().equals(fieldElAnno)) {
+                //TODO report a warning if the left hand side is not MustCall{}
                 report = false;
               }
             }
@@ -232,7 +233,7 @@ public class ObjectConstructionVisitor
 
     if (report) {
       checker.reportError(
-              node, "missing.alwayscall", TreeUtils.typeOf(node).toString(), "field might not be safe");
+              node, "missing.alwayscall", TreeUtils.typeOf(node).toString(), "");
     }
   }
 

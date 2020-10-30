@@ -14,17 +14,35 @@ class CheckFields {
 
     @AlwaysCall("b")
     static class FooField {
-        private final @Owning Foo foo;
-        private final Foo notOwningFoo;
+        private final @Owning Foo finalOwningFoo;
+        private final Foo finalNotOwningFoo;
+        private @Owning Foo owningFoo;
+        private Foo notOwningFoo;
         public FooField() {
-            this.foo = new Foo();
+            this.finalOwningFoo = new Foo();
             // :: error: missing.alwayscall
-            this.notOwningFoo = new Foo();
+            this.finalNotOwningFoo = new Foo();
         }
 
-        @EnsuresCalledMethods(value = "this.foo", methods = "a")
+        void assingToFinalOwningField() {
+            Foo f = new Foo();
+            this.owningFoo = f;
+        }
+
+        void assingToFinalNotOwningField() {
+            // :: error: missing.alwayscall
+            Foo f = new Foo();
+            this.notOwningFoo = f;
+        }
+
+        Foo getOwningFoo() {
+            return this.owningFoo;
+        }
+
+        @EnsuresCalledMethods(value = {"this.finalOwningFoo", "this.owningFoo"}, methods = "a")
         void b() {
-            this.foo.a();
+            this.finalOwningFoo.a();
+            this.owningFoo.a();
         }
 
     }
@@ -32,5 +50,20 @@ class CheckFields {
     void testField() {
         FooField fooField = new FooField();
         fooField.b();
+    }
+
+    void testAccessField() {
+        FooField fooField = new FooField();
+        fooField.owningFoo = new Foo();
+        fooField.b();
+    }
+
+    void testAccessFieldWrong() {
+        // :: error: missing.alwayscall
+        FooField fooField = new FooField();
+        fooField.owningFoo = new Foo();
+        // :: error: missing.alwayscall
+        fooField.notOwningFoo = new Foo();
+
     }
 }

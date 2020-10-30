@@ -8,6 +8,7 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Type;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,6 +65,7 @@ import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlockImpl;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
+import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
@@ -87,6 +89,7 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.checkerframework.org.objectweb.asmx.tree.FieldNode;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -399,8 +402,21 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           Node lhs = ((AssignmentNode) node).getTarget();
           Node rhs = ((AssignmentNode) node).getExpression();
 
-          if (rhs instanceof TypeCastNode) {
+          while (rhs instanceof TypeCastNode) {
             rhs = ((TypeCastNode) rhs).getOperand();
+          }
+
+          // check fields
+          if (rhs instanceof LocalVariableNode && TreeUtils.elementFromTree(lhs.getTree()).getKind().equals(ElementKind.FIELD)) {
+            Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
+            if (getDeclAnnotation(lhsElement, Owning.class) != null) {
+              //TODO report a warning if the left hand side is not MustCall{}
+              if (hasAlwaysCall(lhs.getType()) && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
+                LocalVarWithAssignTree latestAssignmentPair =
+                        getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
+                newDefs.remove(latestAssignmentPair);
+              }
+            }
           }
 
           if (lhs instanceof LocalVariableNode
