@@ -16,7 +16,7 @@ example, a byte array. Either of these dynamic types can be represented by the s
 `@MustCall({"close"}) OutputStream`, which can be read as "an OutputStream that might need
 to call close before it is deallocated". The Object Construction Checker would enforce that the
 type of such an object in its hierarchy is a subtype of `@CalledMethods({"close"})` at each
-point it is deallocated.
+point it may become unreachable.
 
 ### Explanation of qualifiers and type hierarchy
 
