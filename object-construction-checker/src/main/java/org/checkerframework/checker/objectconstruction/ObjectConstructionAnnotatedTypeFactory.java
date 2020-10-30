@@ -742,22 +742,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
-   * Returns the String value of @MustCall annotation declared on the class type of {@code element}.
-   */
-  /*List<String> getMustCallValue(Element element) {
-    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
-        getTypeFactoryOfSubchecker(MustCallChecker.class);
-    AnnotationMirror mustCallAnnotation =
-        mustCallAnnotatedTypeFactory.getAnnotatedType(element).getAnnotation(MustCall.class);
-
-    List<String> mustCallValues = (mustCallAnnotation != null)
-        ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
-        : new ArrayList<>(0);
-
-    return mustCallValues;
-  }*/
-
-  /**
    * Returns the String value of @MustCall annotation declared on the class type of {@code tree}.
    */
   List<String> getMustCallValue(Tree tree) {
