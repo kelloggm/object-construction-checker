@@ -91,7 +91,6 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.trees.DetachedVarSymbol;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -413,8 +412,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           }
 
           if (lhs instanceof LocalVariableNode
-              // don't track synthetic variables
-              && !(((LocalVariableNode) lhs).getElement() instanceof DetachedVarSymbol)
               && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
 
             // Reassignment to the lhs
