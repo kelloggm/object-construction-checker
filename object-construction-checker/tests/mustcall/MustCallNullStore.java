@@ -18,4 +18,4 @@ class MustCallNullStore {
     }
     return n;
   }
-  }
+}
