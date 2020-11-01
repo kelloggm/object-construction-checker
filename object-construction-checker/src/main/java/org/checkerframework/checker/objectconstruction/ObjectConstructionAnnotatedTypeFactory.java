@@ -821,7 +821,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     public BlockWithLocals(Block b, Set<LocalVarWithAssignTree> ls) {
       this.block = (BlockImpl) b;
-      this.localSetInfo = Collections.unmodifiableSet(ls);
+      this.localSetInfo = ls;
     }
 
     @Override
