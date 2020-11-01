@@ -774,7 +774,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     AnnotationMirror cmAnno;
 
-    CFValue lhsCFValue = store.getValue(assign.localVar);
+    // sometimes the store is null!  this looks like a bug in checker dataflow.
+    // TODO track down and report the root-cause bug
+    CFValue lhsCFValue = store != null ? store.getValue(assign.localVar) : null;
     if (lhsCFValue != null) { // When store contains the lhs
       cmAnno =
           lhsCFValue.getAnnotations().stream()
