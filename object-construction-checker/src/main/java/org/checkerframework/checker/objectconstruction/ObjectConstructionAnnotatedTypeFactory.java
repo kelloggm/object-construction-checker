@@ -768,6 +768,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private void checkMustCall(
       LocalVarWithAssignTree assign, CFStore store, String outOfScopeReason) {
     List<String> mustCallValue = getMustCallValue(assign.assignTree);
+    // optimization: if there are no must-call methods, we do not need to perform the check
+    if (mustCallValue.isEmpty()) {
+      return;
+    }
     AnnotationMirror dummyCMAnno = createCalledMethods(mustCallValue.toArray(new String[0]));
 
     boolean report = true;
