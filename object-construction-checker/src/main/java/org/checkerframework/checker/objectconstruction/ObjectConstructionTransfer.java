@@ -16,6 +16,7 @@ import org.checkerframework.checker.calledmethods.CalledMethodsTransfer;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.common.value.ValueCheckerUtils;
+import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
 import org.checkerframework.dataflow.analysis.FlowExpressions;
 import org.checkerframework.dataflow.analysis.FlowExpressions.Receiver;
 import org.checkerframework.dataflow.analysis.TransferInput;
@@ -56,11 +57,16 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
 
     exceptionalStores = makeExceptionalStores(node, input);
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(node, input);
+    Map<TypeMirror, CFStore> exceptionalStoresTmp = exceptionalStores;
     exceptionalStores = null;
 
     handleEnsuresCalledMethodVarArgs(node, result);
 
-    return result;
+    return new ConditionalTransferResult<>(
+        result.getResultValue(),
+        result.getThenStore(),
+        result.getElseStore(),
+        exceptionalStoresTmp);
   }
 
   private AnnotationMirror getUpdatedCalledMethodsType(

@@ -43,8 +43,9 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
     return atypeFactory;
   }
 
-  /** Issue an error at every EnsuresCalledMethodsVarArgs annotation, because using it
-   * is unsound. */
+  /**
+   * Issue an error at every EnsuresCalledMethodsVarArgs annotation, because using it is unsound.
+   */
   @Override
   public Void visitAnnotation(final AnnotationTree node, final Void p) {
     AnnotationMirror anno = TreeUtils.annotationFromAnnotationTree(node);
