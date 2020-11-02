@@ -19,6 +19,7 @@ class CheckFields {
     @MustCall("b")
     static class FooField {
         private final @Owning Foo finalOwningFoo;
+        // :: error: required.method.not.called
         private final @Owning Foo finalOwningFooWrong;
         private final Foo finalNotOwningFoo;
         private @Owning Foo owningFoo;
@@ -26,7 +27,6 @@ class CheckFields {
         private Foo notOwningFoo;
         public FooField() {
             this.finalOwningFoo = new Foo();
-            // :: error: required.method.not.called
             this.finalOwningFooWrong = new Foo();
             // :: error: required.method.not.called
             this.finalNotOwningFoo = new Foo();

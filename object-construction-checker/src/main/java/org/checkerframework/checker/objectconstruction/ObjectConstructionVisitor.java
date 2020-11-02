@@ -128,44 +128,6 @@ public class ObjectConstructionVisitor
     return super.visitNewClass(node, p);
   }
 
-  //  private void checkOwningFeild(final TreePath treePath, Tree node) {
-  //    Element fieldElement = getLeftHandSideOfAssign(treePath, null);
-  //    Element enclosingElemnt =  fieldElement.getEnclosingElement();
-  //    List<String> fieldElAnno = atypeFactory.getMustCallValue(fieldElement);
-  //    List<String> enclosingElAnno = atypeFactory.getMustCallValue(enclosingElemnt);
-  //    boolean report = true;
-  //    if (enclosingElAnno != null) {
-  //      List<? extends Element> classElements = enclosingElemnt.getEnclosedElements();
-  //      for (Element element : classElements) {
-  //        if (element.getKind().equals(METHOD)) {
-  //          if (element.getSimpleName().toString().equals(enclosingElAnno.get(0))) {
-  //            AnnotationMirror annotationMirror = atypeFactory.getDeclAnnotation(element,
-  // EnsuresCalledMethods.class);
-  //            if (annotationMirror == null) {
-  //              break;
-  //            }
-  //            List<Pair<Symbol.MethodSymbol,Attribute>> list =  ((Attribute.Compound)
-  // annotationMirror).values;
-  //            if
-  // (list.get(0).snd.getValue().toString().contains(fieldElement.getSimpleName().toString())) {
-  //              if (((Attribute.Array)
-  // list.get(1).snd).getValue().head.getValue().equals(fieldElAnno.get(0))) {
-  //                //TODO report a warning if the left hand side is not MustCall{}
-  //                report = false;
-  //              }
-  //            }
-  //            break;
-  //          }
-  //        }
-  //      }
-  //    }
-  //
-  //    if (report) {
-  //      checker.reportError(
-  //              node, "missing.alwayscall", TreeUtils.typeOf(node).toString(), "");
-  //    }
-  //  }
-
   private boolean isAssignedToLocalOrField(final TreePath treePath) {
     TreePath parentPath = treePath.getParentPath();
 
@@ -187,10 +149,12 @@ public class ObjectConstructionVisitor
         }
         // Otherwise use the context of the ConditionalExpressionTree.
         return isAssignedToLocalOrField(parentPath);
-      case ASSIGNMENT: // check if the left hand is a local variable
+      case ASSIGNMENT: // check if the left hand is a local variable or an owning field
         final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
         Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
-        return lhsElement.getKind().equals(LOCAL_VARIABLE) || lhsElement.getKind().equals(FIELD);
+        return lhsElement.getKind().equals(LOCAL_VARIABLE)
+            || (lhsElement.getKind().equals(FIELD)
+                && atypeFactory.getDeclAnnotation(lhsElement, Owning.class) != null);
       case VARIABLE:
       case METHOD_INVOCATION:
       case NEW_CLASS:

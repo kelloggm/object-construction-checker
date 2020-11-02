@@ -7,7 +7,6 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Attribute;
-import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Type;
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
@@ -24,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -97,9 +95,6 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
-
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -427,7 +422,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             AnnotationMirror dummyCMAnno =
                 createCalledMethods(rhsMustCallVal.toArray(new String[0]));
 
-            if (getDeclAnnotation(lhsElement, Owning.class) != null ) {
+            if (getDeclAnnotation(lhsElement, Owning.class) != null) {
               // TODO nullness checking
               checkOwningFeild((AssignmentNode) node);
               if (rhs instanceof LocalVariableNode) {
@@ -436,27 +431,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
                       getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
                   newDefs.remove(latestAssignmentPair);
                 }
-              }
-            } else {
-              if (rhs instanceof LocalVariableNode
-                  && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
-                LocalVarWithAssignTree latestAssignmentPair =
-                    getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
-                checkMustCall(
-                    latestAssignmentPair,
-                    getStoreBefore(node),
-                    "assigned to a not owning field " + node.getTree());
-                newDefs.remove(latestAssignmentPair);
-              } else {
-                AnnotationMirror cmAnno =
-                    getAnnotatedType(rhs.getTree()).getAnnotationInHierarchy(TOP);
-                if (!getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno))
-                  checker.reportError(
-                      node.getTree(),
-                      "required.method.not.called",
-                      formatMissingMustCallMethods(getMustCallValue(lhs.getTree())),
-                      TreeUtils.typeOf(lhs.getTree()).toString(),
-                      "assigned to a not owning field");
               }
             }
           }
@@ -613,11 +587,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotationMirror rhsCalledMethodAnno = createCalledMethods(rhsMCAnno.toArray(new String[0]));
     List<String> enclosingElAnno = getMustCallValue(enclosingElemnt);
     boolean report = true;
-    if (enclosingElAnno != null && (getMustCallValue(fieldElement).isEmpty() || fieldElement.getModifiers().contains(Modifier.FINAL))) {
+    if (enclosingElAnno != null
+        && (getMustCallValue(fieldElement).isEmpty()
+            || fieldElement.getModifiers().contains(Modifier.FINAL))) {
       List<? extends Element> classElements = enclosingElemnt.getEnclosedElements();
       for (Element element : classElements) {
         if (element.getKind().equals(ElementKind.METHOD)) {
-          //TODO cause false positives if there is more than one value in the enclosingElAnno
+          // TODO cause false positives if there is more than one value in the enclosingElAnno
           if (element.getSimpleName().toString().equals(enclosingElAnno.get(0))) {
             AnnotationMirror annotationMirror =
                 getDeclAnnotation(element, EnsuresCalledMethods.class);
@@ -626,9 +602,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
             }
             Attribute values = ((Attribute.Compound) annotationMirror).getValue().values.get(0).snd;
             if (values.getValue().toString().contains(fieldElement.getSimpleName().toString())) {
-              Attribute methods = ((Attribute.Compound) annotationMirror).getValue().values.get(1).snd;
-              Set<String> setOfMethod = ((List<Attribute>)methods.getValue()).stream().map(method -> method.getValue().toString()).collect(Collectors.toSet());
-              AnnotationMirror ensuresCalledMethodAnno = createCalledMethods(setOfMethod.toArray(new String[0]));
+              Attribute methods =
+                  ((Attribute.Compound) annotationMirror).getValue().values.get(1).snd;
+              Set<String> setOfMethod =
+                  ((List<Attribute>) methods.getValue())
+                      .stream()
+                          .map(method -> method.getValue().toString())
+                          .collect(Collectors.toSet());
+              AnnotationMirror ensuresCalledMethodAnno =
+                  createCalledMethods(setOfMethod.toArray(new String[0]));
               if (getQualifierHierarchy().isSubtype(ensuresCalledMethodAnno, rhsCalledMethodAnno)) {
                 report = false;
               }
@@ -640,7 +622,19 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
 
     if (report) {
-      checker.reportError(assignmentNode.getTree(), "required.method.not.called", TreeUtils.typeOf(rhs.getTree()).toString(), " required methods are not called on this field");
+      if (fieldElement.getModifiers().contains(Modifier.FINAL)) {
+        checker.reportError(
+            fieldElement,
+            "required.method.not.called",
+            TreeUtils.typeOf(rhs.getTree()).toString(),
+            " required methods are not called on this field");
+      } else {
+        checker.reportError(
+            assignmentNode.getTree(),
+            "required.method.not.called",
+            TreeUtils.typeOf(rhs.getTree()).toString(),
+            " required methods are not called on this field");
+      }
     }
   }
 
