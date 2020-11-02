@@ -1,3 +1,4 @@
+import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 
 /** Test for postcondition support via @EnsureCalledMethods */

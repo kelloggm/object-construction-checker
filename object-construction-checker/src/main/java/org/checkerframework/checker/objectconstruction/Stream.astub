@@ -2,6 +2,7 @@ package java.io;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 class DataOutputStream extends FilterOutputStream implements DataOutput {
     protected int written;
@@ -270,6 +271,7 @@ package java.security;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 class DigestOutputStream extends FilterOutputStream {
     protected MessageDigest digest;
@@ -286,6 +288,7 @@ package java.nio.channels;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 class FileChannel extends AbstractInterruptibleChannel implements SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel {
     protected FileChannel();
