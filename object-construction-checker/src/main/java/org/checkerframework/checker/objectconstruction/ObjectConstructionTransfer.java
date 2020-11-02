@@ -14,6 +14,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.CalledMethodsTransfer;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
@@ -44,7 +45,15 @@ import org.checkerframework.javacutil.TreeUtils;
 public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   private final ObjectConstructionAnnotatedTypeFactory atypefactory;
 
-  private Map<TypeMirror, CFStore> exceptionalStores;
+  /**
+   * {@link #makeExceptionalStores(MethodInvocationNode, TransferInput)} requires a TransferInput,
+   * but the actual exceptional stores need to be modified in {@link #accumulate(Node,
+   * TransferResult, String...)}, which only has access to a TransferResult. So this variable is set
+   * to non-null in {@link #visitMethodInvocation(MethodInvocationNode, TransferInput)} before the
+   * call to super, which will call accumulate(); this field is then reset to null afterwards to
+   * prevent it from being used somewhere it shouldn't be.
+   */
+  private @Nullable Map<TypeMirror, CFStore> exceptionalStores;
 
   public ObjectConstructionTransfer(final CFAnalysis analysis) {
     super(analysis);
@@ -57,16 +66,15 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
 
     exceptionalStores = makeExceptionalStores(node, input);
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(node, input);
-    Map<TypeMirror, CFStore> exceptionalStoresTmp = exceptionalStores;
-    exceptionalStores = null;
-
     handleEnsuresCalledMethodVarArgs(node, result);
-
-    return new ConditionalTransferResult<>(
-        result.getResultValue(),
-        result.getThenStore(),
-        result.getElseStore(),
-        exceptionalStoresTmp);
+    TransferResult<CFValue, CFStore> finalResult =
+        new ConditionalTransferResult<>(
+            result.getResultValue(),
+            result.getThenStore(),
+            result.getElseStore(),
+            exceptionalStores);
+    exceptionalStores = null;
+    return finalResult;
   }
 
   private AnnotationMirror getUpdatedCalledMethodsType(
