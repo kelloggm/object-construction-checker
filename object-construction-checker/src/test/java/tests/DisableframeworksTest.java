@@ -31,7 +31,7 @@ public class DisableframeworksTest extends CheckerFrameworkPerDirectoryTest {
         org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
         "diableframeworks",
         "-Anomsgtext",
-        "-AdisableFrameworkSupports=AutoValue,Lombok",
+        "-AdisableBuilderFrameworkSupports=autovalue,lombok",
         "-nowarn");
   }
 

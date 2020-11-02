@@ -1,4 +1,4 @@
-import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 import java.util.Arrays;
@@ -30,7 +30,7 @@ class Generics {
     }
 
     // reduced from real-world code
-    private <@CalledMethodsTop T extends Symbol> T getMember(Class<T> type, boolean b) {
+    private <@CalledMethods({}) T extends Symbol> T getMember(Class<T> type, boolean b) {
         if (b) {
             T sym = getMember(type, !b);
             if (sym != null && sym.isStatic()) {
@@ -49,7 +49,7 @@ class Generics {
         String s = "hi";
         // dummy method call
         s.contains("h");
-        // should infer type Stream<@CalledMethodsTop String>
+        // should infer type Stream<@CalledMethods({}) String>
         return Arrays.asList(s).stream();
     }
 

@@ -20,7 +20,7 @@ configurations {
 dependencies {
 
     implementation "org.checkerframework:checker:${versions.checkerFramework}"
-    implementation "com.google.guava:guava:29.0-jre"
+    implementation "com.google.guava:guava:30.0-jre"
     compileOnly "com.google.errorprone:javac:9+181-r4173-1"
 
     // If / when other code depends on this checker, we will likely want to make these
@@ -28,14 +28,14 @@ dependencies {
     implementation project(":object-construction-qual")
 
     // For the @CalledMethodsPredicate evaluation
-    implementation "org.springframework:spring-expression:5.2.8.RELEASE"
+    implementation "org.springframework:spring-expression:5.3.0"
 
     // For subtyping between @CalledMethodsPredicate annotations
     implementation 'org.sosy-lab:java-smt:3.2.0'
     implementation 'com.github.javaparser:javaparser-core:3.15.11'
 
     // Use JUnit test framework
-    testImplementation "junit:junit:4.13"
+    testImplementation "junit:junit:4.13.1"
 
     // CF testing infrastructure
     testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
@@ -61,7 +61,7 @@ dependencies {
 
 dependencyManagement {
     imports {
-        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.875"
+        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.892"
     }
 }
 

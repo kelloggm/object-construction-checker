@@ -1,6 +1,7 @@
 package java.io;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 @AlwaysCall("")
 class ByteArrayInputStream { }
