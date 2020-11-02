@@ -22,6 +22,9 @@ class IOUtils {
     static void closeQuietly(OutputStream arg0);
     @EnsuresCalledMethods(value = "#1", methods = "close")
     static void closeQuietly(Closeable arg0);
+    @SuppressWarnings("ensuresvarargs.unverified")
+    @EnsuresCalledMethodsVarArgs("close")
+    static void closeQuietly(Closeable... arg0);
     @EnsuresCalledMethods(value = "#1", methods = "close")
     static void closeQuietly(Socket arg0);
     @EnsuresCalledMethods(value = "#1", methods = "close")

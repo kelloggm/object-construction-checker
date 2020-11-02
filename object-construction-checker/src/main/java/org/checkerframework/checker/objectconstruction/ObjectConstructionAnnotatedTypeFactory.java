@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
@@ -93,7 +94,6 @@ import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
-import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -816,11 +816,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private void propagate(
       BlockWithLocals state, Set<BlockWithLocals> visited, Deque<BlockWithLocals> worklist) {
 
-    if (visited.stream()
-        .noneMatch(
-            pair ->
-                pair.block.equals(state.block) && pair.localSetInfo.equals(state.localSetInfo))) {
-      visited.add(state);
+    if (visited.add(state)) {
       worklist.add(state);
     }
   }
@@ -865,13 +861,19 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   private void checkMustCall(
       LocalVarWithAssignTree assign, CFStore store, String outOfScopeReason) {
     List<String> mustCallValue = getMustCallValue(assign.assignTree);
+    // optimization: if there are no must-call methods, we do not need to perform the check
+    if (mustCallValue.isEmpty()) {
+      return;
+    }
     AnnotationMirror dummyCMAnno = createCalledMethods(mustCallValue.toArray(new String[0]));
 
     boolean report = true;
 
     AnnotationMirror cmAnno;
 
-    CFValue lhsCFValue = store.getValue(assign.localVar);
+    // sometimes the store is null!  this looks like a bug in checker dataflow.
+    // TODO track down and report the root-cause bug
+    CFValue lhsCFValue = store != null ? store.getValue(assign.localVar) : null;
     if (lhsCFValue != null) { // When store contains the lhs
       cmAnno =
           lhsCFValue.getAnnotations().stream()
@@ -913,13 +915,26 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     return !getMustCallValue(t).isEmpty();
   }
 
-  private class BlockWithLocals {
-    public BlockImpl block;
-    public Set<LocalVarWithAssignTree> localSetInfo;
+  private static class BlockWithLocals {
+    public final BlockImpl block;
+    public final Set<LocalVarWithAssignTree> localSetInfo;
 
     public BlockWithLocals(Block b, Set<LocalVarWithAssignTree> ls) {
       this.block = (BlockImpl) b;
       this.localSetInfo = ls;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      BlockWithLocals that = (BlockWithLocals) o;
+      return block.equals(that.block) && localSetInfo.equals(that.localSetInfo);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(block, localSetInfo);
     }
   }
 
@@ -929,8 +944,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
    * formal parameter
    */
   private static class LocalVarWithAssignTree {
-    public LocalVariable localVar;
-    public Tree assignTree;
+    public final LocalVariable localVar;
+    public final Tree assignTree;
 
     public LocalVarWithAssignTree(LocalVariable localVarNode, Tree assignTree) {
       this.localVar = localVarNode;
@@ -948,20 +963,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      LocalVarWithAssignTree localVarWithAssignTree = (LocalVarWithAssignTree) o;
-      return localVar.equals(localVarWithAssignTree.localVar)
-          && assignTree.equals(localVarWithAssignTree.assignTree);
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      LocalVarWithAssignTree that = (LocalVarWithAssignTree) o;
+      return localVar.equals(that.localVar) && assignTree.equals(that.assignTree);
     }
 
     @Override
     public int hashCode() {
-      return Pair.of(localVar, assignTree).hashCode();
+      return Objects.hash(localVar, assignTree);
     }
   }
 

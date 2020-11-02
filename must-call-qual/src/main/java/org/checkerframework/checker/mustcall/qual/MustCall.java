@@ -20,8 +20,8 @@ import org.checkerframework.framework.qual.TypeUseLocation;
  * <pre>{@code @MustCall({"m1"}) <: @MustCall({"m1", "m2"})}</pre>
  *
  * <p>In practice, this means that value of a type that is annotated with {@code @MustCall({"m1",
- * "m2"})} may be obligated to call "m1", "m2", both, or neither before it is deallocated. Such a
- * value is guaranteed not to be obligated to call any other methods.
+ * "m2"})} may be obligated to call "m1" and/or "m2" before it is deallocated. Such a value is
+ * guaranteed not to be obligated to call any other methods.
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
