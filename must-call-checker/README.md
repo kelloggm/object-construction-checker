@@ -87,7 +87,8 @@ void log(String msg, Object... args);
 
 The above call leads to an `argument.type.incompatible` error from the MustCall checker, because
 the argument type `@MustCall({"close"})` is not a subtype of the formal parameter type `@MustCall({"close"})`.
-To mark `log()` as borriwing an argument, use the `org.checkerframework.checker.objectconstruction.qual.NotOwning` annotation:
+To mark `log()` as borriwing an argument, use the `org.checkerframework.checker.objectconstruction.qual.NotOwning`
+annotation on the formal parameter (it is not a tye annotation)
 
 ```
 void log(String msg, @NotOwning Object... args);

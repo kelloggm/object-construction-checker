@@ -1,6 +1,5 @@
 package org.checkerframework.checker.mustcall;
 
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.dataflow.analysis.RegularTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
@@ -38,9 +37,8 @@ public class MustCallTransfer extends CFTransfer {
 
   private TransferResult<CFValue, CFStore> handleStringConcatenation(
       TransferResult<CFValue, CFStore> result) {
-    AnnotationMirror resultAnno = atypeFactory.BOTTOM;
     TypeMirror underlyingType = result.getResultValue().getUnderlyingType();
-    CFValue newValue = analysis.createSingleAnnotationValue(resultAnno, underlyingType);
+    CFValue newValue = analysis.createSingleAnnotationValue(atypeFactory.BOTTOM, underlyingType);
     return new RegularTransferResult<>(newValue, result.getRegularStore());
   }
 }
