@@ -20,13 +20,13 @@ point it may become unreachable.
 
 ### Explanation of qualifiers and type hierarchy
 
-The MustCall Checker supports two qualifiers: `@MustCall` and `@MustCallAny`. The `@MustCall`
+The MustCall Checker supports two qualifiers: `@MustCall` and `@MustCallUnknown`. The `@MustCall`
 qualifier's arguments are the methods that the annotated type
 should call. The type `@MustCall({"a"}) Object obj` means
 that before `obj` is deallocated, `obj.a()` should be called.
 The type hierarchy is:
 
-                     @MustCallAny
+                     @MustCallUnknown
                            |
                           ...
                            |
@@ -46,12 +46,12 @@ to call some *other* method.
 
 The default type in unannotated code is `@MustCall({})`.
 A completely unannotated program will always type-check without warnings.
-For the MustCall Checker to be useful, the programmer should supply at least one
+For the MustCall Checker to be useful, the programmer should supply at least one non-empty
 `@MustCall` annotation, either in source code or in a stub file.
 
-The programmer should rarely (if ever) write the top annotation (`@MustCallAny`), because
+The programmer should rarely (if ever) write the top annotation (`@MustCallUnknown`), because
 the Object Construction Checker cannot verify it by matching with a corresponding `@CalledMethods`
-annotation. `@MustCallAny` theoretically represents a value with an unknowable or infinite set
+annotation. `@MustCallUnknown` theoretically represents a value with an unknowable or infinite set
 of must-call methods.
 
 ### Example use
@@ -101,7 +101,13 @@ eventually called.
 ### Implementation details and caveats
 
 This type system should not be used to track a must-call obligation for a `String`, because it treats all
-String concatenations as having the type `@MustCall({})`. This special-casing is to avoid cases where
+String concatenations as having the type `@MustCall({})`. 
+Normally it is the case that a newly-constructed String (whether created via new String or a string literal 
+or concatenation) has no must-call obligation, just like any other object whose type declaration isn't annotated with a 
+non-empty `@MustCall` type. `java.lang.String` is an exception: even if the declaration of `java.lang.String` were 
+annotated with a non-empty `@MustCall` annotation, the result of a string concatenation would still be `@MustCall({})`. 
+
+This special-casing is to avoid cases where
 an object with a must-call obligation is implicitly converted to a `String`, creating a must-call obligation
 that could never be fulfilled (this is not unsound, but it does reduce precision). For example, suppose that
 all `Socket` objects are `@MustCall({"close"})`. Without special-casing string concatenations, the type of

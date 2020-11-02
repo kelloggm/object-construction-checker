@@ -11,5 +11,5 @@ import org.checkerframework.framework.qual.PolymorphicQualifier;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@PolymorphicQualifier(MustCallAny.class)
+@PolymorphicQualifier(MustCallUnknown.class)
 public @interface PolyMustCall {}

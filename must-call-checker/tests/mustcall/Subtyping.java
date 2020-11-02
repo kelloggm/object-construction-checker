@@ -6,8 +6,8 @@ class Subtyping {
 
     Object unannotatedObj;
 
-    void test_act(@MustCallAny Object o) {
-        @MustCallAny Object act = o;
+    void test_act(@MustCallUnknown Object o) {
+        @MustCallUnknown Object act = o;
         // :: error: assignment.type.incompatible
         @MustCall("close") Object file = o;
         // :: error: assignment.type.incompatible
@@ -19,7 +19,7 @@ class Subtyping {
     }
 
     void test_close(@MustCall("close") Object o) {
-        @MustCallAny Object act = o;
+        @MustCallUnknown Object act = o;
         @MustCall("close") Object file = o;
         @MustCall({"close", "read"}) Object f2 = o;
         // :: error: assignment.type.incompatible
@@ -29,7 +29,7 @@ class Subtyping {
     }
 
     void test_close_read(@MustCall({"close", "read"}) Object o) {
-        @MustCallAny Object act = o;
+        @MustCallUnknown Object act = o;
         // :: error: assignment.type.incompatible
         @MustCall("close") Object file = o;
         @MustCall({"close", "read"}) Object f2 = o;
@@ -40,7 +40,7 @@ class Subtyping {
     }
 
     void test_blank(@MustCall({}) Object o) {
-        @MustCallAny Object act = o;
+        @MustCallUnknown Object act = o;
         @MustCall("close") Object file = o;
         @MustCall({"close", "read"}) Object f2 = o;
         @MustCall({}) Object notAfile = o;
@@ -48,7 +48,7 @@ class Subtyping {
     }
 
     void test_unannotated(Object o) {
-        @MustCallAny Object act = o;
+        @MustCallUnknown Object act = o;
         @MustCall("close") Object file = o;
         @MustCall({"close", "read"}) Object f2 = o;
         @MustCall({}) Object notAfile = o;

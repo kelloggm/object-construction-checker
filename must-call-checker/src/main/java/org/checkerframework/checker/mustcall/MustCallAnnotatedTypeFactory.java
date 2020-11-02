@@ -15,7 +15,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.mustcall.qual.MustCallAny;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -52,13 +52,13 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    */
   public MustCallAnnotatedTypeFactory(final BaseTypeChecker checker) {
     super(checker);
-    TOP = AnnotationBuilder.fromClass(elements, MustCallAny.class);
+    TOP = AnnotationBuilder.fromClass(elements, MustCallUnknown.class);
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
     this.postInit();
   }
 
-  /** Treat non-owning method parameters as @MustCallAny. */
+  /** Treat non-owning method parameters as @MustCallUnknown. */
   @Override
   public void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
     ExecutableElement declaration;
