@@ -1,9 +1,9 @@
 ### MustCall Checker
 
 The MustCall Checker tracks the methods that an object should call before it is deallocated.
-The checker is informational only; the fact that the methods are actually called is enforced
-by the `-AcheckMustCall` flag to the Object Construction Checker. You should use the Object
-Construction Checker directly rather than using the MustCall Checker alone.
+To enforce that the methods are actually called, use
+the `-AcheckMustCall` flag to the Object Construction Checker. You should use the Object
+Construction Checker rather than using the MustCall Checker alone.
 
 The MustCall Checker produces a conservative overapproximation of the set of methods that might
 actually need to be called on an object. The Object Construction Checker then conservatively assumes
@@ -12,7 +12,7 @@ that this approximation (the `@MustCall` type) must be fulfilled.
 For example, an object whose type is `java.io.OutputStream` might
 have an obligation to call the `close()` method, to release an underlying file resource. Or,
 such an `OutputStream` might not have such an obligation, if the underlying resource is, for
-example, a byte array. Either of these dynamic types can be represented by the static type
+example, a byte array. Either of these obligations can be represented by the static type
 `@MustCall({"close"}) OutputStream`, which can be read as "an OutputStream that might need
 to call close before it is deallocated". The Object Construction Checker would enforce that the
 type of such an object in its hierarchy is a subtype of `@CalledMethods({"close"})` at each
@@ -44,10 +44,10 @@ object that needs to call `m2` (or both `m1` and `m2`) is not permitted.
 call `m1`, `m2`, both, or neither; it cannot not represent an object that needs
 to call some *other* method.
 
-The default type in unannotated code is `@MustCall({})`.  Given an expression of
-unannotated type, its value is not known to be required to call any methods.
-The user must provide a specification for any type whose must-call obligations
-they want to enforce.
+The default type in unannotated code is `@MustCall({})`.
+A completely unannotated program will always type-check without warnings.
+For the MustCall Checker to be useful, the programmer should supply at least one
+`@MustCall` annotation, either in source code or in a stub file.
 
 The programmer should rarely (if ever) write the top annotation (`@MustCallAny`), because
 the Object Construction Checker cannot verify it by matching with a corresponding `@CalledMethods`
@@ -65,44 +65,37 @@ type has that `@MustCall` annotation by default. For example, given the followin
     
     @MustCall({"close"}) class Socket { }
     
-any use of `Socket` defaults to `@MustCall({"close"}) Socket`. For the MustCall Checker to be useful,
-it should always be used with at least one such `@MustCall` annotation, either in source code
-or in a stub file.
-
-To enforce the property, the user should not run the MustCall Checker directly. Rather, the user should
-run the Object Construction Checker using the `-AcheckMustCall` flag, which informs that checker to compare
-the obligations in `@MustCall` annotations to the `@CalledMethods` facts that it infers, and report an error
-whenever a method in an `@MustCall` annotation is not present in the `@CalledMethods` type.
+any use of `Socket` defaults to `@MustCall({"close"}) Socket`.
 
 ### NotOwning method parameters
 
-A user might sometimes encounter an `argument.type.incompatible` error from the MustCall checker
-when passing a object with a non-empty `@MustCall` type to an unannotated library method. For example,
-consider a case where all `Socket` objects are `@MustCall({"close"})` and the following code is typechecked:
+Some method calls transfer a `@MustCall` obligation:  the client depends on the method to make the calls.
+For other method calls, the client retains the obligation; the callee only "borrows" the object rather than taking final responsibility for it.
+An example of a borrowing call is a logging call.
 
 ```
-Socket s = ...;
+@MustCall({"close}) Socket s = ...;
 myLogger.log("this is my socket {}", s);
-s.close();
+... // log did not call close(); the client must still do so
 ```
 
-In this case, `log` is "borrowing" the reference to `s`; the code here is responsible for fulfilling
-`s`'s must-call obligation, not `log`. In fact, `log` has no knowledge that `s` might even have a must-call
-obligation: its signature permits any object:
+`log` is annotated with no `@MustCall` obligation:
 
 ```
 void log(String msg, Object... args);
 ```
 
-For these kind of generic methods, the user should annotate `log` (either in its source code or in a stub file)
-with a `org.checkerframework.checker.objectconstruction.qual.NotOwning` annotation:
+The above call leads to an `argument.type.incompatible` error from the MustCall checker, because
+the argument type `@MustCall({"close"})` is not a subtype of the formal parameter type `@MustCall({"close"})`.
+To mark `log()` as borriwing an argument, use the `org.checkerframework.checker.objectconstruction.qual.NotOwning` annotation:
 
 ```
 void log(String msg, @NotOwning Object... args);
 ```
 
-Both the MustCall checker and the Object Construction Checker will respect this `@NotOwning` annotation, and the
-spurious error described above will no longer be raised on any such calls to `log`.
+Now, the Object Construction Checker can soundly verify the client code without
+warnings, including both permitting the call `log()` and ensuring that `close()` is
+eventually called.
 
 ### Implementation details and caveats
 
