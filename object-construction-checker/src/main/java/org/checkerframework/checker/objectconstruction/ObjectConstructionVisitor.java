@@ -92,7 +92,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
           checker.reportError(
               node,
               "required.method.not.called",
-              atypeFactory.formatMissingMustCallMethods(mustCallAnnoVal),
+              MustCallInvokedChecker.formatMissingMustCallMethods(mustCallAnnoVal),
               returnType.toString(),
               "never assigned to a variable");
         }
@@ -121,7 +121,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
         checker.reportError(
             node,
             "required.method.not.called",
-            atypeFactory.formatMissingMustCallMethods(mustCallVal),
+            MustCallInvokedChecker.formatMissingMustCallMethods(mustCallVal),
             type.toString(),
             "never assigned to a variable");
       }
