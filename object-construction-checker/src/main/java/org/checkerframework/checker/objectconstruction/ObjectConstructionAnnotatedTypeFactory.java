@@ -419,12 +419,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
           if (lhsElement.getKind().equals(ElementKind.FIELD) && hasMustCall(lhs.getTree())) {
             List<String> rhsMustCallVal = getMustCallValue(rhs.getTree());
-            AnnotationMirror dummyCMAnno =
-                createCalledMethods(rhsMustCallVal.toArray(new String[0]));
 
             if (getDeclAnnotation(lhsElement, Owning.class) != null) {
               // TODO nullness checking
-              checkOwningFeild((AssignmentNode) node);
+              checkAssignmentToOwningField((AssignmentNode) node);
               if (rhs instanceof LocalVariableNode) {
                 if (hasMustCall(lhs.getTree()) && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
                   LocalVarWithAssignTree latestAssignmentPair =
@@ -578,19 +576,19 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     }
   }
 
-  private void checkOwningFeild(AssignmentNode assignmentNode) {
+  private void checkAssignmentToOwningField(AssignmentNode assignmentNode) {
     Node lhs = assignmentNode.getTarget();
     Node rhs = assignmentNode.getExpression();
     Element fieldElement = TreeUtils.elementFromTree(lhs.getTree());
-    Element enclosingElemnt = fieldElement.getEnclosingElement();
+    Element enclosingElement = fieldElement.getEnclosingElement();
     List<String> rhsMCAnno = getMustCallValue(TreeUtils.elementFromTree(rhs.getTree()));
     AnnotationMirror rhsCalledMethodAnno = createCalledMethods(rhsMCAnno.toArray(new String[0]));
-    List<String> enclosingElAnno = getMustCallValue(enclosingElemnt);
+    List<String> enclosingElAnno = getMustCallValue(enclosingElement);
     boolean report = true;
     if (enclosingElAnno != null
         && (getMustCallValue(fieldElement).isEmpty()
             || fieldElement.getModifiers().contains(Modifier.FINAL))) {
-      List<? extends Element> classElements = enclosingElemnt.getEnclosedElements();
+      List<? extends Element> classElements = enclosingElement.getEnclosedElements();
       for (Element element : classElements) {
         if (element.getKind().equals(ElementKind.METHOD)) {
           // TODO cause false positives if there is more than one value in the enclosingElAnno
@@ -830,11 +828,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
 
-    List<String> mustCallValues =
-        (mustCallAnnotation != null)
-            ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
-            : new ArrayList<>(0);
-    return mustCallValues;
+    return getMustCallValues(mustCallAnnotation);
   }
 
   /**
@@ -846,6 +840,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(element).getAnnotation(MustCall.class);
 
+    return getMustCallValues(mustCallAnnotation);
+  }
+
+  private List<String> getMustCallValues(AnnotationMirror mustCallAnnotation) {
     List<String> mustCallValues =
         (mustCallAnnotation != null)
             ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
