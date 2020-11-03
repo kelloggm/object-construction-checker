@@ -2,6 +2,7 @@ package com.amazonaws.services.kms;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 interface AWSKMS {
      // The predicate implements a modified one-hot detector that permits e.g. setNumberOfBytes and withNumberOfBytes to be called together, but not setNumberOfBytes and withKeySpec. Basically, this predicate enforces that only one of the two categories are represented.

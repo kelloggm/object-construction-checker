@@ -3,7 +3,7 @@ package java.net;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
-
+import org.checkerframework.checker.calledmethods.qual.*;
 
 //@AlwaysCall("close")
 class Socket implements Closeable {
@@ -103,6 +103,7 @@ package javax.net.ssl;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 class SSLSocketFactory extends SocketFactory {
     Socket createSocket(@Owning Socket arg0, String arg1, int arg2, boolean arg3) throws IOException;
@@ -133,6 +134,7 @@ package java.io;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 @AlwaysCall("close")
 public interface Closeable {
@@ -143,6 +145,7 @@ package java.lang;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 // This produces too much noise, for now. Investigate it later.
 // @AlwaysCall("close")

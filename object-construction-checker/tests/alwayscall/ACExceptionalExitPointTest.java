@@ -1,4 +1,5 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 class ACExceptionalExitPointTest {

@@ -1,5 +1,5 @@
 import com.google.auto.value.AutoValue;
-import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.nullness.qual.*;
 
 

@@ -1,6 +1,6 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
-
+import org.checkerframework.checker.calledmethods.qual.*;
 
 class ACMethodInvocationTest {
 
