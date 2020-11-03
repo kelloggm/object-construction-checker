@@ -293,6 +293,3 @@ class DigestOutputStream extends FilterOutputStream {
     void on(boolean arg0);
     String toString();
 }
-
-
-

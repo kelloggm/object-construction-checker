@@ -2,6 +2,7 @@ package org.apache.commons.io;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 class IOUtils {
     static final char DIR_SEPARATOR_UNIX;

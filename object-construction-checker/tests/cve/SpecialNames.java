@@ -2,7 +2,7 @@
 // names in DescribeImagesRequest isn't used for other
 // classes with the same names.
 
-import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 class SpecialNames {
