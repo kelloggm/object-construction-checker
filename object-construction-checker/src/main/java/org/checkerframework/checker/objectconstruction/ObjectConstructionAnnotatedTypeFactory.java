@@ -758,6 +758,24 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
 
+    return getMustCallValues(mustCallAnnotation);
+  }
+
+  /**
+<<<<<<< HEAD
+=======
+   * Returns the String value of @MustCall annotation declared on the class type of {@code element}.
+   */
+  List<String> getMustCallValue(Element element) {
+    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
+        getTypeFactoryOfSubchecker(MustCallChecker.class);
+    AnnotationMirror mustCallAnnotation =
+        mustCallAnnotatedTypeFactory.getAnnotatedType(element).getAnnotation(MustCall.class);
+
+    return getMustCallValues(mustCallAnnotation);
+  }
+
+  private List<String> getMustCallValues(AnnotationMirror mustCallAnnotation) {
     List<String> mustCallValues =
         (mustCallAnnotation != null)
             ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
@@ -766,6 +784,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
   }
 
   /**
+>>>>>>> 1b96d879424b686603b6764ccfb7f55820856f8e
    * Creates the appropriate @CalledMethods annotation that corresponds to the @MustCall annotation
    * declared on the class type of {@code assign.first}. Then, it gets @CalledMethod annotation of
    * {@code assign.first} to do a subtyping check and reports an error if the check fails.
