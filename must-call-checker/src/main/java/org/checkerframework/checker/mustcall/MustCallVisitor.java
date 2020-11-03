@@ -44,9 +44,10 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
 
   /**
    * Change the default for exception parameter lower bounds to bottom (the default), to prevent
-   * false positives. This is unsound; see the discussion on https://github.com/typetools/checker-framework/issues/3839.
-   * TODO: change checking of throws clauses to require that the thrown exception is @MustCall({}).
-   *       This would probably eliminate most of the same false positives, without adding undue false positives.
+   * false positives. This is unsound; see the discussion on
+   * https://github.com/typetools/checker-framework/issues/3839. TODO: change checking of throws
+   * clauses to require that the thrown exception is @MustCall({}). This would probably eliminate
+   * most of the same false positives, without adding undue false positives.
    *
    * @return a set containing only the @MustCall({}) annotation
    */

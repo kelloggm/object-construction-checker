@@ -2,9 +2,9 @@ package org.checkerframework.checker.objectconstruction;
 
 import java.util.LinkedHashSet;
 import java.util.Properties;
+import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.qual.StubFiles;
 import org.checkerframework.framework.source.SuppressWarningsPrefix;
