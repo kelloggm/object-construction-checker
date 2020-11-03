@@ -505,7 +505,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
    * element}. Returns null if the class type of {@code element} doesn't have @AlwaysCall
    * annotation.
    */
-  @Nullable String getAlwaysCallValue(Element element) {
+  @Nullable
+  String getAlwaysCallValue(Element element) {
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
     AnnotationMirror alwaysCallAnnotation = getDeclAnnotation(eType, AlwaysCall.class);
