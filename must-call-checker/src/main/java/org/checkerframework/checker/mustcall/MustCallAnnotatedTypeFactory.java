@@ -9,17 +9,20 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.util.Elements;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
@@ -28,6 +31,7 @@ import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -55,6 +59,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     TOP = AnnotationBuilder.fromClass(elements, MustCallUnknown.class);
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
+    addAliasedAnnotation(InheritableMustCall.class, MustCall.class, true);
     this.postInit();
   }
 
@@ -82,6 +87,36 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       }
     }
     super.methodFromUsePreSubstitution(tree, type);
+  }
+
+  @Override
+  public AnnotatedTypeMirror fromElement(Element elt) {
+    AnnotatedTypeMirror type = super.fromElement(elt);
+    // Support @InheritableMustCall meaning @MustCall on all class declaration elements.
+    if (ElementUtils.isClassElement(elt)) {
+      AnnotationMirror inheritableMustCall = getDeclAnnotation(elt, InheritableMustCall.class);
+      if (inheritableMustCall != null) {
+        List<String> mustCallVal =
+            ValueCheckerUtils.getValueOfAnnotationWithStringArgument(inheritableMustCall);
+        AnnotationMirror inheritedMCAnno = createMustCall(mustCallVal.toArray(new String[0]));
+        // Ensure that there isn't an inconsistent, user-written @MustCall annotation and
+        // issue an error if there is. Otherwise, replace the implicit @MustCall({}) with
+        // the inherited must-call annotation.
+        AnnotationMirror writtenMCAnno = type.getAnnotationInHierarchy(this.TOP);
+        if (writtenMCAnno != null
+            && !this.getQualifierHierarchy().isSubtype(inheritedMCAnno, writtenMCAnno)) {
+          checker.reportError(
+              elt,
+              "inconsistent.mustcall.subtype",
+              elt.getSimpleName(),
+              writtenMCAnno,
+              inheritableMustCall);
+        } else {
+          type.replaceAnnotation(inheritedMCAnno);
+        }
+      }
+    }
+    return type;
   }
 
   /**
