@@ -138,7 +138,7 @@ class ServerSocketFactory {
 
 package java.io;
 
-@MustCall("close")
+@InheritableMustCall("close")
 public interface Closeable {
     void close() throws Exception;
 }
