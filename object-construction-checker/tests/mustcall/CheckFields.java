@@ -42,6 +42,11 @@ class CheckFields {
             this.owningFoo = f;
         }
 
+        void assignToOwningFieldWrong2(){
+            // :: error: required.method.not.called
+            this.owningFoo = new Foo();
+        }
+
         void assingToOwningField() {
             if (this.owningFoo == null) {
                 //TODO

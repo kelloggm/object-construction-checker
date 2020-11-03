@@ -6,7 +6,6 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
-import com.sun.tools.javac.code.Attribute;
 import com.sun.tools.javac.code.Type;
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
@@ -22,12 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -48,7 +45,6 @@ import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsBottom;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsTop;
-import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -418,19 +414,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
           Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
 
           if (lhsElement.getKind().equals(ElementKind.FIELD) && hasMustCall(lhs.getTree())) {
-            List<String> rhsMustCallVal = getMustCallValue(rhs.getTree());
-            AnnotationMirror dummyCMAnno =
-                createCalledMethods(rhsMustCallVal.toArray(new String[0]));
-
-            if (getDeclAnnotation(lhsElement, Owning.class) != null) {
-              // TODO nullness checking
-              checkOwningFeild((AssignmentNode) node);
-              if (rhs instanceof LocalVariableNode) {
-                if (hasMustCall(lhs.getTree()) && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
-                  LocalVarWithAssignTree latestAssignmentPair =
-                      getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
-                  newDefs.remove(latestAssignmentPair);
-                }
+            if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
+              if (getDeclAnnotation(lhsElement, Owning.class) != null) {
+                LocalVarWithAssignTree latestAssignmentPair =
+                    getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
+                newDefs.remove(latestAssignmentPair);
               }
             }
           }
@@ -574,66 +562,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
 
         newDefs.removeAll(toRemove);
         propagate(new BlockWithLocals(succ, newDefs), visited, worklist);
-      }
-    }
-  }
-
-  private void checkOwningFeild(AssignmentNode assignmentNode) {
-    Node lhs = assignmentNode.getTarget();
-    Node rhs = assignmentNode.getExpression();
-    Element fieldElement = TreeUtils.elementFromTree(lhs.getTree());
-    Element enclosingElemnt = fieldElement.getEnclosingElement();
-    List<String> rhsMCAnno = getMustCallValue(TreeUtils.elementFromTree(rhs.getTree()));
-    AnnotationMirror rhsCalledMethodAnno = createCalledMethods(rhsMCAnno.toArray(new String[0]));
-    List<String> enclosingElAnno = getMustCallValue(enclosingElemnt);
-    boolean report = true;
-    if (enclosingElAnno != null
-        && (getMustCallValue(fieldElement).isEmpty()
-            || fieldElement.getModifiers().contains(Modifier.FINAL))) {
-      List<? extends Element> classElements = enclosingElemnt.getEnclosedElements();
-      for (Element element : classElements) {
-        if (element.getKind().equals(ElementKind.METHOD)) {
-          // TODO cause false positives if there is more than one value in the enclosingElAnno
-          if (element.getSimpleName().toString().equals(enclosingElAnno.get(0))) {
-            AnnotationMirror annotationMirror =
-                getDeclAnnotation(element, EnsuresCalledMethods.class);
-            if (annotationMirror == null) {
-              break;
-            }
-            Attribute values = ((Attribute.Compound) annotationMirror).getValue().values.get(0).snd;
-            if (values.getValue().toString().contains(fieldElement.getSimpleName().toString())) {
-              Attribute methods =
-                  ((Attribute.Compound) annotationMirror).getValue().values.get(1).snd;
-              Set<String> setOfMethod =
-                  ((List<Attribute>) methods.getValue())
-                      .stream()
-                          .map(method -> method.getValue().toString())
-                          .collect(Collectors.toSet());
-              AnnotationMirror ensuresCalledMethodAnno =
-                  createCalledMethods(setOfMethod.toArray(new String[0]));
-              if (getQualifierHierarchy().isSubtype(ensuresCalledMethodAnno, rhsCalledMethodAnno)) {
-                report = false;
-              }
-            }
-            break;
-          }
-        }
-      }
-    }
-
-    if (report) {
-      if (fieldElement.getModifiers().contains(Modifier.FINAL)) {
-        checker.reportError(
-            fieldElement,
-            "required.method.not.called",
-            TreeUtils.typeOf(rhs.getTree()).toString(),
-            " required methods are not called on this field");
-      } else {
-        checker.reportError(
-            assignmentNode.getTree(),
-            "required.method.not.called",
-            TreeUtils.typeOf(rhs.getTree()).toString(),
-            " required methods are not called on this field");
       }
     }
   }
@@ -829,22 +757,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends BaseAnnotatedTypeFac
         getTypeFactoryOfSubchecker(MustCallChecker.class);
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
-
-    List<String> mustCallValues =
-        (mustCallAnnotation != null)
-            ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
-            : new ArrayList<>(0);
-    return mustCallValues;
-  }
-
-  /**
-   * Returns the String value of @MustCall annotation declared on the class type of {@code element}.
-   */
-  List<String> getMustCallValue(Element element) {
-    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
-        getTypeFactoryOfSubchecker(MustCallChecker.class);
-    AnnotationMirror mustCallAnnotation =
-        mustCallAnnotatedTypeFactory.getAnnotatedType(element).getAnnotation(MustCall.class);
 
     List<String> mustCallValues =
         (mustCallAnnotation != null)
