@@ -75,7 +75,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
     if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)
         && !isAssignedToLocal(this.getCurrentPath())
         && !atypeFactory.returnsThis(node)
-        && ((atypeFactory.transferOwnershipAtReturn && !hasNotOwningAnno(node))
+        && ((MustCallInvokedChecker.TRANSFER_OWNERSHIP_AT_RETURN && !hasNotOwningAnno(node))
             || isTransferOwnershipAtMethodInvocation(node))) {
 
       // Calls to super() can be disregarded; the object under construction should inherit

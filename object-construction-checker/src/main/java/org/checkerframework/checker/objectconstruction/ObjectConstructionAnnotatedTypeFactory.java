@@ -38,9 +38,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   // fields for @MustCall checking
   ////
 
-  /** By default, should we transfer ownership to the caller when a variable is returned? */
-  public boolean transferOwnershipAtReturn = true;
-
   /**
    * Default constructor matching super. Should be called automatically.
    *
@@ -72,7 +69,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)) {
       MustCallInvokedChecker mustCallInvokedChecker =
           new MustCallInvokedChecker(this, this.checker, this.analysis);
-      mustCallInvokedChecker.mustCallTraverse(cfg);
+      mustCallInvokedChecker.checkMustCallInvoked(cfg);
     }
     super.postAnalyze(cfg);
   }
