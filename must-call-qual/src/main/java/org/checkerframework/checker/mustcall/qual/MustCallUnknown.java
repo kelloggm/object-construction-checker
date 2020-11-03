@@ -16,4 +16,4 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({})
-public @interface MustCallAny {}
+public @interface MustCallUnknown {}
