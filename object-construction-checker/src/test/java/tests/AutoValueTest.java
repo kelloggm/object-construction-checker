@@ -47,6 +47,6 @@ public class AutoValueTest extends CheckerFrameworkPerDirectoryTest {
         buildDefaultConfiguration(
             testDir, testFiles, ANNOTATION_PROCS, customizedOptions, shouldEmitDebugInfo);
     TypecheckResult testResult = new TypecheckExecutor().runTest(config);
-    TestUtilities.assertResultsAreValid(testResult);
+    TestUtilities.assertTestDidNotFail(testResult);
   }
 }
