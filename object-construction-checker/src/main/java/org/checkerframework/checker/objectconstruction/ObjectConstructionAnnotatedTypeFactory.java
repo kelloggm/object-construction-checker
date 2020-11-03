@@ -31,7 +31,6 @@ import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -50,6 +49,7 @@ import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.node.TypeCastNode;
+import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -505,8 +505,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
    * element}. Returns null if the class type of {@code element} doesn't have @AlwaysCall
    * annotation.
    */
-  @Nullable
-  String getAlwaysCallValue(Element element) {
+  @Nullable String getAlwaysCallValue(Element element) {
     TypeMirror type = element.asType();
     TypeElement eType = TypesUtils.getTypeElement(type);
     AnnotationMirror alwaysCallAnnotation = getDeclAnnotation(eType, AlwaysCall.class);
