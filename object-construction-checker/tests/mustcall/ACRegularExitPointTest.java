@@ -245,6 +245,9 @@ class ACRegularExitPointTest {
                 // :: error: required.method.not.called
                 frodo = new Foo();
             } else {
+                // this is a known false positive, due to lack of path sensitivity in the
+                // Called Methods Checker
+                // :: error: required.method.not.called
                 frodo = new Foo();
                 frodo.a();
             }

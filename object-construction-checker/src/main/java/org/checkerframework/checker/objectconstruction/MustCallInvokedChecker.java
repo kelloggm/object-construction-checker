@@ -5,9 +5,9 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Type;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,11 +26,7 @@ import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.BlockImpl;
-import org.checkerframework.dataflow.cfg.block.ConditionalBlock;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
-import org.checkerframework.dataflow.cfg.block.ExceptionBlockImpl;
-import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
-import org.checkerframework.dataflow.cfg.block.SpecialBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlockImpl;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
@@ -44,7 +40,6 @@ import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -103,26 +98,6 @@ class MustCallInvokedChecker {
       Set<LocalVarWithTree> newDefs = new HashSet<>(curBlockLocals.localSetInfo);
 
       for (Node node : nodes) {
-
-        if (node instanceof MethodInvocationNode) {
-          Node receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
-          Element method = ((MethodInvocationNode) node).getTarget().getMethod();
-
-          if (receiver instanceof LocalVariableNode
-              && isVarInDefs(newDefs, (LocalVariableNode) receiver)) {
-            List<String> mustCallVal =
-                typeFactory.getMustCallValue(((LocalVariableNode) receiver).getTree());
-            // TODO: I think this will cause false positives if there is more than one value in the
-            // @MustCall annotation
-
-            if (mustCallVal.size() == 1
-                && mustCallVal.get(0).equals(method.getSimpleName().toString())) {
-              // If the method called on the receiver is the same as receiver's @MustCall value,
-              // then we can remove the receiver from the newDefs
-              newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) receiver));
-            }
-          }
-        }
 
         if (node instanceof AssignmentNode) {
           Node lhs = ((AssignmentNode) node).getTarget();
@@ -236,40 +211,79 @@ class MustCallInvokedChecker {
         }
       }
 
-      if (curBlockLocals.block.getType() == Block.BlockType.EXCEPTION_BLOCK) {
-        checkMustCallInExceptionSuccessors(
-            (ExceptionBlockImpl) curBlockLocals.block, newDefs, visited, worklist);
+      handleSuccessorBlocks(visited, worklist, newDefs, curBlockLocals.block);
+    }
+  }
+
+  /**
+   * get all successor blocks for some block, except for those corresponding to ignored exceptions
+   *
+   * @param block input block
+   * @return set of relevant successors for block
+   */
+  private Set<Block> getRelevantSuccessors(Block block) {
+    if (block.getType() == Block.BlockType.EXCEPTION_BLOCK) {
+      ExceptionBlock excBlock = (ExceptionBlock) block;
+      Set<Block> result = new LinkedHashSet<>();
+      // regular successor
+      Block regularSucc = excBlock.getSuccessor();
+      if (regularSucc != null) {
+        result.add(regularSucc);
       }
-
-      for (BlockImpl succ : getSuccessors(curBlockLocals.block)) {
-        Set<LocalVarWithTree> toRemove = new HashSet<>();
-
-        CFStore succRegularStore = analysis.getInput(succ).getRegularStore();
-        for (LocalVarWithTree assign : newDefs) {
-
-          // If the successor block is the exit block or if the variable is going out of scope
-          if (succ instanceof SpecialBlockImpl
-              || succRegularStore.getValue(assign.localVar) == null) {
-            // technically the variable may be going out of scope before the method exit, but that
-            // doesn't seem to provide additional helpful information
-            String outOfScopeReason = "regular method exit";
-            if (nodes.size() == 0) { // If the cur block is special or conditional block
-              checkMustCall(assign, succRegularStore, outOfScopeReason);
-
-            } else { // If the cur block is Exception/Regular block then it checks MustCall
-              // annotation in the store right after the last node
-              Node last = nodes.get(nodes.size() - 1);
-              CFStore storeAfter = typeFactory.getStoreAfter(last);
-              checkMustCall(assign, storeAfter, outOfScopeReason);
-            }
-
-            toRemove.add(assign);
-          }
+      // relevant exception successors
+      Map<TypeMirror, Set<Block>> exSucc = excBlock.getExceptionalSuccessors();
+      for (Map.Entry<TypeMirror, Set<Block>> pair : exSucc.entrySet()) {
+        if (!isIgnoredExceptionType(((Type) pair.getKey()).tsym.getSimpleName())) {
+          result.addAll(pair.getValue());
         }
-
-        newDefs.removeAll(toRemove);
-        propagate(new BlockWithLocals(succ, newDefs), visited, worklist);
       }
+      return result;
+    } else {
+      return block.getSuccessors();
+    }
+  }
+
+  private void handleSuccessorBlocks(
+      Set<BlockWithLocals> visited,
+      Deque<BlockWithLocals> worklist,
+      Set<LocalVarWithTree> defs,
+      Block block) {
+    String outOfScopeReason;
+    if (block instanceof ExceptionBlock) {
+      outOfScopeReason =
+          "possible exceptional exit due to " + ((ExceptionBlock) block).getNode().getTree();
+    } else {
+      // technically the variable may be going out of scope before the method exit, but that
+      // doesn't seem to provide additional helpful information
+      outOfScopeReason = "regular method exit";
+    }
+    List<Node> nodes = block.getNodes();
+    for (Block succ : getRelevantSuccessors(block)) {
+      Set<LocalVarWithTree> defsCopy = new HashSet<>(defs);
+      Set<LocalVarWithTree> toRemove = new HashSet<>();
+
+      CFStore succRegularStore = analysis.getInput(succ).getRegularStore();
+      for (LocalVarWithTree assign : defs) {
+
+        // If the successor block is the exit block or if the variable is going out of scope
+        if (succ instanceof SpecialBlockImpl
+            || succRegularStore.getValue(assign.localVar) == null) {
+          if (nodes.size() == 0) { // If the cur block is special or conditional block
+            checkMustCall(assign, succRegularStore, outOfScopeReason);
+
+          } else { // If the cur block is Exception/Regular block then it checks MustCall
+            // annotation in the store right after the last node
+            Node last = nodes.get(nodes.size() - 1);
+            CFStore storeAfter = typeFactory.getStoreAfter(last);
+            checkMustCall(assign, storeAfter, outOfScopeReason);
+          }
+
+          toRemove.add(assign);
+        }
+      }
+
+      defsCopy.removeAll(toRemove);
+      propagate(new BlockWithLocals(succ, defsCopy), visited, worklist);
     }
   }
 
@@ -377,40 +391,6 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Performs {@code @MustCall} checking for exceptional successors of a block.
-   *
-   * @param exceptionBlock the block with exceptional successors.
-   * @param defs current locals to check
-   * @param visited already-visited state
-   * @param worklist current worklist
-   */
-  private void checkMustCallInExceptionSuccessors(
-      ExceptionBlock exceptionBlock,
-      Set<LocalVarWithTree> defs,
-      Set<MustCallInvokedChecker.BlockWithLocals> visited,
-      Deque<MustCallInvokedChecker.BlockWithLocals> worklist) {
-    Map<TypeMirror, Set<Block>> exSucc = exceptionBlock.getExceptionalSuccessors();
-    for (Map.Entry<TypeMirror, Set<Block>> pair : exSucc.entrySet()) {
-      if (isIgnoredExceptionType(((Type) pair.getKey()).tsym.getSimpleName())) {
-        continue;
-      }
-      CFStore storeAfter = typeFactory.getStoreAfter(exceptionBlock.getNode());
-      for (Block tSucc : pair.getValue()) {
-        if (tSucc instanceof SpecialBlock) {
-          for (LocalVarWithTree assignTree : defs) {
-            checkMustCall(
-                assignTree,
-                storeAfter,
-                "possible exceptional exit due to " + exceptionBlock.getNode().getTree());
-          }
-        } else {
-          propagate(new MustCallInvokedChecker.BlockWithLocals(tSucc, defs), visited, worklist);
-        }
-      }
-    }
-  }
-
-  /**
    * Is {@code exceptionClassName} an exception type we are ignoring, to avoid excessive false
    * positives? For now we ignore {@code java.lang.Throwable} and {@code NullPointerException}
    */
@@ -419,37 +399,6 @@ class MustCallInvokedChecker {
         exceptionClassName.contentEquals(Throwable.class.getSimpleName())
             || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName());
     return isThrowableOrNPE;
-  }
-
-  /**
-   * If cur is Conditional block, then it returns a list of two successor blocks contains then block
-   * and else block. If cur is instance of SingleSuccessorBlock then it returns a list of one block.
-   * Otherwise, it throws an assertion error at runtime.
-   *
-   * @param cur
-   * @return list of successor blocks
-   */
-  private List<BlockImpl> getSuccessors(BlockImpl cur) {
-    List<BlockImpl> successorBlock = new ArrayList<>();
-
-    if (cur.getType() == Block.BlockType.CONDITIONAL_BLOCK) {
-
-      ConditionalBlock ccur = (ConditionalBlock) cur;
-
-      successorBlock.add((BlockImpl) ccur.getThenSuccessor());
-      successorBlock.add((BlockImpl) ccur.getElseSuccessor());
-
-    } else {
-      if (!(cur instanceof SingleSuccessorBlock)) {
-        throw new BugInCF("BlockImpl is neither a conditional block nor a SingleSuccessorBlock");
-      }
-
-      Block b = ((SingleSuccessorBlock) cur).getSuccessor();
-      if (b != null) {
-        successorBlock.add((BlockImpl) b);
-      }
-    }
-    return successorBlock;
   }
 
   /**
