@@ -13,8 +13,6 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.tree.JCTree;
-
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -24,10 +22,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-
-import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
-import org.checkerframework.checker.mustcall.MustCallChecker;
-import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.objectconstruction.framework.FrameworkSupport;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
@@ -177,11 +171,12 @@ public class ObjectConstructionVisitor
     ExpressionTree lhs = node.getVariable();
     Element lhsElement = TreeUtils.elementFromTree(lhs);
 
-    if (lhsElement.getKind().isField() && !ElementUtils.isFinal(lhsElement)) {
-      List<String> lhsMCAValue = getMustCallValue(lhsElement);
+    if (lhsElement.getKind().isField()
+        && !ElementUtils.isFinal(lhsElement)
+        && atypeFactory.getDeclAnnotation(lhsElement, Owning.class) != null) {
+      List<String> lhsMCAValue = atypeFactory.getMustCallValue(lhsElement);
 
-      if (!lhsMCAValue.isEmpty()
-          && atypeFactory.getDeclAnnotation(lhsElement, Owning.class) != null) {
+      if (!lhsMCAValue.isEmpty()) {
         AnnotationMirror dummyCMAnno =
             atypeFactory.createCalledMethods(lhsMCAValue.toArray(new String[0]));
         AnnotatedTypeMirror annoType = atypeFactory.getAnnotatedType(node.getExpression());
@@ -201,12 +196,12 @@ public class ObjectConstructionVisitor
   }
 
   private void checkFinalOwningField(Element field) {
-    List<String> fieldMCAnno = getMustCallValue(field);
+    List<String> fieldMCAnno = atypeFactory.getMustCallValue(field);
     String error = "";
 
     if (!fieldMCAnno.isEmpty()) {
       Element enclosingElement = field.getEnclosingElement();
-      List<String> enclosingMCAnno = getMustCallValue(enclosingElement);
+      List<String> enclosingMCAnno = atypeFactory.getMustCallValue(enclosingElement);
 
       if (enclosingMCAnno != null) {
         List<? extends Element> classElements = enclosingElement.getEnclosedElements();
@@ -289,22 +284,6 @@ public class ObjectConstructionVisitor
       default:
         return false;
     }
-  }
-
-  /**
-   * Returns the String value of @MustCall annotation declared on the class type of {@code element}.
-   */
-  List<String> getMustCallValue(Element element) {
-    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
-            atypeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
-    AnnotationMirror mustCallAnnotation =
-            mustCallAnnotatedTypeFactory.getAnnotatedType(element).getAnnotation(MustCall.class);
-
-    List<String> mustCallValues =
-            (mustCallAnnotation != null)
-                    ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
-                    : new ArrayList<>(0);
-    return mustCallValues;
   }
 
   /**
