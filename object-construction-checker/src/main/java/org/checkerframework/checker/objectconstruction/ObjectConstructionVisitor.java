@@ -3,9 +3,7 @@ package org.checkerframework.checker.objectconstruction;
 import static javax.lang.model.element.ElementKind.*;
 
 import com.sun.source.tree.AnnotationTree;
-import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ConditionalExpressionTree;
-import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
@@ -157,18 +155,19 @@ public class ObjectConstructionVisitor
   public Void visitVariable(VariableTree node, Void p) {
     Element varElement = TreeUtils.elementFromTree(node);
 
-    if (varElement.getKind().isField() && atypeFactory.getDeclAnnotation(varElement, Owning.class) != null) {
+    if (varElement.getKind().isField()
+        && atypeFactory.getDeclAnnotation(varElement, Owning.class) != null) {
       List<String> fieldMCAnno = atypeFactory.getMustCallValue(varElement);
       if (ElementUtils.isFinal(varElement)) {
         checkFinalOwningField(varElement);
-      } else if (!fieldMCAnno.isEmpty()){
+      } else if (!fieldMCAnno.isEmpty()) {
         List<String> varMCValue = atypeFactory.getMustCallValue(varElement);
-          checker.reportError(
-              node,
-              "required.method.not.called",
-              atypeFactory.formatMissingMustCallMethods(varMCValue),
-              varElement.asType().toString(),
-              " Non-final owning field might be overwritten");
+        checker.reportError(
+            node,
+            "required.method.not.called",
+            atypeFactory.formatMissingMustCallMethods(varMCValue),
+            varElement.asType().toString(),
+            " Non-final owning field might be overwritten");
       }
     }
 
