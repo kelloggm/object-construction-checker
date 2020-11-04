@@ -2,14 +2,14 @@ package java.io;
 
 import org.checkerframework.checker.mustcall.qual.*;
 
-@MustCall({})
+@InheritableMustCall({})
 class ByteArrayInputStream { }
 
-@MustCall({})
+@InheritableMustCall({})
 class ByteArrayOutputStream { }
 
-@MustCall({})
+@InheritableMustCall({})
 class StringReader { }
 
-@MustCall({})
+@InheritableMustCall({})
 class StringWriter { }
