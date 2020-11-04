@@ -1,7 +1,5 @@
 package org.checkerframework.checker.objectconstruction;
 
-import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -9,7 +7,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsBottom;
@@ -17,16 +14,9 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.objectconstruction.qual.NotOwning;
-import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
-import org.checkerframework.dataflow.cfg.UnderlyingAST;
-import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
-import org.checkerframework.dataflow.cfg.node.Node;
-import org.checkerframework.dataflow.cfg.node.ReturnNode;
-import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -72,50 +62,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
       mustCallInvokedChecker.checkMustCallInvoked(cfg);
     }
     super.postAnalyze(cfg);
-  }
-
-  boolean hasNotOwningAnno(Node node, ControlFlowGraph cfg) {
-    if (node instanceof ReturnNode) {
-      UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
-      if (underlyingAST instanceof UnderlyingAST.CFGMethod) {
-        // TODO: lambdas?
-        MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
-        ExecutableElement executableElement = TreeUtils.elementFromDeclaration(method);
-        return (getDeclAnnotation(executableElement, NotOwning.class) != null);
-      }
-    }
-    return false;
-  }
-
-  boolean isTransferOwnershipAtReturn(Node node, ControlFlowGraph cfg) {
-    if (node instanceof ReturnNode) {
-      UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
-      if (underlyingAST instanceof UnderlyingAST.CFGMethod) {
-        // TODO: lambdas?
-        MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
-        ExecutableElement executableElement = TreeUtils.elementFromDeclaration(method);
-        return (getDeclAnnotation(executableElement, Owning.class) != null);
-      }
-    }
-    return false;
-  }
-
-  boolean hasNotOwningAnno(Node node) {
-    if (node instanceof MethodInvocationNode) {
-      MethodInvocationTree methodInvocationTree = ((MethodInvocationNode) node).getTree();
-      ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
-      return (getDeclAnnotation(executableElement, NotOwning.class) != null);
-    }
-    return false;
-  }
-
-  boolean isTransferOwnershipAtMethodInvocation(Node node) {
-    if (node instanceof MethodInvocationNode) {
-      MethodInvocationTree methodInvocationTree = ((MethodInvocationNode) node).getTree();
-      ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
-      return (getDeclAnnotation(executableElement, Owning.class) != null);
-    }
-    return false;
   }
 
   /**

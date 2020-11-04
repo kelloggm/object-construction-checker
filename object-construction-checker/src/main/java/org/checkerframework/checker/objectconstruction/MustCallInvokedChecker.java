@@ -1,5 +1,6 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
@@ -20,12 +21,12 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
+import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
-import org.checkerframework.dataflow.cfg.block.BlockImpl;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlockImpl;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
@@ -100,56 +101,14 @@ class MustCallInvokedChecker {
       for (Node node : nodes) {
 
         if (node instanceof AssignmentNode) {
-          Node lhs = ((AssignmentNode) node).getTarget();
-          Node rhs = ((AssignmentNode) node).getExpression();
+          handleAssignment((AssignmentNode) node, newDefs);
+        } else if (node instanceof ReturnNode) {
 
-          if (rhs instanceof TypeCastNode) {
-            rhs = ((TypeCastNode) rhs).getOperand();
-          }
-
-          if (lhs instanceof LocalVariableNode
-              && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
-
-            // Reassignment to the lhs
-            if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
-              LocalVarWithTree latestAssignmentPair =
-                  getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-              checkMustCall(
-                  latestAssignmentPair,
-                  typeFactory.getStoreBefore(node),
-                  "variable overwritten by assignment " + node.getTree());
-              newDefs.remove(latestAssignmentPair);
-            }
-
-            // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
-            // the AssignmentNode to the newDefs.
-            if ((rhs instanceof ObjectCreationNode)
-                || (rhs instanceof MethodInvocationNode && !typeFactory.hasNotOwningAnno(rhs))) {
-              newDefs.add(
-                  new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree()));
-            }
-
-            // Ownership Transfer
-            if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
-              // If the rhs is a LocalVariableNode that exists in the newDefs (Note that if a
-              // localVariableNode exists in the newDefs it means it isn't assigned to a null
-              // literals), then it adds the localVariableNode to the newDefs
-              newDefs.add(
-                  new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree()));
-              newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs));
-            }
-          }
         }
 
         // Remove the returned localVariableNode from newDefs.
-        if (node instanceof ReturnNode
-            && (typeFactory.isTransferOwnershipAtReturn(node, cfg)
-                || (TRANSFER_OWNERSHIP_AT_RETURN && !typeFactory.hasNotOwningAnno(node, cfg)))) {
-          Node result = ((ReturnNode) node).getResult();
-          if (result instanceof LocalVariableNode
-              && isVarInDefs(newDefs, (LocalVariableNode) result)) {
-            newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) result));
-          }
+        if (node instanceof ReturnNode) {
+          handleReturn((ReturnNode) node, cfg, newDefs);
         }
 
         if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
@@ -215,6 +174,83 @@ class MustCallInvokedChecker {
     }
   }
 
+  private void handleReturn(ReturnNode node, ControlFlowGraph cfg, Set<LocalVarWithTree> newDefs) {
+    if (isTransferOwnershipAtReturn(cfg)) {
+      Node result = node.getResult();
+      if (result instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) result)) {
+        newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) result));
+      }
+    }
+  }
+
+  /**
+   * Should we transfer ownership to the return type of the method corresponding to a CFG? Returns
+   * true when either (1) there is an explicit {@link Owning} annotation on the return type or (2)
+   * the policy is to transfer ownership by default, and there is no {@link NotOwning} annotation on
+   * the return type
+   */
+  private boolean isTransferOwnershipAtReturn(ControlFlowGraph cfg) {
+    UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
+    if (underlyingAST instanceof UnderlyingAST.CFGMethod) {
+      // TODO: lambdas?
+      MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
+      ExecutableElement executableElement = TreeUtils.elementFromDeclaration(method);
+      return (typeFactory.getDeclAnnotation(executableElement, Owning.class) != null)
+          || (TRANSFER_OWNERSHIP_AT_RETURN
+              && typeFactory.getDeclAnnotation(executableElement, NotOwning.class) == null);
+    }
+    return false;
+  }
+
+  private void handleAssignment(AssignmentNode node, Set<LocalVarWithTree> newDefs) {
+    Node lhs = node.getTarget();
+    Node rhs = node.getExpression();
+
+    if (rhs instanceof TypeCastNode) {
+      rhs = ((TypeCastNode) rhs).getOperand();
+    }
+
+    if (lhs instanceof LocalVariableNode && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
+
+      // Reassignment to the lhs
+      if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
+        LocalVarWithTree latestAssignmentPair =
+            getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
+        checkMustCall(
+            latestAssignmentPair,
+            typeFactory.getStoreBefore(node),
+            "variable overwritten by assignment " + node.getTree());
+        newDefs.remove(latestAssignmentPair);
+      }
+
+      // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
+      // the AssignmentNode to the newDefs.
+      if ((rhs instanceof ObjectCreationNode)
+          || (rhs instanceof MethodInvocationNode && !hasNotOwningAnno(rhs))) {
+        newDefs.add(
+            new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree()));
+      }
+
+      // Ownership Transfer
+      if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
+        // If the rhs is a LocalVariableNode that exists in the newDefs (Note that if a
+        // localVariableNode exists in the newDefs it means it isn't assigned to a null
+        // literals), then it adds the localVariableNode to the newDefs
+        newDefs.add(
+            new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree()));
+        newDefs.remove(getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs));
+      }
+    }
+  }
+
+  boolean hasNotOwningAnno(Node node) {
+    if (node instanceof MethodInvocationNode) {
+      MethodInvocationTree methodInvocationTree = ((MethodInvocationNode) node).getTree();
+      ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
+      return (typeFactory.getDeclAnnotation(executableElement, NotOwning.class) != null);
+    }
+    return false;
+  }
   /**
    * get all successor blocks for some block, except for those corresponding to ignored exceptions
    *
@@ -425,12 +461,17 @@ class MustCallInvokedChecker {
     return mustCallVal.stream().reduce("", (s, acc) -> "".equals(acc) ? s : acc + ", " + s);
   }
 
+  /**
+   * A pair of a {@link Block} and a set of {@link LocalVarWithTree}. In our algorithm, a
+   * BlockWithLocals represents visiting a {@link Block} while checking the {@link
+   * org.checkerframework.checker.mustcall.qual.MustCall} obligations for a set of locals.
+   */
   private static class BlockWithLocals {
-    public final BlockImpl block;
+    public final Block block;
     public final Set<LocalVarWithTree> localSetInfo;
 
     public BlockWithLocals(Block b, Set<LocalVarWithTree> ls) {
-      this.block = (BlockImpl) b;
+      this.block = b;
       this.localSetInfo = ls;
     }
 
@@ -451,7 +492,8 @@ class MustCallInvokedChecker {
   /**
    * A pair of a local variable along with a tree in the corresponding method that "assigns" the
    * variable. Besides a normal assignment, the tree may be a {@link VariableTree} in the case of a
-   * formal parameter
+   * formal parameter. We keep the tree for error-reporting purposes (so we can report an error per
+   * assignment to a local, pinpointing the expression whose MustCall may not be satisfied).
    */
   private static class LocalVarWithTree {
     public final LocalVariable localVar;
