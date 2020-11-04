@@ -157,42 +157,22 @@ public class ObjectConstructionVisitor
   public Void visitVariable(VariableTree node, Void p) {
     Element varElement = TreeUtils.elementFromTree(node);
 
-    if (varElement.getKind().isField() && ElementUtils.isFinal(varElement)) {
-      if (atypeFactory.getDeclAnnotation(varElement, Owning.class) != null) {
+    if (varElement.getKind().isField() && atypeFactory.getDeclAnnotation(varElement, Owning.class) != null) {
+      List<String> fieldMCAnno = atypeFactory.getMustCallValue(varElement);
+      if (ElementUtils.isFinal(varElement)) {
         checkFinalOwningField(varElement);
+      } else if (!fieldMCAnno.isEmpty()){
+        List<String> varMCValue = atypeFactory.getMustCallValue(varElement);
+          checker.reportError(
+              node,
+              "required.method.not.called",
+              atypeFactory.formatMissingMustCallMethods(varMCValue),
+              varElement.asType().toString(),
+              " Non-final owning field might be overwritten");
       }
     }
 
     return super.visitVariable(node, p);
-  }
-
-  @Override
-  public Void visitAssignment(AssignmentTree node, Void p) {
-    ExpressionTree lhs = node.getVariable();
-    Element lhsElement = TreeUtils.elementFromTree(lhs);
-
-    if (lhsElement.getKind().isField()
-        && !ElementUtils.isFinal(lhsElement)
-        && atypeFactory.getDeclAnnotation(lhsElement, Owning.class) != null) {
-      List<String> lhsMCAValue = atypeFactory.getMustCallValue(lhsElement);
-
-      if (!lhsMCAValue.isEmpty()) {
-        AnnotationMirror dummyCMAnno =
-            atypeFactory.createCalledMethods(lhsMCAValue.toArray(new String[0]));
-        AnnotatedTypeMirror annoType = atypeFactory.getAnnotatedType(node.getExpression());
-        AnnotationMirror cmAnno = annoType.getAnnotationInHierarchy(atypeFactory.TOP);
-
-        if (!atypeFactory.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
-          checker.reportError(
-              node,
-              "required.method.not.called",
-              atypeFactory.formatMissingMustCallMethods(lhsMCAValue),
-              TreeUtils.typeOf(lhs).toString(),
-              " Non-final owning field might be overwritten");
-        }
-      }
-    }
-    return super.visitAssignment(node, p);
   }
 
   private void checkFinalOwningField(Element field) {
