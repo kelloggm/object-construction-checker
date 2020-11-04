@@ -103,74 +103,71 @@ class MustCallInvokedChecker {
         if (node instanceof AssignmentNode) {
           handleAssignment((AssignmentNode) node, newDefs);
         } else if (node instanceof ReturnNode) {
-
-        }
-
-        // Remove the returned localVariableNode from newDefs.
-        if (node instanceof ReturnNode) {
           handleReturn((ReturnNode) node, cfg, newDefs);
-        }
-
-        if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
-          List<Node> arguments;
-          ExecutableElement executableElement;
-          if (node instanceof MethodInvocationNode) {
-            MethodInvocationNode invocationNode = (MethodInvocationNode) node;
-            arguments = invocationNode.getArguments();
-            executableElement = TreeUtils.elementFromUse(invocationNode.getTree());
-          } else {
-            arguments = ((ObjectCreationNode) node).getArguments();
-            executableElement = TreeUtils.elementFromUse(((ObjectCreationNode) node).getTree());
-          }
-
-          List<? extends VariableElement> formals = executableElement.getParameters();
-          if (arguments.size() != formals.size()) {
-            // this could happen, e.g., with varargs, or with strange cases like generated Enum
-            // constructors
-            // for now, just skip this case
-            // TODO allow for ownership transfer here if needed in future
-            continue;
-          }
-          for (int i = 0; i < arguments.size(); i++) {
-            Node n = arguments.get(i);
-            if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
-              VariableElement formal = formals.get(i);
-              Set<AnnotationMirror> annotationMirrors = typeFactory.getDeclAnnotations(formal);
-              TypeMirror t = TreeUtils.typeOf(n.getTree());
-              List<String> mustCallVal = typeFactory.getMustCallValue(n.getTree());
-              if (!mustCallVal.isEmpty()
-                  && annotationMirrors.stream()
-                      .noneMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
-                // TODO why is this logic here and not in the visitor?
-                checker.reportError(
-                    n.getTree(),
-                    "required.method.not.called",
-                    formatMissingMustCallMethods(mustCallVal),
-                    t.toString(),
-                    "never assigned to a variable");
-              }
-            }
-
-            if (n instanceof LocalVariableNode) {
-              LocalVariableNode local = (LocalVariableNode) n;
-              if (isVarInDefs(newDefs, local)) {
-
-                // check if formal has an @Owning annotation
-                VariableElement formal = formals.get(i);
-                Set<AnnotationMirror> annotationMirrors = typeFactory.getDeclAnnotations(formal);
-
-                if (annotationMirrors.stream()
-                    .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
-                  // transfer ownership!
-                  newDefs.remove(getAssignmentTreeOfVar(newDefs, local));
-                }
-              }
-            }
-          }
+        } else if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
+          handleInvocation(newDefs, node);
         }
       }
 
       handleSuccessorBlocks(visited, worklist, newDefs, curBlockLocals.block);
+    }
+  }
+
+  private void handleInvocation(Set<LocalVarWithTree> newDefs, Node node) {
+    List<Node> arguments;
+    ExecutableElement executableElement;
+    if (node instanceof MethodInvocationNode) {
+      MethodInvocationNode invocationNode = (MethodInvocationNode) node;
+      arguments = invocationNode.getArguments();
+      executableElement = TreeUtils.elementFromUse(invocationNode.getTree());
+    } else {
+      arguments = ((ObjectCreationNode) node).getArguments();
+      executableElement = TreeUtils.elementFromUse(((ObjectCreationNode) node).getTree());
+    }
+
+    List<? extends VariableElement> formals = executableElement.getParameters();
+    if (arguments.size() != formals.size()) {
+      // this could happen, e.g., with varargs, or with strange cases like generated Enum
+      // constructors
+      // for now, just skip this case
+      // TODO allow for ownership transfer here if needed in future
+      return;
+    }
+    for (int i = 0; i < arguments.size(); i++) {
+      Node n = arguments.get(i);
+      if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
+        VariableElement formal = formals.get(i);
+        Set<AnnotationMirror> annotationMirrors = typeFactory.getDeclAnnotations(formal);
+        TypeMirror t = TreeUtils.typeOf(n.getTree());
+        List<String> mustCallVal = typeFactory.getMustCallValue(n.getTree());
+        if (!mustCallVal.isEmpty()
+            && annotationMirrors.stream()
+                .noneMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
+          // TODO why is this logic here and not in the visitor?
+          checker.reportError(
+              n.getTree(),
+              "required.method.not.called",
+              formatMissingMustCallMethods(mustCallVal),
+              t.toString(),
+              "never assigned to a variable");
+        }
+      }
+
+      if (n instanceof LocalVariableNode) {
+        LocalVariableNode local = (LocalVariableNode) n;
+        if (isVarInDefs(newDefs, local)) {
+
+          // check if formal has an @Owning annotation
+          VariableElement formal = formals.get(i);
+          Set<AnnotationMirror> annotationMirrors = typeFactory.getDeclAnnotations(formal);
+
+          if (annotationMirrors.stream()
+              .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
+            // transfer ownership!
+            newDefs.remove(getAssignmentTreeOfVar(newDefs, local));
+          }
+        }
+      }
     }
   }
 
@@ -226,7 +223,8 @@ class MustCallInvokedChecker {
       // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
       // the AssignmentNode to the newDefs.
       if ((rhs instanceof ObjectCreationNode)
-          || (rhs instanceof MethodInvocationNode && !hasNotOwningAnno(rhs))) {
+          || (rhs instanceof MethodInvocationNode
+              && !hasNotOwningAnno((MethodInvocationNode) rhs))) {
         newDefs.add(
             new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree()));
       }
@@ -243,14 +241,12 @@ class MustCallInvokedChecker {
     }
   }
 
-  boolean hasNotOwningAnno(Node node) {
-    if (node instanceof MethodInvocationNode) {
-      MethodInvocationTree methodInvocationTree = ((MethodInvocationNode) node).getTree();
-      ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
-      return (typeFactory.getDeclAnnotation(executableElement, NotOwning.class) != null);
-    }
-    return false;
+  boolean hasNotOwningAnno(MethodInvocationNode node) {
+    MethodInvocationTree methodInvocationTree = node.getTree();
+    ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
+    return (typeFactory.getDeclAnnotation(executableElement, NotOwning.class) != null);
   }
+
   /**
    * get all successor blocks for some block, except for those corresponding to ignored exceptions
    *
