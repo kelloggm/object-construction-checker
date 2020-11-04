@@ -2,8 +2,8 @@ package org.checkerframework.checker.objectconstruction;
 
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
@@ -23,10 +23,6 @@ import org.checkerframework.dataflow.cfg.ControlFlowGraph;
  * subtyping rules between @CalledMethod annotations.
  */
 public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotatedTypeFactory {
-
-  ////
-  // fields for @MustCall checking
-  ////
 
   /**
    * Default constructor matching super. Should be called automatically.
@@ -76,7 +72,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     List<String> mustCallValues =
         (mustCallAnnotation != null)
             ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
-            : new ArrayList<>(0);
+            : Collections.emptyList();
     return mustCallValues;
   }
 

@@ -224,7 +224,7 @@ class MustCallInvokedChecker {
       // the AssignmentNode to the newDefs.
       if ((rhs instanceof ObjectCreationNode)
           || (rhs instanceof MethodInvocationNode
-              && !hasNotOwningAnno((MethodInvocationNode) rhs))) {
+              && !hasNotOwningReturnType((MethodInvocationNode) rhs))) {
         newDefs.add(
             new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree()));
       }
@@ -241,7 +241,7 @@ class MustCallInvokedChecker {
     }
   }
 
-  boolean hasNotOwningAnno(MethodInvocationNode node) {
+  private boolean hasNotOwningReturnType(MethodInvocationNode node) {
     MethodInvocationTree methodInvocationTree = node.getTree();
     ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
     return (typeFactory.getDeclAnnotation(executableElement, NotOwning.class) != null);
@@ -372,25 +372,25 @@ class MustCallInvokedChecker {
 
   /**
    * Creates the appropriate @CalledMethods annotation that corresponds to the @MustCall annotation
-   * declared on the class type of {@code assign.first}. Then, it gets @CalledMethod annotation of
-   * {@code assign.first} to do a subtyping check and reports an error if the check fails.
+   * declared on the class type of {@code localVarWithTree.first}. Then, it gets @CalledMethod
+   * annotation of {@code localVarWithTree.first} to do a subtyping check and reports an error if
+   * the check fails.
    */
-  private void checkMustCall(LocalVarWithTree assign, CFStore store, String outOfScopeReason) {
-    List<String> mustCallValue = typeFactory.getMustCallValue(assign.tree);
+  private void checkMustCall(
+      LocalVarWithTree localVarWithTree, CFStore store, String outOfScopeReason) {
+    List<String> mustCallValue = typeFactory.getMustCallValue(localVarWithTree.tree);
     // optimization: if there are no must-call methods, we do not need to perform the check
     if (mustCallValue.isEmpty()) {
       return;
     }
-    AnnotationMirror dummyCMAnno =
+    AnnotationMirror cmAnnoForMustCallMethods =
         typeFactory.createCalledMethods(mustCallValue.toArray(new String[0]));
-
-    boolean report = true;
 
     AnnotationMirror cmAnno;
 
     // sometimes the store is null!  this looks like a bug in checker dataflow.
     // TODO track down and report the root-cause bug
-    CFValue lhsCFValue = store != null ? store.getValue(assign.localVar) : null;
+    CFValue lhsCFValue = store != null ? store.getValue(localVarWithTree.localVar) : null;
     if (lhsCFValue != null) { // When store contains the lhs
       cmAnno =
           lhsCFValue.getAnnotations().stream()
@@ -400,23 +400,19 @@ class MustCallInvokedChecker {
     } else {
       cmAnno =
           typeFactory
-              .getAnnotatedType(assign.localVar.getElement())
+              .getAnnotatedType(localVarWithTree.localVar.getElement())
               .getAnnotationInHierarchy(typeFactory.top);
     }
 
-    if (typeFactory.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
-      report = false;
-    }
-
-    if (report) {
-      if (!reportedMustCallErrors.contains(assign)) {
-        reportedMustCallErrors.add(assign);
+    if (!typeFactory.getQualifierHierarchy().isSubtype(cmAnno, cmAnnoForMustCallMethods)) {
+      if (!reportedMustCallErrors.contains(localVarWithTree)) {
+        reportedMustCallErrors.add(localVarWithTree);
 
         checker.reportError(
-            assign.tree,
+            localVarWithTree.tree,
             "required.method.not.called",
             formatMissingMustCallMethods(mustCallValue),
-            assign.localVar.getType().toString(),
+            localVarWithTree.localVar.getType().toString(),
             outOfScopeReason);
       }
     }
@@ -426,7 +422,7 @@ class MustCallInvokedChecker {
    * Is {@code exceptionClassName} an exception type we are ignoring, to avoid excessive false
    * positives? For now we ignore {@code java.lang.Throwable} and {@code NullPointerException}
    */
-  private boolean isIgnoredExceptionType(Name exceptionClassName) {
+  private static boolean isIgnoredExceptionType(Name exceptionClassName) {
     boolean isThrowableOrNPE =
         exceptionClassName.contentEquals(Throwable.class.getSimpleName())
             || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName());
@@ -437,10 +433,8 @@ class MustCallInvokedChecker {
    * Updates {@code visited} and {@code worklist} if the input {@code state} has not been visited
    * yet.
    */
-  private void propagate(
-      MustCallInvokedChecker.BlockWithLocals state,
-      Set<MustCallInvokedChecker.BlockWithLocals> visited,
-      Deque<MustCallInvokedChecker.BlockWithLocals> worklist) {
+  private static void propagate(
+      BlockWithLocals state, Set<BlockWithLocals> visited, Deque<BlockWithLocals> worklist) {
 
     if (visited.add(state)) {
       worklist.add(state);
