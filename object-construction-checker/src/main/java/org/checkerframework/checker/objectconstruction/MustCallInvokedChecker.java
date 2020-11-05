@@ -47,6 +47,7 @@ import org.checkerframework.javacutil.TreeUtils;
  * Checks that all methods in {@link org.checkerframework.checker.mustcall.qual.MustCall} object
  * types are invoked before the corresponding objects become unreachable
  */
+/* package-private */
 class MustCallInvokedChecker {
 
   /** By default, should we transfer ownership to the caller when a variable is returned? */
@@ -61,6 +62,7 @@ class MustCallInvokedChecker {
 
   private final CFAnalysis analysis;
 
+  /* package-private */
   MustCallInvokedChecker(
       ObjectConstructionAnnotatedTypeFactory typeFactory,
       BaseTypeChecker checker,
@@ -80,6 +82,7 @@ class MustCallInvokedChecker {
    *
    * @param cfg the control flow graph of a method
    */
+  /* package-private */
   void checkMustCallInvoked(ControlFlowGraph cfg) {
     // add any owning parameters to initial set of variables to track
     BlockWithLocals firstBlockLocals =
@@ -447,6 +450,7 @@ class MustCallInvokedChecker {
    * @param mustCallVal the list of must-call strings
    * @return a formatted string
    */
+  /* package-private */
   static String formatMissingMustCallMethods(List<String> mustCallVal) {
     return mustCallVal.stream().reduce("", (s, acc) -> "".equals(acc) ? s : acc + ", " + s);
   }
