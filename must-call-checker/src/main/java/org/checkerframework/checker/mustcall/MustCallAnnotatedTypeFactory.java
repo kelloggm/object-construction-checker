@@ -26,10 +26,10 @@ import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
-import org.checkerframework.framework.type.ElementQualifierHierarchy;
+import org.checkerframework.framework.type.MostlyNoElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.javacutil.AnnotationBuilder;
-import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -141,7 +141,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
    * declaratively-defined subtyping relationships, like our @MustCall annotation.
    */
-  private class MustCallQualifierHierarchy extends ElementQualifierHierarchy {
+  private class MustCallQualifierHierarchy extends MostlyNoElementQualifierHierarchy {
 
     protected MustCallQualifierHierarchy(
         Collection<Class<? extends Annotation>> qualifierClasses, Elements elements) {
@@ -153,86 +153,36 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return TOP;
     }
 
-    /**
-     * GLB in this type system is set intersection of the arguments of the two annotations, unless
-     * one of the annotations is top (if so, the result is the other annotation).
-     */
     @Override
-    public AnnotationMirror greatestLowerBound(
-        final AnnotationMirror a1, final AnnotationMirror a2) {
-
-      // Shortcut for the common case, because bottom is the default and the intersection of
-      // any set with the empty set (i.e. bottom) is also the empty set.
-      if (AnnotationUtils.areSame(a1, BOTTOM) || AnnotationUtils.areSame(a2, BOTTOM)) {
-        return BOTTOM;
-      }
-
-      if (isPolymorphicQualifier(a1) && isPolymorphicQualifier(a2)) {
-        return a1;
-      } else if (isPolymorphicQualifier(a1) || isPolymorphicQualifier(a2)) {
-        return BOTTOM;
-      }
-
-      if (AnnotationUtils.areSame(a1, TOP)) {
-        return a2;
-      }
-
-      if (AnnotationUtils.areSame(a2, TOP)) {
-        return a1;
-      }
-
+    protected AnnotationMirror greatestLowerBoundWithElements(
+        AnnotationMirror a1,
+        QualifierKind qualifierKind1,
+        AnnotationMirror a2,
+        QualifierKind qualifierKind2) {
       Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
       Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
       a1Val.retainAll(a2Val);
       return createMustCall(a1Val.toArray(new String[0]));
     }
 
-    /**
-     * LUB in this type system is set union of the arguments of the two annotations, unless one of
-     * them is top, in which case the result is top.
-     */
     @Override
-    public AnnotationMirror leastUpperBound(final AnnotationMirror a1, final AnnotationMirror a2) {
-      if (AnnotationUtils.areSame(a1, TOP) || AnnotationUtils.areSame(a2, TOP)) {
-        return TOP;
-      }
-
-      if (isPolymorphicQualifier(a1) && isPolymorphicQualifier(a2)) {
-        return a1;
-      } else if (isPolymorphicQualifier(a1) || isPolymorphicQualifier(a2)) {
-        return TOP;
-      }
-
+    protected AnnotationMirror leastUpperBoundWithElements(
+        AnnotationMirror a1,
+        QualifierKind qualifierKind1,
+        AnnotationMirror a2,
+        QualifierKind qualifierKind2) {
       Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
       Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
       a1Val.addAll(a2Val);
       return createMustCall(a1Val.toArray(new String[0]));
     }
 
-    /** isSubtype in this type system is superset */
     @Override
-    public boolean isSubtype(final AnnotationMirror subAnno, final AnnotationMirror superAnno) {
-
-      if (AnnotationUtils.areSame(subAnno, BOTTOM)) {
-        return true;
-      } else if (AnnotationUtils.areSame(superAnno, BOTTOM)) {
-        return false;
-      }
-
-      if (AnnotationUtils.areSame(superAnno, TOP)) {
-        return true;
-      } else if (AnnotationUtils.areSame(subAnno, TOP)) {
-        return false;
-      }
-
-      if (isPolymorphicQualifier(subAnno)) {
-        return isPolymorphicQualifier(superAnno);
-      } else if (isPolymorphicQualifier(superAnno)) {
-        // Polymorphic annotations are only a supertype of other polymorphic annotations and
-        // the bottom type, both of which have already been checked above.
-        return false;
-      }
-
+    protected boolean isSubtypeWithElements(
+        AnnotationMirror subAnno,
+        QualifierKind subKind,
+        AnnotationMirror superAnno,
+        QualifierKind superKind) {
       Set<String> subVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(subAnno));
       Set<String> superVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(superAnno));
 
