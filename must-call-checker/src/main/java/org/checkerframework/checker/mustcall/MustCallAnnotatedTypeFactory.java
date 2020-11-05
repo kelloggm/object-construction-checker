@@ -24,10 +24,10 @@ import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.MostlyNoElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
 import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.BugInCF;
@@ -49,6 +49,9 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The polymorphic qualifier */
   final AnnotationMirror POLY;
 
+  /** Simple scanner that descends into a type and replaces all annotations with top. */
+  private SimpleAnnotatedTypeScanner<Void, Void> replaceWithTop;
+
   /**
    * Default constructor matching super. Should be called automatically.
    *
@@ -59,6 +62,12 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     TOP = AnnotationBuilder.fromClass(elements, MustCallUnknown.class);
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
+    replaceWithTop =
+        new SimpleAnnotatedTypeScanner<>(
+            (t, p) -> {
+              t.replaceAnnotation(TOP);
+              return null;
+            });
     addAliasedAnnotation(InheritableMustCall.class, MustCall.class, true);
     this.postInit();
   }
@@ -78,12 +87,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       Element paramDecl = declaration.getParameters().get(i);
       if (getDeclAnnotation(paramDecl, NotOwning.class) != null) {
         AnnotatedTypeMirror paramType = type.getParameterTypes().get(i);
-        paramType.replaceAnnotation(TOP);
-        // Descend into a varargs array
-        if (declaration.isVarArgs() && i == declaration.getParameters().size() - 1) {
-          AnnotatedTypeMirror componentType = ((AnnotatedArrayType) paramType).getComponentType();
-          componentType.replaceAnnotation(TOP);
-        }
+        replaceWithTop.visit(paramType);
       }
     }
     super.methodFromUsePreSubstitution(tree, type);
