@@ -10,14 +10,13 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.tree.JCTree;
+import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import org.checkerframework.checker.calledmethods.CalledMethodsVisitor;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.objectconstruction.qual.AlwaysCall;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
@@ -26,7 +25,6 @@ import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.TypesUtils;
 
 public class ObjectConstructionVisitor extends CalledMethodsVisitor {
 
@@ -74,21 +72,29 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
 
-    if (!isAssignedToLocal(this.getCurrentPath())
+    if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)
+        && !isAssignedToLocal(this.getCurrentPath())
         && !atypeFactory.returnsThis(node)
-        && ((atypeFactory.transferOwnershipAtReturn && !hasNotOwningAnno(node))
+        && ((MustCallInvokedChecker.TRANSFER_OWNERSHIP_AT_RETURN && !hasNotOwningAnno(node))
             || isTransferOwnershipAtMethodInvocation(node))) {
-      TypeMirror returnType = TreeUtils.typeOf(node);
 
-      if (atypeFactory.hasAlwaysCall(returnType)) {
-        String alwaysCallAnnoVal = getAlwaysCallValue(returnType);
-        AnnotationMirror dummyCMAnno = atypeFactory.createCalledMethods(alwaysCallAnnoVal);
+      // Calls to super() can be disregarded; the object under construction should inherit
+      // the MustCall responsibility of its super class.
+      if (!TreeUtils.isSuperConstructorCall(node) && atypeFactory.hasMustCall(node)) {
+        TypeMirror returnType = TreeUtils.typeOf(node);
+        List<String> mustCallAnnoVal = atypeFactory.getMustCallValue(node);
+        AnnotationMirror dummyCMAnno =
+            atypeFactory.createCalledMethods(mustCallAnnoVal.toArray(new String[0]));
         AnnotatedTypeMirror annoType = atypeFactory.getAnnotatedType(node);
         AnnotationMirror cmAnno = annoType.getAnnotationInHierarchy(atypeFactory.top);
 
         if (!atypeFactory.getQualifierHierarchy().isSubtype(cmAnno, dummyCMAnno)) {
           checker.reportError(
-              node, "missing.alwayscall", returnType.toString(), "never assigned to a variable");
+              node,
+              "required.method.not.called",
+              MustCallInvokedChecker.formatMissingMustCallMethods(mustCallAnnoVal),
+              returnType.toString(),
+              "never assigned to a variable");
         }
       }
     }
@@ -107,23 +113,20 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
 
   @Override
   public Void visitNewClass(NewClassTree node, Void p) {
-    if (!isAssignedToLocal(this.getCurrentPath())) {
-      TypeMirror type = TreeUtils.typeOf(node);
-      if (atypeFactory.hasAlwaysCall(type)) {
+    if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)
+        && !isAssignedToLocal(this.getCurrentPath())) {
+      List<String> mustCallVal = atypeFactory.getMustCallValue(node);
+      if (!mustCallVal.isEmpty()) {
+        TypeMirror type = TreeUtils.typeOf(node);
         checker.reportError(
-            node, "missing.alwayscall", type.toString(), "never assigned to a variable");
+            node,
+            "required.method.not.called",
+            MustCallInvokedChecker.formatMissingMustCallMethods(mustCallVal),
+            type.toString(),
+            "never assigned to a variable");
       }
     }
     return super.visitNewClass(node, p);
-  }
-
-  private String getAlwaysCallValue(TypeMirror type) {
-    TypeElement eType = TypesUtils.getTypeElement(type);
-    AnnotationMirror alwaysCallAnno = atypeFactory.getDeclAnnotation(eType, AlwaysCall.class);
-
-    return (alwaysCallAnno != null)
-        ? AnnotationUtils.getElementValue(alwaysCallAnno, "value", String.class, false)
-        : null;
   }
 
   private boolean isAssignedToLocal(final TreePath treePath) {
@@ -150,8 +153,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
       case ASSIGNMENT: // check if the left hand is a local variable
         final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
         return (lhs instanceof JCTree.JCIdent)
-            ? (((JCTree.JCIdent) lhs).sym.getKind().equals(LOCAL_VARIABLE))
-            : false;
+            && (((JCTree.JCIdent) lhs).sym.getKind().equals(LOCAL_VARIABLE));
       case METHOD_INVOCATION:
       case NEW_CLASS:
       case RETURN:

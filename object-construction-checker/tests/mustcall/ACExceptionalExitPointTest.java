@@ -1,10 +1,10 @@
-import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 class ACExceptionalExitPointTest {
 
-    @AlwaysCall("a")
+    @MustCall("a")
     class Foo {
         void a() {}
         @This Foo b() {
@@ -24,7 +24,7 @@ class ACExceptionalExitPointTest {
     }
 
     void exceptionalExitWrong() {
-        // :: error: missing.alwayscall
+        // :: error: required.method.not.called
         Foo fw = makeFoo();
         throw new RuntimeException();
     }

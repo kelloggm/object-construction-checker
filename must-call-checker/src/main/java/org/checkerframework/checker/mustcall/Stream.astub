@@ -1,0 +1,278 @@
+package java.io;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+class DataOutputStream extends FilterOutputStream implements DataOutput {
+    protected int written;
+    @PolyMustCall DataOutputStream(@Owning @PolyMustCall OutputStream arg0);
+    void write(int arg0) throws IOException;
+    void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    void flush() throws IOException;
+    void writeBoolean(boolean arg0) throws IOException;
+    void writeByte(int arg0) throws IOException;
+    void writeShort(int arg0) throws IOException;
+    void writeChar(int arg0) throws IOException;
+    void writeInt(int arg0) throws IOException;
+    void writeLong(long arg0) throws IOException;
+    void writeFloat(float arg0) throws IOException;
+    void writeDouble(double arg0) throws IOException;
+    void writeBytes(String arg0) throws IOException;
+    void writeChars(String arg0) throws IOException;
+    void writeUTF(String arg0) throws IOException;
+    int size();
+}
+
+class OutputStream { }
+
+class InputStream { }
+
+class FilterOutputStream extends OutputStream {
+    protected OutputStream out;
+    @PolyMustCall FilterOutputStream(@PolyMustCall @Owning OutputStream arg0);
+    void write(int arg0) throws IOException;
+    void write(byte[] arg0) throws IOException;
+    void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    void flush() throws IOException;
+    void close() throws IOException;
+}
+
+class PrintStream extends FilterOutputStream implements Appendable, Closeable {
+    @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0);
+    @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0, boolean arg1);
+    @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0, boolean arg1, String arg2) throws UnsupportedEncodingException;
+    @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0, boolean arg1, Charset arg2);
+    public PrintStream(String arg0) throws FileNotFoundException;
+    public PrintStream(String arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    public PrintStream(String arg0, Charset arg1) throws IOException;
+    PrintStream(File arg0) throws FileNotFoundException;
+    PrintStream(File arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    PrintStream(File arg0, Charset arg1) throws IOException;
+    void flush();
+    void close();
+    boolean checkError();
+    protected void setError();
+    protected void clearError();
+    void write(int arg0);
+    void write(byte[] arg0, int arg1, int arg2);
+    void print(boolean arg0);
+    void print(char arg0);
+    void print(int arg0);
+    void print(long arg0);
+    void print(float arg0);
+    void print(double arg0);
+    void print(char[] arg0);
+    void print(@NotOwning String s);
+    void print(@NotOwning Object arg0);
+    void println();
+    void println(boolean arg0);
+    void println(char arg0);
+    void println(int arg0);
+    void println(long arg0);
+    void println(float arg0);
+    void println(double arg0);
+    void println(char[] arg0);
+    void println(@NotOwning String s);
+    void println(@NotOwning Object arg0);
+    @NotOwning PrintStream printf(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    @NotOwning PrintStream printf(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    @NotOwning PrintStream format(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    @NotOwning PrintStream format(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    @NotOwning PrintStream append(@NotOwning CharSequence arg0);
+    @NotOwning PrintStream append(@NotOwning CharSequence arg0, int arg1, int arg2);
+    @NotOwning PrintStream append(char arg0);
+}
+
+class BufferedReader extends Reader {
+    @PolyMustCall BufferedReader(@PolyMustCall @Owning Reader arg0, int arg1);
+    @PolyMustCall BufferedReader(@PolyMustCall @Owning Reader arg0);
+    int read() throws IOException;
+    int read(char[] arg0, int arg1, int arg2) throws IOException;
+    String readLine() throws IOException;
+    long skip(long arg0) throws IOException;
+    boolean ready() throws IOException;
+    boolean markSupported();
+    void mark(int arg0) throws IOException;
+    void reset() throws IOException;
+    void close() throws IOException;
+    Stream<String> lines();
+}
+
+class BufferedOutputStream extends FilterOutputStream {
+    protected byte[] buf;
+    protected int count;
+    @PolyMustCall BufferedOutputStream(@PolyMustCall @Owning OutputStream arg0);
+    @PolyMustCall BufferedOutputStream(@PolyMustCall @Owning OutputStream arg0, int arg1);
+    void write(int arg0) throws IOException;
+    void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    void flush() throws IOException;
+}
+
+class DataInputStream extends FilterInputStream implements DataInput {
+    @PolyMustCall DataInputStream(@Owning @PolyMustCall InputStream arg0);
+    int read(byte[] arg0) throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
+    void readFully(byte[] arg0) throws IOException;
+    void readFully(byte[] arg0, int arg1, int arg2) throws IOException;
+    int skipBytes(int arg0) throws IOException;
+    boolean readBoolean() throws IOException;
+    byte readByte() throws IOException;
+    int readUnsignedByte() throws IOException;
+    short readShort() throws IOException;
+    int readUnsignedShort() throws IOException;
+    char readChar() throws IOException;
+    int readInt() throws IOException;
+    long readLong() throws IOException;
+    float readFloat() throws IOException;
+    double readDouble() throws IOException;
+    @java.lang.Deprecated
+String readLine() throws IOException;
+    String readUTF() throws IOException;
+    static String readUTF(DataInput arg0) throws IOException;
+}
+
+class FilterInputStream extends InputStream {
+    protected InputStream in;
+    protected FilterInputStream(@Owning InputStream arg0);
+    int read() throws IOException;
+    int read(byte[] arg0) throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
+    long skip(long arg0) throws IOException;
+    int available() throws IOException;
+    void close() throws IOException;
+    void mark(int arg0);
+    void reset() throws IOException;
+    boolean markSupported();
+}
+
+class BufferedInputStream extends FilterInputStream {
+    protected byte[] buf;
+    protected int count;
+    protected int pos;
+    protected int markpos;
+    protected int marklimit;
+    @PolyMustCall BufferedInputStream(@PolyMustCall @Owning InputStream arg0);
+    @PolyMustCall BufferedInputStream(@PolyMustCall @Owning InputStream arg0, int arg1);
+    int read() throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
+    long skip(long arg0) throws IOException;
+    int available() throws IOException;
+    void mark(int arg0);
+    void reset() throws IOException;
+    boolean markSupported();
+    void close() throws IOException;
+}
+
+class InputStreamReader extends Reader {
+    @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0);
+    @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0, String arg1) throws UnsupportedEncodingException;
+    @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0, Charset arg1);
+    @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0, CharsetDecoder arg1);
+    String getEncoding();
+    int read() throws IOException;
+    int read(char[] arg0, int arg1, int arg2) throws IOException;
+    boolean ready() throws IOException;
+    void close() throws IOException;
+}
+
+class BufferedWriter extends Writer {
+    @PolyMustCall BufferedWriter(@PolyMustCall @Owning Writer arg0);
+    @PolyMustCall BufferedWriter(@PolyMustCall @Owning Writer arg0, int arg1);
+    void write(int arg0) throws IOException;
+    void write(char[] arg0, int arg1, int arg2) throws IOException;
+    void write(String arg0, int arg1, int arg2) throws IOException;
+    void newLine() throws IOException;
+    void flush() throws IOException;
+    void close() throws IOException;
+}
+
+class PrintWriter extends Writer {
+    protected Writer out;
+    @PolyMustCall PrintWriter(@PolyMustCall @Owning Writer arg0);
+    @PolyMustCall PrintWriter(@PolyMustCall @Owning Writer arg0, boolean arg1);
+    @PolyMustCall PrintWriter(@PolyMustCall @Owning OutputStream arg0);
+    @PolyMustCall PrintWriter(@PolyMustCall @Owning OutputStream arg0, boolean arg1);
+    @PolyMustCall PrintWriter(@PolyMustCall @Owning OutputStream arg0, boolean arg1, Charset arg2);
+    PrintWriter(String arg0) throws FileNotFoundException;
+    PrintWriter(String arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    PrintWriter(String arg0, Charset arg1) throws IOException;
+    PrintWriter(@Owning File arg0) throws FileNotFoundException;
+    PrintWriter(@Owning File arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    PrintWriter(@Owning File arg0, Charset arg1) throws IOException;
+    void flush();
+    void close();
+    boolean checkError();
+    protected void setError();
+    protected void clearError();
+    void write(int arg0);
+    void write(char[] arg0, int arg1, int arg2);
+    void write(char[] arg0);
+    void write(String arg0, int arg1, int arg2);
+    void write(String arg0);
+    void print(boolean arg0);
+    void print(char arg0);
+    void print(int arg0);
+    void print(long arg0);
+    void print(float arg0);
+    void print(double arg0);
+    void print(char[] arg0);
+    void print(String arg0);
+    void print(Object arg0);
+    void println();
+    void println(boolean arg0);
+    void println(char arg0);
+    void println(int arg0);
+    void println(long arg0);
+    void println(float arg0);
+    void println(double arg0);
+    void println(char[] arg0);
+    void println(String arg0);
+    void println(Object arg0);
+    @NotOwning PrintWriter printf(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    @NotOwning PrintWriter printf(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    @NotOwning PrintWriter format(@NotOwning String arg0, @NotOwning Object @NotOwning [] arg1);
+    @NotOwning PrintWriter format(Locale arg0, @NotOwning String arg1, @NotOwning Object @NotOwning [] arg2);
+    @NotOwning PrintWriter append(@NotOwning CharSequence arg0);
+    @NotOwning PrintWriter append(@NotOwning CharSequence arg0, int arg1, int arg2);
+    @NotOwning PrintWriter append(char arg0);
+}
+
+class OutputStreamWriter extends Writer {
+    @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0, String arg1) throws UnsupportedEncodingException;
+    @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0);
+    @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0, Charset arg1);
+    @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0, CharsetEncoder arg1);
+    String getEncoding();
+    void write(int arg0) throws IOException;
+    void write(char[] arg0, int arg1, int arg2) throws IOException;
+    void write(String arg0, int arg1, int arg2) throws IOException;
+    @NotOwning Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
+    @NotOwning Writer append(CharSequence arg0) throws IOException;
+    void flush() throws IOException;
+    void close() throws IOException;
+}
+
+class Reader { }
+
+class Writer {
+    @NotOwning Writer append(CharSequence arg0) throws IOException;
+    @NotOwning Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
+    @NotOwning Writer append(char arg0) throws IOException;
+}
+
+package java.security;
+
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+class DigestOutputStream extends FilterOutputStream {
+    protected MessageDigest digest;
+    @PolyMustCall DigestOutputStream(@PolyMustCall @Owning OutputStream arg0, MessageDigest arg1);
+    MessageDigest getMessageDigest();
+    void setMessageDigest(MessageDigest arg0);
+    void write(int arg0) throws IOException;
+    void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    void on(boolean arg0);
+    String toString();
+}

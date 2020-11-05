@@ -1,7 +1,10 @@
 package org.checkerframework.checker.objectconstruction;
 
+import java.util.LinkedHashSet;
 import java.util.Properties;
 import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
+import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.qual.StubFiles;
 import org.checkerframework.framework.source.SuppressWarningsPrefix;
@@ -16,10 +19,25 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   "Socket.astub",
   "NotOwning.astub",
   "Stream.astub",
-  "AlwaysCallEmpty.astub",
+  "NoObligationStreams.astub",
   "IOUtils.astub"
 })
 public class ObjectConstructionChecker extends CalledMethodsChecker {
+
+  public static final String CHECK_MUST_CALL = "checkMustCall";
+
+  @Override
+  protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
+    LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
+        super.getImmediateSubcheckerClasses();
+
+    if (this.processingEnv.getOptions().containsKey(CHECK_MUST_CALL)) {
+      checkers.add(MustCallChecker.class);
+    }
+
+    return checkers;
+  }
+
   /**
    * Overridden because the messages.properties file isn't being loaded, for some reason. I think it
    * has to do with relative paths? For whatever reason, this has to be hardcoded into the checker
@@ -35,8 +53,8 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
         "ensuresvarargs.unverified",
         "@EnsuresCalledMethodsVarArgs cannot be verified yet.  Please check that the implementation of the method actually does call the given methods on the varargs parameters by hand, and then suppress the warning.");
     messages.setProperty(
-        "missing.alwayscall",
-        "@AlwaysCall method for variable/expression not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
+        "required.method.not.called",
+        "@MustCall method(s) %s for variable/expression not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
     return messages;
   }
 

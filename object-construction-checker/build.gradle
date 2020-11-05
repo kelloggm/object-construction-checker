@@ -27,6 +27,10 @@ dependencies {
     // api dependencies
     implementation project(":object-construction-qual")
 
+    // For MustCall support
+    implementation project(":must-call-qual")
+    implementation project(":must-call-checker")
+
     // For the @CalledMethodsPredicate evaluation
     implementation "org.springframework:spring-expression:5.3.0"
 
@@ -79,7 +83,7 @@ spotless {
 }
 
 test {
-    inputs.files("tests/basic", "tests/cve", "tests/lombok", "tests/autovalue")
+    inputs.files("tests/basic", "tests/cve", "tests/lombok", "tests/autovalue", "tests/disableframeworks", "tests/mustcall", "tests/socket")
     if (!JavaVersion.current().java9Compatible) {
         jvmArgs "-Xbootclasspath/p:${configurations.errorproneJavac.asPath}"
     }
