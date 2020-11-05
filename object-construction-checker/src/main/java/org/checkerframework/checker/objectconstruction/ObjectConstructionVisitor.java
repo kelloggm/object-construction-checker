@@ -75,7 +75,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
     if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)
         && !isAssignedToLocal(this.getCurrentPath())
         && !atypeFactory.returnsThis(node)
-        && ((atypeFactory.transferOwnershipAtReturn && !hasNotOwningAnno(node))
+        && ((MustCallInvokedChecker.TRANSFER_OWNERSHIP_AT_RETURN && !hasNotOwningAnno(node))
             || isTransferOwnershipAtMethodInvocation(node))) {
 
       // Calls to super() can be disregarded; the object under construction should inherit
@@ -92,7 +92,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
           checker.reportError(
               node,
               "required.method.not.called",
-              atypeFactory.formatMissingMustCallMethods(mustCallAnnoVal),
+              MustCallInvokedChecker.formatMissingMustCallMethods(mustCallAnnoVal),
               returnType.toString(),
               "never assigned to a variable");
         }
@@ -121,7 +121,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
         checker.reportError(
             node,
             "required.method.not.called",
-            atypeFactory.formatMissingMustCallMethods(mustCallVal),
+            MustCallInvokedChecker.formatMissingMustCallMethods(mustCallVal),
             type.toString(),
             "never assigned to a variable");
       }
