@@ -23,6 +23,7 @@ import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
+import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
@@ -429,7 +430,7 @@ class MustCallInvokedChecker {
    * Is {@code exceptionClassName} an exception type we are ignoring, to avoid excessive false
    * positives? For now we ignore {@code java.lang.Throwable} and {@code NullPointerException}
    */
-  private static boolean isIgnoredExceptionType(Name exceptionClassName) {
+  private static boolean isIgnoredExceptionType(@FullyQualifiedName Name exceptionClassName) {
     boolean isThrowableOrNPE =
         exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
             || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName());
