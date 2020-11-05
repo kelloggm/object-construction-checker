@@ -272,7 +272,7 @@ class MustCallInvokedChecker {
       // relevant exception successors
       Map<TypeMirror, Set<Block>> exSucc = excBlock.getExceptionalSuccessors();
       for (Map.Entry<TypeMirror, Set<Block>> pair : exSucc.entrySet()) {
-        if (!isIgnoredExceptionType(((Type) pair.getKey()).tsym.getSimpleName())) {
+        if (!isIgnoredExceptionType(((Type) pair.getKey()).tsym.getQualifiedName())) {
           result.addAll(pair.getValue());
         }
       }
@@ -431,8 +431,8 @@ class MustCallInvokedChecker {
    */
   private static boolean isIgnoredExceptionType(Name exceptionClassName) {
     boolean isThrowableOrNPE =
-        exceptionClassName.contentEquals(Throwable.class.getSimpleName())
-            || exceptionClassName.contentEquals(NullPointerException.class.getSimpleName());
+        exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
+            || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName());
     return isThrowableOrNPE;
   }
 
