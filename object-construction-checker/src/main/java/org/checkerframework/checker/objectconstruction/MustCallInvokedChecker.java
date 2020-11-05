@@ -41,6 +41,7 @@ import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -124,6 +125,9 @@ class MustCallInvokedChecker {
       arguments = invocationNode.getArguments();
       executableElement = TreeUtils.elementFromUse(invocationNode.getTree());
     } else {
+      if (!(node instanceof ObjectCreationNode)) {
+        throw new BugInCF("unexpected node type " + node.getClass());
+      }
       arguments = ((ObjectCreationNode) node).getArguments();
       executableElement = TreeUtils.elementFromUse(((ObjectCreationNode) node).getTree());
     }
