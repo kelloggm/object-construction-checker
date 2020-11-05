@@ -15,6 +15,8 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.util.Elements;
+
+import com.sun.source.tree.Tree;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
@@ -33,6 +35,7 @@ import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * The annotated type factory for the must call checker. Primarily responsible for the subtyping
@@ -70,6 +73,27 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             });
     addAliasedAnnotation(InheritableMustCall.class, MustCall.class, true);
     this.postInit();
+  }
+
+  @Override
+  protected void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
+    super.addComputedTypeAnnotations(tree, type, iUseFlow);
+    // All primitives are @MustCall({}). This code is needed to avoid primitive conversions, taking
+    // on the MustCall type of an object. For example, without this in this code b's type would be
+    // @MustCall("a"), which is nonsensical:
+    //
+    // @MustCall("a") Object obj; boolean b = obj == null;
+    if (TypesUtils.isPrimitiveOrBoxed(type.getUnderlyingType())) {
+      type.replaceAnnotation(BOTTOM);
+    }
+  }
+
+  @Override
+  public void addComputedTypeAnnotations(Element elt, AnnotatedTypeMirror type) {
+    super.addComputedTypeAnnotations(elt, type);
+    if (TypesUtils.isPrimitiveOrBoxed(type.getUnderlyingType())) {
+      type.replaceAnnotation(BOTTOM);
+    }
   }
 
   /** Treat non-owning method parameters as @MustCallUnknown. */
