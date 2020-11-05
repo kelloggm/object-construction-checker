@@ -5,7 +5,9 @@ import org.checkerframework.checker.mustcall.qual.*;
 @InheritableMustCall("a")
 public class Subtype0 {
 
-    public class Subtype1 extends Subtype0 { }
+    public class Subtype1 extends Subtype0 {
+        void m1() { }
+    }
     public class Subtype2 extends Subtype1 { }
 
     static void test(Subtype0 s0, Subtype1 s1, Subtype2 s2, Subtype3 s3, Subtype4 s4) {
@@ -41,4 +43,14 @@ public class Subtype0 {
 
     @InheritableMustCall({"a"})
     public class Subtype6 extends Subtype0 { }
+
+    public class Container {
+        Subtype0 in;
+
+        void test() {
+            if (in instanceof Subtype1) {
+                ((Subtype1) in).m1();
+            }
+        }
+    }
 }
