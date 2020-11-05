@@ -67,6 +67,13 @@ type has that `@MustCall` annotation by default. For example, given the followin
     
 any use of `Socket` defaults to `@MustCall({"close"}) Socket`.
 
+### InheritableMustCall annotation
+
+A declaration annotation `@InheritedMustCall(String[])` is also supported. This annotation can only
+be written on a class declaration. It adds an `@MustCall` annotation with the same arguments to
+the class declaration on which it is written, and also to all subclasses, freeing the user of the need
+to write the `@MustCall` annotation on every subclass.
+
 ### NotOwning method parameters
 
 Some method calls transfer a `@MustCall` obligation:  the client depends on the method to make the calls.

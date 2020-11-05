@@ -20,11 +20,11 @@ class CheckerFrameworkBuilder {
      * of the copied code correctly.
      */
 
-    public static void testOldCalledMethodsGood(@org.checkerframework.checker.objectconstruction.qual.CalledMethods({"y", "z"}) CheckerFrameworkBuilderBuilder pb) {
+    public static void testOldCalledMethodsGood(@org.checkerframework.checker.calledmethods.qual.CalledMethods({"y", "z"}) CheckerFrameworkBuilderBuilder pb) {
         pb.build();
     }
 
-    public static void testOldCalledMethodsBad(@org.checkerframework.checker.objectconstruction.qual.CalledMethods({"y"}) CheckerFrameworkBuilderBuilder pb) {
+    public static void testOldCalledMethodsBad(@org.checkerframework.checker.calledmethods.qual.CalledMethods({"y"}) CheckerFrameworkBuilderBuilder pb) {
         // :: error: finalizer.invocation.invalid
         pb.build(); // pb requires y, z
     }

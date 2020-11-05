@@ -4,7 +4,6 @@ import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
-@MustCall("close")
 class DataOutputStream extends FilterOutputStream implements DataOutput {
     protected int written;
     @PolyMustCall DataOutputStream(@Owning @PolyMustCall OutputStream arg0);
@@ -25,13 +24,10 @@ class DataOutputStream extends FilterOutputStream implements DataOutput {
     int size();
 }
 
-@MustCall("close")
 class OutputStream { }
 
-@MustCall("close")
 class InputStream { }
 
-@MustCall("close")
 class FilterOutputStream extends OutputStream {
     protected OutputStream out;
     @PolyMustCall FilterOutputStream(@PolyMustCall @Owning OutputStream arg0);
@@ -42,7 +38,6 @@ class FilterOutputStream extends OutputStream {
     void close() throws IOException;
 }
 
-@MustCall("close")
 class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0);
     @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0, boolean arg1);
@@ -89,7 +84,6 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     @NotOwning PrintStream append(char arg0);
 }
 
-@MustCall("close")
 class BufferedReader extends Reader {
     @PolyMustCall BufferedReader(@PolyMustCall @Owning Reader arg0, int arg1);
     @PolyMustCall BufferedReader(@PolyMustCall @Owning Reader arg0);
@@ -105,7 +99,6 @@ class BufferedReader extends Reader {
     Stream<String> lines();
 }
 
-@MustCall("close")
 class BufferedOutputStream extends FilterOutputStream {
     protected byte[] buf;
     protected int count;
@@ -116,7 +109,6 @@ class BufferedOutputStream extends FilterOutputStream {
     void flush() throws IOException;
 }
 
-@MustCall("close")
 class DataInputStream extends FilterInputStream implements DataInput {
     @PolyMustCall DataInputStream(@Owning @PolyMustCall InputStream arg0);
     int read(byte[] arg0) throws IOException;
@@ -140,7 +132,6 @@ String readLine() throws IOException;
     static String readUTF(DataInput arg0) throws IOException;
 }
 
-@MustCall("close")
 class FilterInputStream extends InputStream {
     protected InputStream in;
     protected FilterInputStream(@Owning InputStream arg0);
@@ -155,7 +146,6 @@ class FilterInputStream extends InputStream {
     boolean markSupported();
 }
 
-@MustCall("close")
 class BufferedInputStream extends FilterInputStream {
     protected byte[] buf;
     protected int count;
@@ -174,7 +164,6 @@ class BufferedInputStream extends FilterInputStream {
     void close() throws IOException;
 }
 
-@MustCall("close")
 class InputStreamReader extends Reader {
     @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0);
     @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0, String arg1) throws UnsupportedEncodingException;
@@ -187,7 +176,6 @@ class InputStreamReader extends Reader {
     void close() throws IOException;
 }
 
-@MustCall("close")
 class BufferedWriter extends Writer {
     @PolyMustCall BufferedWriter(@PolyMustCall @Owning Writer arg0);
     @PolyMustCall BufferedWriter(@PolyMustCall @Owning Writer arg0, int arg1);
@@ -199,7 +187,6 @@ class BufferedWriter extends Writer {
     void close() throws IOException;
 }
 
-@MustCall("close")
 class PrintWriter extends Writer {
     protected Writer out;
     @PolyMustCall PrintWriter(@PolyMustCall @Owning Writer arg0);
@@ -251,7 +238,6 @@ class PrintWriter extends Writer {
     @NotOwning PrintWriter append(char arg0);
 }
 
-@MustCall("close")
 class OutputStreamWriter extends Writer {
     @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0, String arg1) throws UnsupportedEncodingException;
     @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0);
@@ -267,10 +253,8 @@ class OutputStreamWriter extends Writer {
     void close() throws IOException;
 }
 
-@MustCall("close")
 class Reader { }
 
-@MustCall("close")
 class Writer {
     @NotOwning Writer append(CharSequence arg0) throws IOException;
     @NotOwning Writer append(CharSequence arg0, int arg1, int arg2) throws IOException;
@@ -282,7 +266,6 @@ package java.security;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
-@MustCall("close")
 class DigestOutputStream extends FilterOutputStream {
     protected MessageDigest digest;
     @PolyMustCall DigestOutputStream(@PolyMustCall @Owning OutputStream arg0, MessageDigest arg1);
@@ -293,6 +276,3 @@ class DigestOutputStream extends FilterOutputStream {
     void on(boolean arg0);
     String toString();
 }
-
-
-

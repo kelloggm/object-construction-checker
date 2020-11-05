@@ -1,4 +1,5 @@
 import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.checker.mustcall.qual.*;
 import java.lang.SuppressWarnings;
@@ -63,7 +64,7 @@ class CheckFields {
             return this.owningFoo;
         }
 
-        @EnsuresCalledMethods(value = {"this.finalOwningFoo", "this.owningFoo"}, methods = {"a", "c"})
+        @EnsuresCalledMethods(value = {"this.finalOwningFoo"}, methods = {"a", "c"})
         void b() {
             this.finalOwningFoo.a();
             this.finalOwningFoo.c();

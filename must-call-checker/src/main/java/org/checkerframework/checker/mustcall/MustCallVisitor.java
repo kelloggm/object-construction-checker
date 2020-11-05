@@ -44,8 +44,10 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
 
   /**
    * Change the default for exception parameter lower bounds to bottom (the default), to prevent
-   * false positives. I think it might be a bug in the Checker Framework that these locations are
-   * always defaulted to top - that doesn't make sense for checkers that use bottom as the default.
+   * false positives. This is unsound; see the discussion on
+   * https://github.com/typetools/checker-framework/issues/3839. TODO: change checking of throws
+   * clauses to require that the thrown exception is @MustCall({}). This would probably eliminate
+   * most of the same false positives, without adding undue false positives.
    *
    * @return a set containing only the @MustCall({}) annotation
    */

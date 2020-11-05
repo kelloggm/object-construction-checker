@@ -2,6 +2,7 @@ package com.amazonaws.services.ec2;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 // Interface
 class AmazonEC2 {

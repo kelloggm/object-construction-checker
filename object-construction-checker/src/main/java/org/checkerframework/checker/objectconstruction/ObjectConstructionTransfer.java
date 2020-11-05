@@ -1,32 +1,34 @@
 package org.checkerframework.checker.objectconstruction;
 
-import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.Tree;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.calledmethods.CalledMethodsTransfer;
+import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
+import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
-import org.checkerframework.dataflow.analysis.FlowExpressions;
-import org.checkerframework.dataflow.analysis.FlowExpressions.Receiver;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.node.ArrayCreationNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
+import org.checkerframework.dataflow.expression.FlowExpressions;
+import org.checkerframework.dataflow.expression.Receiver;
+import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
-import org.checkerframework.framework.flow.CFTransfer;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -40,8 +42,18 @@ import org.checkerframework.javacutil.TreeUtils;
  *
  * <p>the type of obj is @CalledMethods({"a","b"}) (assuming obj had no type beforehand).
  */
-public class ObjectConstructionTransfer extends CFTransfer {
+public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   private final ObjectConstructionAnnotatedTypeFactory atypefactory;
+
+  /**
+   * {@link #makeExceptionalStores(MethodInvocationNode, TransferInput)} requires a TransferInput,
+   * but the actual exceptional stores need to be modified in {@link #accumulate(Node,
+   * TransferResult, String...)}, which only has access to a TransferResult. So this variable is set
+   * to non-null in {@link #visitMethodInvocation(MethodInvocationNode, TransferInput)} before the
+   * call to super, which will call accumulate(); this field is then reset to null afterwards to
+   * prevent it from being used somewhere it shouldn't be.
+   */
+  private @Nullable Map<TypeMirror, CFStore> exceptionalStores;
 
   public ObjectConstructionTransfer(final CFAnalysis analysis) {
     super(analysis);
@@ -51,89 +63,40 @@ public class ObjectConstructionTransfer extends CFTransfer {
   @Override
   public TransferResult<CFValue, CFStore> visitMethodInvocation(
       final MethodInvocationNode node, final TransferInput<CFValue, CFStore> input) {
+
+    exceptionalStores = makeExceptionalStores(node, input);
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(node, input);
-
     handleEnsuresCalledMethodVarArgs(node, result);
-
-    Node receiver = node.getTarget().getReceiver();
-
-    // in the event that the method we're visiting is static
-    if (receiver == null) {
-      return result;
-    }
-
-    AnnotatedTypeMirror currentType = atypefactory.getReceiverType(node.getTree());
-    String methodName = node.getTarget().getMethod().getSimpleName().toString();
-    methodName = atypefactory.adjustMethodNameUsingValueChecker(methodName, node.getTree());
-    AnnotationMirror newType = getUpdatedCalledMethodsType(currentType, methodName);
-    if (newType == null) {
-      return result;
-    }
-
-    // For some reason, visitMethodInvocation returns a conditional store. I think this is to
-    // support conditional post-condition annotations, based on the comments in CFAbstractTransfer.
-    CFStore thenStore = result.getThenStore();
-    CFStore elseStore = result.getElseStore();
-    Map<TypeMirror, CFStore> exceptionalStores = makeExceptionalStores(node, input);
-
-    while (receiver != null) {
-      // Insert the new type computed previously as the type of the receiver.
-      Receiver receiverReceiver = FlowExpressions.internalReprOf(atypefactory, receiver);
-      thenStore.insertValue(receiverReceiver, newType);
-      elseStore.insertValue(receiverReceiver, newType);
-      exceptionalStores.values().stream().forEach(s -> s.insertValue(receiverReceiver, newType));
-
-      Tree receiverTree = receiver.getTree();
-
-      // Possibly recurse: if the receiver is itself a method call,
-      // then we need to also propagate this new information to its receiver
-      // if the method being called has an @This return type.
-      //
-      // Note that we must check for null, because the tree could be
-      // implicit (when calling an instance method on the class itself).
-      // In that case, do not attempt to refine either - the receiver is
-      // not a method invocation, anyway.
-      if (receiverTree == null || receiverTree.getKind() != Tree.Kind.METHOD_INVOCATION) {
-        // Do not continue, because the receiver isn't a method invocation itself. The
-        // end of the chain of calls has been reached.
-        break;
-      }
-
-      MethodInvocationTree receiverAsMethodInvocation = (MethodInvocationTree) receiver.getTree();
-
-      if (atypefactory.returnsThis(receiverAsMethodInvocation)) {
-        receiver = ((MethodInvocationNode) receiver).getTarget().getReceiver();
-      } else {
-        // Do not continue, because the method does not return @This.
-        break;
-      }
-    }
-
-    return new ConditionalTransferResult<>(
-        result.getResultValue(), thenStore, elseStore, exceptionalStores);
+    TransferResult<CFValue, CFStore> finalResult =
+        new ConditionalTransferResult<>(
+            result.getResultValue(),
+            result.getThenStore(),
+            result.getElseStore(),
+            exceptionalStores);
+    exceptionalStores = null;
+    return finalResult;
   }
 
   private AnnotationMirror getUpdatedCalledMethodsType(
       AnnotatedTypeMirror currentType, String... methodNames) {
     AnnotationMirror type;
-    if (currentType == null || !currentType.isAnnotatedInHierarchy(atypefactory.TOP)) {
-      type = atypefactory.TOP;
+    if (currentType == null || !currentType.isAnnotatedInHierarchy(atypefactory.top)) {
+      type = atypefactory.top;
     } else {
-      type = currentType.getAnnotationInHierarchy(atypefactory.TOP);
+      type = currentType.getAnnotationInHierarchy(atypefactory.top);
     }
 
     // Don't attempt to strengthen @CalledMethodsPredicate annotations, because that would
     // require reasoning about the predicate itself. Instead, start over from top.
     if (AnnotationUtils.areSameByClass(type, CalledMethodsPredicate.class)) {
-      type = atypefactory.TOP;
+      type = atypefactory.top;
     }
 
-    if (AnnotationUtils.areSame(type, atypefactory.BOTTOM)) {
+    if (AnnotationUtils.areSame(type, atypefactory.bottom)) {
       return null;
     }
 
-    List<String> currentMethods =
-        ObjectConstructionAnnotatedTypeFactory.getValueOfAnnotationWithStringArgument(type);
+    List<String> currentMethods = ValueCheckerUtils.getValueOfAnnotationWithStringArgument(type);
     List<String> newList =
         Stream.concat(Arrays.stream(methodNames), currentMethods.stream())
             .collect(Collectors.toList());
@@ -173,6 +136,40 @@ public class ObjectConstructionTransfer extends CFTransfer {
         elseStore.insertValue(receiverReceiver, newType);
       }
     }
+  }
+
+  @Override
+  public void accumulate(Node node, TransferResult<CFValue, CFStore> result, String... values) {
+    super.accumulate(node, result, values);
+    if (exceptionalStores == null) {
+      return;
+    }
+    List<String> valuesAsList = Arrays.asList(values);
+    // If dataflow has already recorded information about the target, fetch it and integrate
+    // it into the list of values in the new annotation.
+    Receiver target = FlowExpressions.internalReprOf(atypefactory, node);
+    if (CFAbstractStore.canInsertReceiver(target)) {
+      CFValue flowValue = result.getRegularStore().getValue(target);
+      if (flowValue != null) {
+        Set<AnnotationMirror> flowAnnos = flowValue.getAnnotations();
+        assert flowAnnos.size() <= 1;
+        for (AnnotationMirror anno : flowAnnos) {
+          if (typeFactory.isAccumulatorAnnotation(anno)) {
+            List<String> oldFlowValues =
+                ValueCheckerUtils.getValueOfAnnotationWithStringArgument(anno);
+            if (oldFlowValues != null) {
+              // valuesAsList cannot have its length changed -- it is backed by an
+              // array.  getValueOfAnnotationWithStringArgument returns a new,
+              // modifiable list.
+              oldFlowValues.addAll(valuesAsList);
+              valuesAsList = oldFlowValues;
+            }
+          }
+        }
+      }
+    }
+    AnnotationMirror newAnno = typeFactory.createAccumulatorAnnotation(valuesAsList);
+    exceptionalStores.values().stream().forEach(s -> s.insertValue(target, newAnno));
   }
 
   private Map<TypeMirror, CFStore> makeExceptionalStores(

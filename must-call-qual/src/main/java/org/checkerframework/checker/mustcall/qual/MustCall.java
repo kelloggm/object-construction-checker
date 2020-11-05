@@ -1,7 +1,6 @@
 package org.checkerframework.checker.mustcall.qual;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -23,7 +22,6 @@ import org.checkerframework.framework.qual.TypeUseLocation;
  * "m2"})} may be obligated to call "m1" and/or "m2" before it is deallocated. Such a value is
  * guaranteed not to be obligated to call any other methods.
  */
-@Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({MustCallUnknown.class})
