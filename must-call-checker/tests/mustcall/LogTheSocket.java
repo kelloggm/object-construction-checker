@@ -68,6 +68,7 @@ class LogTheSocket {
         return sock;
     }
 
+    @SuppressWarnings("mustcall") // https://github.com/typetools/checker-framework/pull/3867
     void testPrintln(ServerSocket s) {
         System.out.println(s);
     }
