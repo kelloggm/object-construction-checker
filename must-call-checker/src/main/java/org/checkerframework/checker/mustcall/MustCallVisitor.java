@@ -2,14 +2,18 @@ package org.checkerframework.checker.mustcall;
 
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.ReturnTree;
 import java.util.Collections;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
+import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * The visitor for the MustCall checker. This visitor is similar to BaseTypeVisitor, but overrides
@@ -25,6 +29,23 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
    */
   public MustCallVisitor(BaseTypeChecker checker) {
     super(checker);
+  }
+
+  @Override
+  public Void visitReturn(ReturnTree node, Void p) {
+    // Only check return types if ownership is being transferred.
+    MethodTree enclosingMethod = TreeUtils.enclosingMethod(this.getCurrentPath());
+    // enclosingMethod is null if this return site is inside a lambda. TODO: handle lambdas more
+    // precisely?
+    if (enclosingMethod != null) {
+      ExecutableElement methodElt = TreeUtils.elementFromDeclaration(enclosingMethod);
+      AnnotationMirror notOwningAnno = atypeFactory.getDeclAnnotation(methodElt, NotOwning.class);
+      if (notOwningAnno != null) {
+        // skip return type subtyping check, because not-owning pointer means OCC won't check anyway
+        return null;
+      }
+    }
+    return super.visitReturn(node, p);
   }
 
   @Override
