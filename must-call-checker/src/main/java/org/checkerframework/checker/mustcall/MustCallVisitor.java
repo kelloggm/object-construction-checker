@@ -1,12 +1,14 @@
 package org.checkerframework.checker.mustcall;
 
 import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.MethodInvocationTree;
 import java.util.Collections;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 
 /**
@@ -23,6 +25,29 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
    */
   public MustCallVisitor(BaseTypeChecker checker) {
     super(checker);
+  }
+
+  @Override
+  protected boolean skipReceiverSubtypeCheck(
+      MethodInvocationTree node,
+      AnnotatedTypeMirror methodDefinitionReceiver,
+      AnnotatedTypeMirror methodCallReceiver) {
+    // TODO: Check explicit receiver parameters annotated with @Owning. ExecutableElement
+    //       doesn't have any way to get an element associated with the receiver, so I can't
+    //       figure out a way to get a declaration annotation for the receiver. It might not
+    //       be possible? The below is the closest that I got, but the receiver doesn't show up
+    //       in the list of the parameters, even when it's explicit. Is this a bug in javac?
+    //
+    //    ExecutableElement elt = TreeUtils.elementFromUse(node);
+    //    System.out.println(elt);
+    //    List<? extends VariableElement> params = elt.getParameters();
+    //    if (!params.isEmpty()) {
+    //      VariableElement first = params.get(0);
+    //      if (first.getSimpleName().contentEquals("this")) {
+    //        return atypeFactory.getDeclAnnotation(first, Owning.class) == null;
+    //      }
+    //    }
+    return true;
   }
 
   /**

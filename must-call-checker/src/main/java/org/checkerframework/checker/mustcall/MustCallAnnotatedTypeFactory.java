@@ -20,7 +20,7 @@ import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
-import org.checkerframework.checker.objectconstruction.qual.NotOwning;
+import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
@@ -67,7 +67,9 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     replaceWithTop =
         new SimpleAnnotatedTypeScanner<>(
             (t, p) -> {
-              t.replaceAnnotation(TOP);
+              if (!t.hasAnnotation(POLY)) {
+                t.replaceAnnotation(TOP);
+              }
               return null;
             });
     addAliasedAnnotation(InheritableMustCall.class, MustCall.class, true);
@@ -108,7 +110,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
     for (int i = 0; i < type.getParameterTypes().size(); i++) {
       Element paramDecl = declaration.getParameters().get(i);
-      if (getDeclAnnotation(paramDecl, NotOwning.class) != null) {
+      if (getDeclAnnotation(paramDecl, Owning.class) == null) {
         AnnotatedTypeMirror paramType = type.getParameterTypes().get(i);
         replaceWithTop.visit(paramType);
       }

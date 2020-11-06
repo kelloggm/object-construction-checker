@@ -1,27 +1,20 @@
 package java.net;
 
-
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 package java.nio.channels;
 
-@MustCall("close")
-class SelectableChannel {
-}
-
 class SelectionKey {
     @NotOwning SelectableChannel channel();
 }
 
-@MustCall("close")
 class FileChannel {
     @NotOwning FileChannel position(long arg0) throws IOException;
     @NotOwning FileChannel truncate(long arg0) throws IOException;
 }
 
-@MustCall("close")
 class SocketChannel extends AbstractSelectableChannel implements ByteChannel, ScatteringByteChannel, GatheringByteChannel, NetworkChannel {
     protected SocketChannel(SelectorProvider arg0);
     static SocketChannel open() throws IOException;
@@ -46,7 +39,6 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
     SocketAddress getLocalAddress() throws IOException;
 }
 
-@MustCall("close")
 class ServerSocketChannel extends AbstractSelectableChannel implements NetworkChannel {
     protected ServerSocketChannel(SelectorProvider arg0);
     static ServerSocketChannel open() throws IOException;
@@ -61,90 +53,6 @@ class ServerSocketChannel extends AbstractSelectableChannel implements NetworkCh
 
 package java.nio.channels.spi;
 
-@MustCall("close")
 class AbstractSelectableChannel {
     @NotOwning SelectableChannel configureBlocking(boolean b);
-}
-
-@MustCall("close")
-class AbstractInterruptibleChannel {
-}
-
-package org.slf4j;
-
-class Logger {
-    void debug​(@NotOwning String msg);
-    void debug​(@NotOwning String format, @NotOwning Object arg);
-    void debug​(@NotOwning String format, @NotOwning Object... arguments);
-    void debug​(@NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void debug​(@NotOwning String msg, @NotOwning Throwable t);
-    void debug​(Marker marker, @NotOwning String msg);
-    void debug​(Marker marker, @NotOwning String format, @NotOwning Object arg);
-    void debug​(Marker marker, @NotOwning String format, @NotOwning Object... arguments);
-    void debug​(Marker marker, @NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void debug​(Marker marker, @NotOwning String msg, @NotOwning Throwable t);
-
-    void error​(@NotOwning String msg);
-    void error​(@NotOwning String format, @NotOwning Object arg);
-    void error​(@NotOwning String format, @NotOwning Object... arguments);
-    void error​(@NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void error​(@NotOwning String msg, @NotOwning Throwable t);
-    void error​(Marker marker, @NotOwning String msg);
-    void error​(Marker marker, @NotOwning String format, @NotOwning Object arg);
-    void error​(Marker marker, @NotOwning String format, @NotOwning Object... arguments);
-    void error​(Marker marker, @NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void error​(Marker marker, @NotOwning String msg, @NotOwning Throwable t);
-
-    void warn​(@NotOwning String msg);
-    void warn​(@NotOwning String format, @NotOwning Object arg);
-    void warn​(@NotOwning String format, @NotOwning Object... arguments);
-    void warn​(@NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void warn​(@NotOwning String msg, @NotOwning Throwable t);
-    void warn​(Marker marker, @NotOwning String msg);
-    void warn​(Marker marker, @NotOwning String format, @NotOwning Object arg);
-    void warn​(Marker marker, @NotOwning String format, @NotOwning Object... arguments);
-    void warn​(Marker marker, @NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void warn​(Marker marker, @NotOwning String msg, @NotOwning Throwable t);
-
-    void info​(@NotOwning String msg);
-    void info​(@NotOwning String format, @NotOwning Object arg);
-    void info​(@NotOwning String format, @NotOwning Object... arguments);
-    void info​(@NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void info​(@NotOwning String msg, @NotOwning Throwable t);
-    void info​(Marker marker, @NotOwning String msg);
-    void info​(Marker marker, @NotOwning String format, @NotOwning Object arg);
-    void info​(Marker marker, @NotOwning String format, @NotOwning Object... arguments);
-    void info​(Marker marker, @NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void info​(Marker marker, @NotOwning String msg, @NotOwning Throwable t);
-    
-    void trace​(@NotOwning String msg);
-    void trace​(@NotOwning String format, @NotOwning Object arg);
-    void trace​(@NotOwning String format, @NotOwning Object... arguments);
-    void trace​(@NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void trace​(@NotOwning String msg, @NotOwning Throwable t);
-    void trace​(Marker marker, @NotOwning String msg);
-    void trace​(Marker marker, @NotOwning String format, @NotOwning Object arg);
-    void trace​(Marker marker, @NotOwning String format, @NotOwning Object... arguments);
-    void trace​(Marker marker, @NotOwning String format, @NotOwning Object arg1, @NotOwning Object arg2);
-    void trace​(Marker marker, @NotOwning String msg, @NotOwning Throwable t);
-}
-
-package java.lang;
-
-class StringBuilder {
-    StringBuilder append(@NotOwning String s);
-}
-
-package java.util;
-
-interface List<E> {
-    E remove(@NotOwning Object o);
-}
-
-interface Map<K, V> {
-    V remove(@NotOwning Object k);
-}
-
-class HashMap<K, V> {
-    V remove(@NotOwning Object k);
 }

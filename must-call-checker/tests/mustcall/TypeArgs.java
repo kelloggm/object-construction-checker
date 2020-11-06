@@ -8,7 +8,7 @@ public class TypeArgs {
     static class B<S> extends A<S> {}
 
     public <T> void f1(Generic<T> real, Generic<? super T> other, boolean flag) {
-        // :: error: (type.argument.type.incompatible)
+        // :: error: (argument.type.incompatible)
         f2(flag ? real : other);
     }
 
@@ -23,43 +23,29 @@ public class TypeArgs {
             @MustCall({"foo", "bar"}) Object d) {
         requireNothing1(a);
         requireNothing2(a);
-        // :: error: (type.argument.type.incompatible)
         requireNothing1(b);
-        // :: error: (argument.type.incompatible)
         requireNothing2(b);
-        // :: error: (type.argument.type.incompatible)
         requireNothing1(c);
-        // :: error: (argument.type.incompatible)
         requireNothing2(c);
-        // :: error: (type.argument.type.incompatible)
         requireNothing1(d);
-        // :: error: (argument.type.incompatible)
         requireNothing2(d);
 
         requireFoo1(a);
         requireFoo2(a);
         requireFoo1(b);
         requireFoo2(b);
-        // :: error: (type.argument.type.incompatible)
         requireFoo1(c);
-        // :: error: (argument.type.incompatible)
         requireFoo2(c);
-        // :: error: (type.argument.type.incompatible)
         requireFoo1(d);
-        // :: error: (argument.type.incompatible)
         requireFoo2(d);
 
         requireBar1(a);
         requireBar2(a);
-        // :: error: (type.argument.type.incompatible)
         requireBar1(b);
-        // :: error: (argument.type.incompatible)
         requireBar2(b);
         requireBar1(c);
         requireBar2(c);
-        // :: error: (type.argument.type.incompatible)
         requireBar1(d);
-        // :: error: (argument.type.incompatible)
         requireBar2(d);
 
         requireFooBar1(a);

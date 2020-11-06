@@ -13,7 +13,6 @@
 //       }
 //    }
 //
-// This test now also tests for other interactions between NotOwning and MustCall annotations, too.
 
 import java.net.ServerSocket;
 import java.nio.channels.SocketChannel;
@@ -34,9 +33,9 @@ class LogTheSocket {
         s2 = s1;
     }
 
-    void logVarargs(@NotOwning String s, @NotOwning Object... objects) { }
+    void logVarargs(String s, Object... objects) { }
 
-    void logNoVarargs(@NotOwning String s, @NotOwning Object object) { }
+    void logNoVarargs(String s, Object object) { }
 
     void test(ServerSocket serverSocket) {
         if (!serverSocket.isClosed()) {
