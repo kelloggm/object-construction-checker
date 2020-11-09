@@ -74,36 +74,10 @@ be written on a class declaration. It adds an `@MustCall` annotation with the sa
 the class declaration on which it is written, and also to all subclasses, freeing the user of the need
 to write the `@MustCall` annotation on every subclass.
 
-### NotOwning method parameters
+### Ownership transfer
 
-Some method calls transfer a `@MustCall` obligation:  the client depends on the method to make the calls.
-For other method calls, the client retains the obligation; the callee only "borrows" the object rather than taking final responsibility for it.
-An example of a borrowing call is a logging call.
-
-```
-@MustCall({"close}) Socket s = ...;
-myLogger.log("this is my socket {}", s);
-... // log did not call close(); the client must still do so
-```
-
-`log` is annotated with no `@MustCall` obligation:
-
-```
-void log(String msg, Object... args);
-```
-
-The above call leads to an `argument.type.incompatible` error from the MustCall checker, because
-the argument type `@MustCall({"close"})` is not a subtype of the formal parameter type `@MustCall({"close"})`.
-To mark `log()` as borriwing an argument, use the `org.checkerframework.checker.objectconstruction.qual.NotOwning`
-annotation on the formal parameter (it is not a tye annotation)
-
-```
-void log(String msg, @NotOwning Object... args);
-```
-
-Now, the Object Construction Checker can soundly verify the client code without
-warnings, including both permitting the call `log()` and ensuring that `close()` is
-eventually called.
+The MustCall Checker respects the same rules and annotations as the Object Construction with respect to ownership 
+transfer. See its documentation for an explanation of these rules.
 
 ### Implementation details and caveats
 

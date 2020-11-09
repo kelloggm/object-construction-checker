@@ -87,6 +87,12 @@ test {
     if (!JavaVersion.current().java9Compatible) {
         jvmArgs "-Xbootclasspath/p:${configurations.errorproneJavac.asPath}"
     }
+    testLogging {
+        showStandardStreams = true
+        // Show the found unexpected diagnostics and expected diagnostics not found.
+        exceptionFormat "full"
+        events "failed"
+    }
 }
 
 clean.doFirst {

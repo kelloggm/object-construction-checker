@@ -1,13 +1,19 @@
 package org.checkerframework.checker.mustcall;
 
 import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.ReturnTree;
 import java.util.Collections;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
+import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * The visitor for the MustCall checker. This visitor is similar to BaseTypeVisitor, but overrides
@@ -23,6 +29,46 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
    */
   public MustCallVisitor(BaseTypeChecker checker) {
     super(checker);
+  }
+
+  @Override
+  public Void visitReturn(ReturnTree node, Void p) {
+    // Only check return types if ownership is being transferred.
+    MethodTree enclosingMethod = TreeUtils.enclosingMethod(this.getCurrentPath());
+    // enclosingMethod is null if this return site is inside a lambda. TODO: handle lambdas more
+    // precisely?
+    if (enclosingMethod != null) {
+      ExecutableElement methodElt = TreeUtils.elementFromDeclaration(enclosingMethod);
+      AnnotationMirror notOwningAnno = atypeFactory.getDeclAnnotation(methodElt, NotOwning.class);
+      if (notOwningAnno != null) {
+        // skip return type subtyping check, because not-owning pointer means OCC won't check anyway
+        return null;
+      }
+    }
+    return super.visitReturn(node, p);
+  }
+
+  @Override
+  protected boolean skipReceiverSubtypeCheck(
+      MethodInvocationTree node,
+      AnnotatedTypeMirror methodDefinitionReceiver,
+      AnnotatedTypeMirror methodCallReceiver) {
+    // TODO: Check explicit receiver parameters annotated with @Owning. ExecutableElement
+    //       doesn't have any way to get an element associated with the receiver, so I can't
+    //       figure out a way to get a declaration annotation for the receiver. It might not
+    //       be possible? The below is the closest that I got, but the receiver doesn't show up
+    //       in the list of the parameters, even when it's explicit. Is this a bug in javac?
+    //
+    //    ExecutableElement elt = TreeUtils.elementFromUse(node);
+    //    System.out.println(elt);
+    //    List<? extends VariableElement> params = elt.getParameters();
+    //    if (!params.isEmpty()) {
+    //      VariableElement first = params.get(0);
+    //      if (first.getSimpleName().contentEquals("this")) {
+    //        return atypeFactory.getDeclAnnotation(first, Owning.class) == null;
+    //      }
+    //    }
+    return true;
   }
 
   /**
