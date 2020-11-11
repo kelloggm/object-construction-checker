@@ -5,6 +5,7 @@ import static org.checkerframework.common.value.ValueCheckerUtils.getValueOfAnno
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -98,6 +99,18 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else {
       throw new BugInCF("unexpected type of method tree: " + tree.getKind());
     }
+    changeParameterTypesToTop(declaration, type);
+    super.methodFromUsePreSubstitution(tree, type);
+  }
+
+  @Override
+  protected void constructorFromUsePreSubstitution(NewClassTree tree, AnnotatedExecutableType type) {
+    ExecutableElement declaration = TreeUtils.elementFromUse(tree);
+    changeParameterTypesToTop(declaration, type);
+    super.constructorFromUsePreSubstitution(tree, type);
+  }
+
+  private void changeParameterTypesToTop(ExecutableElement declaration, AnnotatedExecutableType type) {
     for (int i = 0; i < type.getParameterTypes().size(); i++) {
       Element paramDecl = declaration.getParameters().get(i);
       if (getDeclAnnotation(paramDecl, Owning.class) == null) {
@@ -116,7 +129,6 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         }
       }
     }
-    super.methodFromUsePreSubstitution(tree, type);
   }
 
   @Override
