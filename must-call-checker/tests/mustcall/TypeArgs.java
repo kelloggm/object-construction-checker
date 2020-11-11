@@ -8,7 +8,7 @@ public class TypeArgs {
     static class B<S> extends A<S> {}
 
     public <T> void f1(Generic<T> real, Generic<? super T> other, boolean flag) {
-        // :: error: (argument.type.incompatible)
+        // :: error: (type.argument.type.incompatible)
         f2(flag ? real : other);
     }
 
