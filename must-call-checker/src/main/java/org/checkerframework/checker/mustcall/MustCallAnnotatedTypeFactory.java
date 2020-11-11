@@ -104,13 +104,15 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   @Override
-  protected void constructorFromUsePreSubstitution(NewClassTree tree, AnnotatedExecutableType type) {
+  protected void constructorFromUsePreSubstitution(
+      NewClassTree tree, AnnotatedExecutableType type) {
     ExecutableElement declaration = TreeUtils.elementFromUse(tree);
     changeParameterTypesToTop(declaration, type);
     super.constructorFromUsePreSubstitution(tree, type);
   }
 
-  private void changeParameterTypesToTop(ExecutableElement declaration, AnnotatedExecutableType type) {
+  private void changeParameterTypesToTop(
+      ExecutableElement declaration, AnnotatedExecutableType type) {
     for (int i = 0; i < type.getParameterTypes().size(); i++) {
       Element paramDecl = declaration.getParameters().get(i);
       if (getDeclAnnotation(paramDecl, Owning.class) == null) {
