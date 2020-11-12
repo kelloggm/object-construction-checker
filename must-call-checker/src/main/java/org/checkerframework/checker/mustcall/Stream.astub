@@ -28,6 +28,20 @@ class OutputStream { }
 
 class InputStream { }
 
+class FileInputStream extends InputStream {
+    FileInputStream(String arg0) throws FileNotFoundException;
+    FileInputStream(File arg0) throws FileNotFoundException;
+    FileInputStream(FileDescriptor arg0);
+    int read() throws IOException;
+    int read(byte[] arg0) throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
+    long skip(long arg0) throws IOException;
+    int available() throws IOException;
+    void close() throws IOException;
+    FileDescriptor getFD() throws IOException;
+    @NotOwning FileChannel getChannel();
+}
+
 class FilterOutputStream extends OutputStream {
     protected OutputStream out;
     @PolyMustCall FilterOutputStream(@PolyMustCall @Owning OutputStream arg0);
@@ -211,6 +225,17 @@ class DigestOutputStream extends FilterOutputStream {
     void setMessageDigest(MessageDigest arg0);
     void write(int arg0) throws IOException;
     void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    void on(boolean arg0);
+    String toString();
+}
+
+class DigestInputStream extends FilterInputStream {
+    protected MessageDigest digest;
+    @PolyMustCall DigestInputStream(@PolyMustCall @Owning InputStream arg0, MessageDigest arg1);
+    MessageDigest getMessageDigest();
+    void setMessageDigest(MessageDigest arg0);
+    int read() throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
     void on(boolean arg0);
     String toString();
 }

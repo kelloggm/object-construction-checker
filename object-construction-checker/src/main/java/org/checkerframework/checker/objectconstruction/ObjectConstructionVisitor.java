@@ -1,6 +1,6 @@
 package org.checkerframework.checker.objectconstruction;
 
-import static javax.lang.model.element.ElementKind.LOCAL_VARIABLE;
+import static javax.lang.model.element.ElementKind.*;
 
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ConditionalExpressionTree;
@@ -8,22 +8,27 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.tree.JCTree;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import org.checkerframework.checker.calledmethods.CalledMethodsVisitor;
+import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class ObjectConstructionVisitor extends CalledMethodsVisitor {
@@ -129,6 +134,83 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
     return super.visitNewClass(node, p);
   }
 
+  @Override
+  public Void visitVariable(VariableTree node, Void p) {
+    Element varElement = TreeUtils.elementFromTree(node);
+
+    if (varElement.getKind().isField()
+        && atypeFactory.getDeclAnnotation(varElement, Owning.class) != null) {
+      List<String> fieldMCAnno = atypeFactory.getMustCallValue(varElement);
+      if (ElementUtils.isFinal(varElement)) {
+        checkFinalOwningField(varElement);
+      } else if (!fieldMCAnno.isEmpty()) {
+        List<String> varMCValue = atypeFactory.getMustCallValue(varElement);
+        checker.reportError(
+            node,
+            "required.method.not.called",
+            MustCallInvokedChecker.formatMissingMustCallMethods(varMCValue),
+            varElement.asType().toString(),
+            " Non-final owning field might be overwritten");
+      }
+    }
+
+    return super.visitVariable(node, p);
+  }
+
+  private void checkFinalOwningField(Element field) {
+    List<String> fieldMCAnno = atypeFactory.getMustCallValue(field);
+    String error = "";
+
+    if (!fieldMCAnno.isEmpty()) {
+      Element enclosingElement = field.getEnclosingElement();
+      List<String> enclosingMCAnno = atypeFactory.getMustCallValue(enclosingElement);
+
+      if (enclosingMCAnno != null) {
+        List<? extends Element> classElements = enclosingElement.getEnclosedElements();
+        for (Element element : classElements) {
+          if (fieldMCAnno.isEmpty()) {
+            return;
+          }
+          if (element.getKind().equals(METHOD)
+              && enclosingMCAnno.contains(element.getSimpleName().toString())) {
+            AnnotationMirror ensuresCalledMethodsAnno =
+                atypeFactory.getDeclAnnotation(element, EnsuresCalledMethods.class);
+
+            if (ensuresCalledMethodsAnno != null) {
+              List<String> values =
+                  ValueCheckerUtils.getValueOfAnnotationWithStringArgument(
+                      ensuresCalledMethodsAnno);
+              if (values.stream()
+                  .anyMatch(value -> value.contains(field.getSimpleName().toString()))) {
+                List<String> methods =
+                    AnnotationUtils.getElementValueArray(
+                        ensuresCalledMethodsAnno, "methods", String.class, false);
+                fieldMCAnno.removeAll(methods);
+              }
+            }
+
+            if (!fieldMCAnno.isEmpty()) {
+              error =
+                  " @EnsuresCalledMethods written on MustCall methods doesn't contain "
+                      + MustCallInvokedChecker.formatMissingMustCallMethods(fieldMCAnno);
+            }
+          }
+        }
+      } else {
+        error = " The enclosing element doesn't have a @MustCall annotation";
+      }
+    }
+
+    if (!fieldMCAnno.isEmpty()) {
+      checker.reportError(
+          field,
+          "required.method.not.called",
+          MustCallInvokedChecker.formatMissingMustCallMethods(fieldMCAnno),
+          field.asType().toString(),
+          error);
+    }
+  }
+
   private boolean isAssignedToLocal(final TreePath treePath) {
     TreePath parentPath = treePath.getParentPath();
 
@@ -152,8 +234,11 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
         return isAssignedToLocal(parentPath);
       case ASSIGNMENT: // check if the left hand is a local variable
         final JCTree.JCExpression lhs = ((JCTree.JCAssign) parent).lhs;
-        return (lhs instanceof JCTree.JCIdent)
-            && (((JCTree.JCIdent) lhs).sym.getKind().equals(LOCAL_VARIABLE));
+        Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
+        if (lhsElement.getKind().equals(FIELD)) {
+          return (atypeFactory.getDeclAnnotation(lhsElement, Owning.class) != null);
+        }
+        return lhsElement.getKind().equals(LOCAL_VARIABLE);
       case METHOD_INVOCATION:
       case NEW_CLASS:
       case RETURN:

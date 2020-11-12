@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsBottom;
@@ -17,6 +18,7 @@ import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -69,6 +71,23 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
 
+    return getMustCallValues(mustCallAnnotation);
+  }
+
+  /**
+   * Returns the String value of @MustCall annotation declared on the class type of {@code element}.
+   */
+  List<String> getMustCallValue(Element element) {
+    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
+        getTypeFactoryOfSubchecker(MustCallChecker.class);
+    AnnotatedTypeMirror mustCallAnnotatedType =
+        mustCallAnnotatedTypeFactory.getAnnotatedType(element);
+    AnnotationMirror mustCallAnnotation = mustCallAnnotatedType.getAnnotation(MustCall.class);
+
+    return getMustCallValues(mustCallAnnotation);
+  }
+
+  private List<String> getMustCallValues(AnnotationMirror mustCallAnnotation) {
     List<String> mustCallValues =
         (mustCallAnnotation != null)
             ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
