@@ -5,6 +5,7 @@ import static org.checkerframework.common.value.ValueCheckerUtils.getValueOfAnno
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
@@ -25,10 +27,10 @@ import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.MostlyNoElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
-import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
 import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.BugInCF;
@@ -51,9 +53,6 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The polymorphic qualifier */
   final AnnotationMirror POLY;
 
-  /** Simple scanner that descends into a type and replaces all annotations with top. */
-  private SimpleAnnotatedTypeScanner<Void, Void> replaceWithTop;
-
   /**
    * Default constructor matching super. Should be called automatically.
    *
@@ -64,14 +63,6 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     TOP = AnnotationBuilder.fromClass(elements, MustCallUnknown.class);
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
-    replaceWithTop =
-        new SimpleAnnotatedTypeScanner<>(
-            (t, p) -> {
-              if (!t.hasAnnotation(POLY)) {
-                t.replaceAnnotation(TOP);
-              }
-              return null;
-            });
     addAliasedAnnotation(InheritableMustCall.class, MustCall.class, true);
     this.postInit();
   }
@@ -108,14 +99,38 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else {
       throw new BugInCF("unexpected type of method tree: " + tree.getKind());
     }
+    changeParameterTypesToTop(declaration, type);
+    super.methodFromUsePreSubstitution(tree, type);
+  }
+
+  @Override
+  protected void constructorFromUsePreSubstitution(
+      NewClassTree tree, AnnotatedExecutableType type) {
+    ExecutableElement declaration = TreeUtils.elementFromUse(tree);
+    changeParameterTypesToTop(declaration, type);
+    super.constructorFromUsePreSubstitution(tree, type);
+  }
+
+  private void changeParameterTypesToTop(
+      ExecutableElement declaration, AnnotatedExecutableType type) {
     for (int i = 0; i < type.getParameterTypes().size(); i++) {
       Element paramDecl = declaration.getParameters().get(i);
       if (getDeclAnnotation(paramDecl, Owning.class) == null) {
         AnnotatedTypeMirror paramType = type.getParameterTypes().get(i);
-        replaceWithTop.visit(paramType);
+        if (!paramType.hasAnnotation(POLY)) {
+          paramType.replaceAnnotation(TOP);
+        }
+        if (declaration.isVarArgs() && i == type.getParameterTypes().size() - 1) {
+          // also modify the last component type of a varargs array
+          if (paramType.getKind() == TypeKind.ARRAY) {
+            AnnotatedTypeMirror varargsType = ((AnnotatedArrayType) paramType).getComponentType();
+            if (!varargsType.hasAnnotation(POLY)) {
+              varargsType.replaceAnnotation(TOP);
+            }
+          }
+        }
       }
     }
-    super.methodFromUsePreSubstitution(tree, type);
   }
 
   @Override
