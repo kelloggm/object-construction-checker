@@ -215,6 +215,10 @@ class MustCallInvokedChecker {
     if (!(node instanceof MethodInvocationNode || node instanceof ObjectCreationNode)) {
       throw new BugInCF("unexpected node type " + node.getClass());
     }
+    if (!(node.getBlock() instanceof ExceptionBlock)) {
+      // can happen, e.g., for calls generated for enhanced for loops
+      return false;
+    }
     Block successorBlock = ((ExceptionBlock) node.getBlock()).getSuccessor();
     if (successorBlock instanceof ExceptionBlock) {
       Node succNode = ((ExceptionBlock) successorBlock).getNode();

@@ -154,7 +154,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         Set<AnnotationMirror> flowAnnos = flowValue.getAnnotations();
         assert flowAnnos.size() <= 1;
         for (AnnotationMirror anno : flowAnnos) {
-          if (typeFactory.isAccumulatorAnnotation(anno)) {
+          if (atypefactory.isAccumulatorAnnotation(anno)) {
             List<String> oldFlowValues =
                 ValueCheckerUtils.getValueOfAnnotationWithStringArgument(anno);
             if (oldFlowValues != null) {
@@ -168,7 +168,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         }
       }
     }
-    AnnotationMirror newAnno = typeFactory.createAccumulatorAnnotation(valuesAsList);
+    AnnotationMirror newAnno = atypefactory.createAccumulatorAnnotation(valuesAsList);
     exceptionalStores.values().stream().forEach(s -> s.insertValue(target, newAnno));
   }
 

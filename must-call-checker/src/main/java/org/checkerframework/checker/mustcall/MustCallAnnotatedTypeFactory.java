@@ -202,7 +202,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         AnnotationMirror a1,
         QualifierKind qualifierKind1,
         AnnotationMirror a2,
-        QualifierKind qualifierKind2) {
+        QualifierKind qualifierKind2,
+        QualifierKind glbKind) {
       Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
       Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
       a1Val.retainAll(a2Val);
@@ -214,7 +215,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         AnnotationMirror a1,
         QualifierKind qualifierKind1,
         AnnotationMirror a2,
-        QualifierKind qualifierKind2) {
+        QualifierKind qualifierKind2,
+        QualifierKind glbKind) {
       Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
       Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
       a1Val.addAll(a2Val);
