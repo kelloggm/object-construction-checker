@@ -116,6 +116,8 @@ class MustCallInvokedChecker {
           handleReturn((ReturnNode) node, cfg, newDefs);
         } else if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
           handleInvocation(newDefs, node);
+        } else if (node instanceof TypeCastNode) {
+          handleTypeCast((TypeCastNode) node);
         }
       }
 
@@ -123,9 +125,20 @@ class MustCallInvokedChecker {
     }
   }
 
+  private void handleTypeCast(TypeCastNode node) {
+    Node operand = node.getOperand();
+    if (operand instanceof MethodInvocationNode || operand instanceof ObjectCreationNode) {
+      if (!shouldSkipInvokePseudoAssignCheck(operand.getTree())) {
+        checkPseudoAssignToOwning(node);
+      }
+    }
+  }
+
   private void handleInvocation(Set<LocalVarWithTree> newDefs, Node node) {
     doOwnershipTransferToParameters(newDefs, node);
-    checkPseudoAssignToOwning(node);
+    if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node.getTree())) {
+      checkPseudoAssignToOwning(node);
+    }
   }
 
   /**
@@ -134,12 +147,9 @@ class MustCallInvokedChecker {
    * ownership of the result
    */
   private void checkPseudoAssignToOwning(Node node) {
-    Tree callTree = node.getTree();
-    List<String> mustCallVal = typeFactory.getMustCallValue(callTree);
-    if (mustCallVal.isEmpty()
-        || (callTree instanceof MethodInvocationTree
-            && (typeFactory.returnsThis((MethodInvocationTree) callTree)
-                || TreeUtils.isSuperConstructorCall((MethodInvocationTree) callTree)))) {
+    Tree tree = node.getTree();
+    List<String> mustCallVal = typeFactory.getMustCallValue(tree);
+    if (mustCallVal.isEmpty()) {
       return;
     }
     boolean assignedToOwning = false;
@@ -149,7 +159,9 @@ class MustCallInvokedChecker {
       if (assignmentContext instanceof AssignmentLhsContext) {
         // lhs should be a local variable
         assignedToOwning =
-            elementForType != null && elementForType.getKind().equals(ElementKind.LOCAL_VARIABLE);
+            elementForType != null
+                && (elementForType.getKind().equals(ElementKind.LOCAL_VARIABLE)
+                    || elementForType.getKind().equals(ElementKind.RESOURCE_VARIABLE));
       } else if (assignmentContext instanceof MethodParameterContext) {
         // must be an @Owning parameter
         assignedToOwning = typeFactory.getDeclAnnotation(elementForType, Owning.class) != null;
@@ -157,7 +169,10 @@ class MustCallInvokedChecker {
         // must be an @Owning return
         assignedToOwning =
             TRANSFER_OWNERSHIP_AT_RETURN
-                ? typeFactory.getDeclAnnotation(elementForType, NotOwning.class) == null
+                ? typeFactory.getDeclAnnotation(
+                        TreeUtils.elementFromTree(assignmentContext.getContextTree()),
+                        NotOwning.class)
+                    == null
                 : typeFactory.getDeclAnnotation(elementForType, Owning.class) != null;
       } else if (assignmentContext instanceof LambdaReturnContext) {
         // TODO handle this case.  For now we will report an error
@@ -168,16 +183,45 @@ class MustCallInvokedChecker {
     if (!assignedToOwning) {
       // check if @CalledMethods type of return satisfies the @MustCall obligation
       AnnotationMirror cmAnno =
-          typeFactory.getAnnotatedType(callTree).getAnnotationInHierarchy(typeFactory.top);
+          typeFactory.getAnnotatedType(tree).getAnnotationInHierarchy(typeFactory.top);
       if (!calledMethodsSatisfyMustCall(mustCallVal, cmAnno)) {
         checker.reportError(
-            callTree,
+            tree,
             "required.method.not.called",
             MustCallInvokedChecker.formatMissingMustCallMethods(mustCallVal),
-            TreeUtils.typeOf(callTree).toString(),
+            TreeUtils.typeOf(tree).toString(),
             "never assigned to an @Owning location");
       }
     }
+  }
+
+  private boolean shouldSkipInvokePseudoAssignCheck(Tree callTree) {
+    if (callTree instanceof MethodInvocationTree) {
+      MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
+      return typeFactory.returnsThis(methodInvokeTree)
+          || TreeUtils.isSuperConstructorCall(methodInvokeTree)
+          || typeFactory.getDeclAnnotation(
+                  TreeUtils.elementFromUse(methodInvokeTree), NotOwning.class)
+              != null;
+    }
+    return false;
+  }
+
+  /**
+   * Checks if {@code node} is an invocation nested inside a TypeCastNode, by looking at the
+   * successor block in the CFG
+   */
+  private boolean nestedInTypeCast(Node node) {
+    if (!(node instanceof MethodInvocationNode || node instanceof ObjectCreationNode)) {
+      throw new BugInCF("unexpected node type " + node.getClass());
+    }
+    Block successorBlock = ((ExceptionBlock) node.getBlock()).getSuccessor();
+    if (successorBlock instanceof ExceptionBlock) {
+      Node succNode = ((ExceptionBlock) successorBlock).getNode();
+      return succNode instanceof TypeCastNode
+          && ((TypeCastNode) succNode).getOperand().equals(node);
+    }
+    return false;
   }
 
   /**
