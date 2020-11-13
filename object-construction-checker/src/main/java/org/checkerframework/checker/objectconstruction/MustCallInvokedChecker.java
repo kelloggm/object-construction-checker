@@ -136,6 +136,8 @@ class MustCallInvokedChecker {
 
   private void handleInvocation(Set<LocalVarWithTree> newDefs, Node node) {
     doOwnershipTransferToParameters(newDefs, node);
+    // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
+    // checking.  So we defer the check to the corresponding TypeCastNode
     if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node.getTree())) {
       checkPseudoAssignToOwning(node);
     }
@@ -195,6 +197,12 @@ class MustCallInvokedChecker {
     }
   }
 
+  /**
+   * Checks for cases where we do not need to ensure that a method invocation gets pseudo-assigned
+   * to a variable / field that takes ownership. We can skip the check when the invoked method's
+   * return type is {@link org.checkerframework.common.returnsreceiver.qual.This}, the invocation is
+   * a super constructor call, or the method's return type is annotated {@link NotOwning}
+   */
   private boolean shouldSkipInvokePseudoAssignCheck(Tree callTree) {
     if (callTree instanceof MethodInvocationTree) {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
@@ -257,24 +265,6 @@ class MustCallInvokedChecker {
     }
     for (int i = 0; i < arguments.size(); i++) {
       Node n = arguments.get(i);
-      //      if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
-      //        VariableElement formal = formals.get(i);
-      //        Set<AnnotationMirror> annotationMirrors = typeFactory.getDeclAnnotations(formal);
-      //        TypeMirror t = TreeUtils.typeOf(n.getTree());
-      //        List<String> mustCallVal = typeFactory.getMustCallValue(n.getTree());
-      //        if (!mustCallVal.isEmpty()
-      //            && annotationMirrors.stream()
-      //                .noneMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
-      //          // TODO why is this logic here and not in the visitor?
-      //          checker.reportError(
-      //              n.getTree(),
-      //              "required.method.not.called",
-      //              formatMissingMustCallMethods(mustCallVal),
-      //              t.toString(),
-      //              "never assigned to a variable");
-      //        }
-      //      }
-
       if (n instanceof LocalVariableNode) {
         LocalVariableNode local = (LocalVariableNode) n;
         if (isVarInDefs(newDefs, local)) {
