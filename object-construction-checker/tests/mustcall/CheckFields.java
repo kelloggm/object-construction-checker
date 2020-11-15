@@ -34,10 +34,6 @@ class CheckFields {
             this.finalNotOwningFoo = new Foo();
         }
 
-//        void emptyMustCallAssign() {
-//            this.owningEmptyMustCallFoo = new Foo();
-//        }
-
         void assingToOwningFieldWrong() {
             Foo f = new Foo();
             this.owningFoo = f;
@@ -48,6 +44,8 @@ class CheckFields {
         }
 
         void assingToOwningField() {
+            // this is a safe re-assignment.  we cannot yet prove it safe,
+            // but hope to eventually
             if (this.owningFoo == null) {
                 Foo f = new Foo();
                 this.owningFoo = f;
