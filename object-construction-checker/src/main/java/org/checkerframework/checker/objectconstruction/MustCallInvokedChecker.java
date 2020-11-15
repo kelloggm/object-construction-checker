@@ -217,6 +217,7 @@ class MustCallInvokedChecker {
 
     Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
 
+    // Ownership transfer to @Owning field
     if (lhsElement.getKind().equals(ElementKind.FIELD) && typeFactory.hasMustCall(lhs.getTree())) {
       if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
         if (typeFactory.getDeclAnnotation(lhsElement, Owning.class) != null) {
@@ -225,9 +226,8 @@ class MustCallInvokedChecker {
           newDefs.remove(latestAssignmentPair);
         }
       }
-    }
-
-    if (lhs instanceof LocalVariableNode && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
+    } else if (lhs instanceof LocalVariableNode
+        && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
 
       // Reassignment to the lhs
       if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
