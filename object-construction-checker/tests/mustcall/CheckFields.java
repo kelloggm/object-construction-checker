@@ -34,10 +34,8 @@ class CheckFields {
             this.finalNotOwningFoo = new Foo();
         }
 
-//        void emptyMustCallAssign() {
-//            this.owningEmptyMustCallFoo = new Foo();
-//        }
-
+        // for now we report an error at the field declaration, but we are keeping
+        // the next three tests in case we adopt a more flexible scheme in the future
         void assingToOwningFieldWrong() {
             Foo f = new Foo();
             this.owningFoo = f;
