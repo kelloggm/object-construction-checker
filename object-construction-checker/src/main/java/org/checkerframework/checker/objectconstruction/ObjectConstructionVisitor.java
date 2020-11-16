@@ -157,6 +157,13 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
     return super.visitVariable(node, p);
   }
 
+  /**
+   * Checks validity of a final field {@code field} with an {@code @Owning} annotation. Say the type
+   * of {@code field} is {@code @MustCall("m"}}. This method checks that the enclosing class of
+   * {@code field} has a type {@code @MustCall("m2")} for some method {@code m2}, and that {@code
+   * m2} has an annotation {@code @EnsuresCalledMethods(value = "this.field", methods = "m")},
+   * guaranteeing that the {@code @MustCall} obligation of the field will be satisfied.
+   */
   private void checkFinalOwningField(Element field) {
     List<String> fieldMCAnno = atypeFactory.getMustCallValue(field);
     String error = "";

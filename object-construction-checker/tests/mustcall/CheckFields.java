@@ -34,8 +34,11 @@ class CheckFields {
             this.finalNotOwningFoo = new Foo();
         }
 
+<<<<<<< HEAD
         // for now we report an error at the field declaration, but we are keeping
         // the next three tests in case we adopt a more flexible scheme in the future
+=======
+>>>>>>> fd1103322b5ce4eac9d548d88b391b22f481e529
         void assingToOwningFieldWrong() {
             Foo f = new Foo();
             this.owningFoo = f;
@@ -46,6 +49,8 @@ class CheckFields {
         }
 
         void assingToOwningField() {
+            // this is a safe re-assignment.  we cannot yet prove it safe,
+            // but hope to eventually
             if (this.owningFoo == null) {
                 Foo f = new Foo();
                 this.owningFoo = f;
