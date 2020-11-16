@@ -160,10 +160,7 @@ class MustCallInvokedChecker {
       Element elementForType = assignmentContext.getElementForType();
       if (assignmentContext instanceof AssignmentLhsContext) {
         // lhs should be a local variable
-        assignedToOwning =
-            elementForType != null
-                && (elementForType.getKind().equals(ElementKind.LOCAL_VARIABLE)
-                    || elementForType.getKind().equals(ElementKind.RESOURCE_VARIABLE));
+        assignedToOwning = isOwningAssignmentLhs(elementForType);
       } else if (assignmentContext instanceof MethodParameterContext) {
         // must be an @Owning parameter
         assignedToOwning = typeFactory.getDeclAnnotation(elementForType, Owning.class) != null;
@@ -195,6 +192,21 @@ class MustCallInvokedChecker {
             "never assigned to an @Owning location");
       }
     }
+  }
+
+  /**
+   * Does an element represents an assignment left-hand side that can take ownership?
+   *
+   * @param elem the element
+   * @return {@code true} iff {@code elem} represents a local variable, a try-with-resources
+   *     variable, or an {@code @Owning} field
+   */
+  private boolean isOwningAssignmentLhs(Element elem) {
+    return elem != null
+        && (elem.getKind().equals(ElementKind.LOCAL_VARIABLE)
+            || elem.getKind().equals(ElementKind.RESOURCE_VARIABLE)
+            || (elem.getKind().equals(ElementKind.FIELD)
+                && typeFactory.getDeclAnnotation(elem, Owning.class) != null));
   }
 
   /**
@@ -319,7 +331,19 @@ class MustCallInvokedChecker {
       rhs = ((TypeCastNode) rhs).getOperand();
     }
 
-    if (lhs instanceof LocalVariableNode && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
+    Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
+
+    // Ownership transfer to @Owning field
+    if (lhsElement.getKind().equals(ElementKind.FIELD) && typeFactory.hasMustCall(lhs.getTree())) {
+      if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
+        if (typeFactory.getDeclAnnotation(lhsElement, Owning.class) != null) {
+          LocalVarWithTree latestAssignmentPair =
+              getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
+          newDefs.remove(latestAssignmentPair);
+        }
+      }
+    } else if (lhs instanceof LocalVariableNode
+        && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
 
       // Reassignment to the lhs
       if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
