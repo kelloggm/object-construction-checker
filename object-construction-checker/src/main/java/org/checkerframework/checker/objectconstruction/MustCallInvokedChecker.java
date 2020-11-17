@@ -144,7 +144,7 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Give a node representing a method or constructor call, checks that if the call has a non-empty
+   * Given a node representing a method or constructor call, checks that if the call has a non-empty
    * {@code @MustCall} type, then its result is pseudo-assigned to some location that can take
    * ownership of the result
    */
