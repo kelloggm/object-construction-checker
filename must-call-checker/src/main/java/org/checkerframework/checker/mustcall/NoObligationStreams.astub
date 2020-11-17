@@ -13,3 +13,11 @@ class StringReader { }
 
 @InheritableMustCall({})
 class StringWriter { }
+
+package java.lang;
+
+class System {
+    @MustCall({}) InputSteam in;
+    @MustCall({}) OutputStream out;
+    @MustCall({}) OutputStream err;
+}
