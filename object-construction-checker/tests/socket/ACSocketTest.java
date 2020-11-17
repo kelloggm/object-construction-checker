@@ -447,6 +447,13 @@ public class ACSocketTest
         return configureSSLServerSocket(sslServerSocket);
     }
 
+    private SSLServerSocket nonOwningSSField;
+
+    void assignToNonOwningViaCast(SSLContext sslContext) throws IOException {
+        // :: error: required.method.not.called
+        nonOwningSSField = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket();
+    }
+
     private SSLServerSocket configureSSLServerSocket(@Owning SSLServerSocket socket) {
         return socket;
     }

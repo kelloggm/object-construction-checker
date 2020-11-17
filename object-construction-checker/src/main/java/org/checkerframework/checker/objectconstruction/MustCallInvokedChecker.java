@@ -30,6 +30,11 @@ import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlockImpl;
+import org.checkerframework.dataflow.cfg.node.AssignmentContext;
+import org.checkerframework.dataflow.cfg.node.AssignmentContext.AssignmentLhsContext;
+import org.checkerframework.dataflow.cfg.node.AssignmentContext.LambdaReturnContext;
+import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodParameterContext;
+import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodReturnContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
@@ -111,6 +116,8 @@ class MustCallInvokedChecker {
           handleReturn((ReturnNode) node, cfg, newDefs);
         } else if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
           handleInvocation(newDefs, node);
+        } else if (node instanceof TypeCastNode) {
+          handleTypeCast((TypeCastNode) node);
         }
       }
 
@@ -118,7 +125,134 @@ class MustCallInvokedChecker {
     }
   }
 
+  private void handleTypeCast(TypeCastNode node) {
+    Node operand = node.getOperand();
+    if (operand instanceof MethodInvocationNode || operand instanceof ObjectCreationNode) {
+      if (!shouldSkipInvokePseudoAssignCheck(operand.getTree())) {
+        checkPseudoAssignToOwning(node);
+      }
+    }
+  }
+
   private void handleInvocation(Set<LocalVarWithTree> newDefs, Node node) {
+    doOwnershipTransferToParameters(newDefs, node);
+    // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
+    // checking.  So we defer the check to the corresponding TypeCastNode
+    if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node.getTree())) {
+      checkPseudoAssignToOwning(node);
+    }
+  }
+
+  /**
+   * Given a node representing a method or constructor call, checks that if the call has a non-empty
+   * {@code @MustCall} type, then its result is pseudo-assigned to some location that can take
+   * ownership of the result
+   */
+  private void checkPseudoAssignToOwning(Node node) {
+    Tree tree = node.getTree();
+    List<String> mustCallVal = typeFactory.getMustCallValue(tree);
+    if (mustCallVal.isEmpty()) {
+      return;
+    }
+    boolean assignedToOwning = false;
+    AssignmentContext assignmentContext = node.getAssignmentContext();
+    if (assignmentContext != null) {
+      Element elementForType = assignmentContext.getElementForType();
+      if (assignmentContext instanceof AssignmentLhsContext) {
+        // lhs should be a local variable
+        assignedToOwning = isOwningAssignmentLhs(elementForType);
+      } else if (assignmentContext instanceof MethodParameterContext) {
+        // must be an @Owning parameter
+        assignedToOwning = typeFactory.getDeclAnnotation(elementForType, Owning.class) != null;
+      } else if (assignmentContext instanceof MethodReturnContext) {
+        // must be an @Owning return
+        assignedToOwning =
+            TRANSFER_OWNERSHIP_AT_RETURN
+                ? typeFactory.getDeclAnnotation(
+                        TreeUtils.elementFromTree(assignmentContext.getContextTree()),
+                        NotOwning.class)
+                    == null
+                : typeFactory.getDeclAnnotation(elementForType, Owning.class) != null;
+      } else if (assignmentContext instanceof LambdaReturnContext) {
+        // TODO handle this case.  For now we will report an error
+      } else {
+        throw new BugInCF("unexpected AssignmentContext type " + assignmentContext.getClass());
+      }
+    }
+    if (!assignedToOwning) {
+      // check if @CalledMethods type of return satisfies the @MustCall obligation
+      AnnotationMirror cmAnno =
+          typeFactory.getAnnotatedType(tree).getAnnotationInHierarchy(typeFactory.top);
+      if (!calledMethodsSatisfyMustCall(mustCallVal, cmAnno)) {
+        checker.reportError(
+            tree,
+            "required.method.not.called",
+            MustCallInvokedChecker.formatMissingMustCallMethods(mustCallVal),
+            TreeUtils.typeOf(tree).toString(),
+            "never assigned to an @Owning location");
+      }
+    }
+  }
+
+  /**
+   * Does an element represents an assignment left-hand side that can take ownership?
+   *
+   * @param elem the element
+   * @return {@code true} iff {@code elem} represents a local variable, a try-with-resources
+   *     variable, or an {@code @Owning} field
+   */
+  private boolean isOwningAssignmentLhs(Element elem) {
+    return elem != null
+        && (elem.getKind().equals(ElementKind.LOCAL_VARIABLE)
+            || elem.getKind().equals(ElementKind.RESOURCE_VARIABLE)
+            || (elem.getKind().equals(ElementKind.FIELD)
+                && typeFactory.getDeclAnnotation(elem, Owning.class) != null));
+  }
+
+  /**
+   * Checks for cases where we do not need to ensure that a method invocation gets pseudo-assigned
+   * to a variable / field that takes ownership. We can skip the check when the invoked method's
+   * return type is {@link org.checkerframework.common.returnsreceiver.qual.This}, the invocation is
+   * a super constructor call, or the method's return type is annotated {@link NotOwning}
+   */
+  private boolean shouldSkipInvokePseudoAssignCheck(Tree callTree) {
+    if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
+      MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
+      return typeFactory.returnsThis(methodInvokeTree)
+          || TreeUtils.isSuperConstructorCall(methodInvokeTree)
+          || typeFactory.getDeclAnnotation(
+                  TreeUtils.elementFromUse(methodInvokeTree), NotOwning.class)
+              != null;
+    }
+    return false;
+  }
+
+  /**
+   * Checks if {@code node} is an invocation nested inside a TypeCastNode, by looking at the
+   * successor block in the CFG
+   */
+  private boolean nestedInTypeCast(Node node) {
+    if (!(node instanceof MethodInvocationNode || node instanceof ObjectCreationNode)) {
+      throw new BugInCF("unexpected node type " + node.getClass());
+    }
+    if (!(node.getBlock() instanceof ExceptionBlock)) {
+      // can happen, e.g., for calls generated for enhanced for loops
+      return false;
+    }
+    Block successorBlock = ((ExceptionBlock) node.getBlock()).getSuccessor();
+    if (successorBlock instanceof ExceptionBlock) {
+      Node succNode = ((ExceptionBlock) successorBlock).getNode();
+      return succNode instanceof TypeCastNode
+          && ((TypeCastNode) succNode).getOperand().equals(node);
+    }
+    return false;
+  }
+
+  /**
+   * logic to transfer ownership of locals to {@code @Owning} parameters at a method or constructor
+   * call
+   */
+  private void doOwnershipTransferToParameters(Set<LocalVarWithTree> newDefs, Node node) {
     List<Node> arguments;
     ExecutableElement executableElement;
     if (node instanceof MethodInvocationNode) {
@@ -143,24 +277,6 @@ class MustCallInvokedChecker {
     }
     for (int i = 0; i < arguments.size(); i++) {
       Node n = arguments.get(i);
-      if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
-        VariableElement formal = formals.get(i);
-        Set<AnnotationMirror> annotationMirrors = typeFactory.getDeclAnnotations(formal);
-        TypeMirror t = TreeUtils.typeOf(n.getTree());
-        List<String> mustCallVal = typeFactory.getMustCallValue(n.getTree());
-        if (!mustCallVal.isEmpty()
-            && annotationMirrors.stream()
-                .noneMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
-          // TODO why is this logic here and not in the visitor?
-          checker.reportError(
-              n.getTree(),
-              "required.method.not.called",
-              formatMissingMustCallMethods(mustCallVal),
-              t.toString(),
-              "never assigned to a variable");
-        }
-      }
-
       if (n instanceof LocalVariableNode) {
         LocalVariableNode local = (LocalVariableNode) n;
         if (isVarInDefs(newDefs, local)) {
@@ -403,9 +519,6 @@ class MustCallInvokedChecker {
     if (mustCallValue.isEmpty()) {
       return;
     }
-    AnnotationMirror cmAnnoForMustCallMethods =
-        typeFactory.createCalledMethods(mustCallValue.toArray(new String[0]));
-
     AnnotationMirror cmAnno;
 
     // sometimes the store is null!  this looks like a bug in checker dataflow.
@@ -424,7 +537,7 @@ class MustCallInvokedChecker {
               .getAnnotationInHierarchy(typeFactory.top);
     }
 
-    if (!typeFactory.getQualifierHierarchy().isSubtype(cmAnno, cmAnnoForMustCallMethods)) {
+    if (!calledMethodsSatisfyMustCall(mustCallValue, cmAnno)) {
       if (!reportedMustCallErrors.contains(localVarWithTree)) {
         reportedMustCallErrors.add(localVarWithTree);
 
@@ -436,6 +549,18 @@ class MustCallInvokedChecker {
             outOfScopeReason);
       }
     }
+  }
+
+  /**
+   * Do the called methods represented by the {@link CalledMethods} type {@code cmAnno} include all
+   * the methods in {@code mustCallValue}?
+   */
+  private boolean calledMethodsSatisfyMustCall(
+      List<String> mustCallValue, AnnotationMirror cmAnno) {
+    AnnotationMirror cmAnnoForMustCallMethods =
+        typeFactory.createCalledMethods(mustCallValue.toArray(new String[0]));
+
+    return typeFactory.getQualifierHierarchy().isSubtype(cmAnno, cmAnnoForMustCallMethods);
   }
 
   /**
