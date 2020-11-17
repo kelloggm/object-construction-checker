@@ -216,7 +216,7 @@ class MustCallInvokedChecker {
    * a super constructor call, or the method's return type is annotated {@link NotOwning}
    */
   private boolean shouldSkipInvokePseudoAssignCheck(Tree callTree) {
-    if (callTree instanceof MethodInvocationTree) {
+    if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
       return typeFactory.returnsThis(methodInvokeTree)
           || TreeUtils.isSuperConstructorCall(methodInvokeTree)
