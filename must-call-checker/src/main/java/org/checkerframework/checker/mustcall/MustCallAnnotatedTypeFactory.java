@@ -1,8 +1,11 @@
 package org.checkerframework.checker.mustcall;
 
+import static javax.lang.model.element.ElementKind.CONSTRUCTOR;
+import static javax.lang.model.element.ElementKind.METHOD;
 import static org.checkerframework.common.value.ValueCheckerUtils.getValueOfAnnotationWithStringArgument;
 
 import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
@@ -16,12 +19,14 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -31,6 +36,8 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayTyp
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.MostlyNoElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
+import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.BugInCF;
@@ -68,6 +75,11 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   @Override
+  protected TreeAnnotator createTreeAnnotator() {
+    return new ListTreeAnnotator(super.createTreeAnnotator(), new MustCallTreeAnnotator(this));
+  }
+
+  @Override
   protected void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
     super.addComputedTypeAnnotations(tree, type, iUseFlow);
     // All primitives are @MustCall({}). This code is needed to avoid primitive conversions, taking
@@ -88,7 +100,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
   }
 
-  /** Treat non-owning method parameters as @MustCallUnknown. */
+  /** Treat non-owning method parameters as @MustCallUnknown when the method is called. */
   @Override
   public void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
     ExecutableElement declaration;
@@ -99,7 +111,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else {
       throw new BugInCF("unexpected type of method tree: " + tree.getKind());
     }
-    changeParameterTypesToTop(declaration, type);
+    changeNonOwningParametersTypes(declaration, type);
     super.methodFromUsePreSubstitution(tree, type);
   }
 
@@ -107,11 +119,18 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   protected void constructorFromUsePreSubstitution(
       NewClassTree tree, AnnotatedExecutableType type) {
     ExecutableElement declaration = TreeUtils.elementFromUse(tree);
-    changeParameterTypesToTop(declaration, type);
+    changeNonOwningParametersTypes(declaration, type);
     super.constructorFromUsePreSubstitution(tree, type);
   }
 
-  private void changeParameterTypesToTop(
+  /**
+   * Changes the type of each parameter not annotated as @Owning to top. Also replaces the component
+   * type of the varargs array, if applicable.
+   *
+   * @param declaration a method or constructor declaration
+   * @param type the method or constructor's type
+   */
+  private void changeNonOwningParametersTypes(
       ExecutableElement declaration, AnnotatedExecutableType type) {
     for (int i = 0; i < type.getParameterTypes().size(); i++) {
       Element paramDecl = declaration.getParameters().get(i);
@@ -231,6 +250,47 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       Set<String> superVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(superAnno));
 
       return superVal.containsAll(subVal);
+    }
+  }
+
+  private class MustCallTreeAnnotator extends TreeAnnotator {
+    public MustCallTreeAnnotator(MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory) {
+      super(mustCallAnnotatedTypeFactory);
+    }
+
+    // When they appear in the body of a method or constructor, treat non-owning parameters
+    // as bottom regardless of their declared type.
+    @Override
+    public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
+      Element elt = TreeUtils.elementFromTree(node);
+      /// This code derived from ElementUtils#enclosingClass
+      Element enclosing = elt;
+      while (enclosing != null && !(isMethodElement(enclosing))) {
+        @Nullable Element encl = enclosing.getEnclosingElement();
+        enclosing = encl;
+      }
+      ///
+      if (enclosing != null) {
+        ExecutableElement enclosingMethod = (ExecutableElement) enclosing;
+        VariableElement decl = null;
+        for (VariableElement param : enclosingMethod.getParameters()) {
+          // scoping rules should mean these are the same? I hope?
+          // TODO: find a better way to associate an identifier with a method parameter...
+          if (param.getSimpleName().contentEquals(elt.getSimpleName())) {
+            decl = param;
+            break;
+          }
+        }
+        if (decl != null && getDeclAnnotation(decl, Owning.class) == null) {
+          type.replaceAnnotation(BOTTOM);
+        }
+      }
+      return super.visitIdentifier(node, type);
+    }
+
+    /** Equivalent to ElementUtils#isClassElement for methods. */
+    private boolean isMethodElement(Element elt) {
+      return elt.getKind() == METHOD || elt.getKind() == CONSTRUCTOR;
     }
   }
 }

@@ -1,6 +1,7 @@
 // Unit tests for the poly annotation.
 
 import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 
 @MustCall("close")
 class PolyTests {
@@ -8,13 +9,13 @@ class PolyTests {
         return obj;
     }
 
-    static void test1(@MustCall("close") Object o) {
+    static void test1(@Owning @MustCall("close") Object o) {
         @MustCall("close") Object o1 = id(o);
         // :: error: assignment.type.incompatible
         @MustCall({}) Object o2 = id(o);
     }
 
-    static void test2(@MustCall({}) Object o) {
+    static void test2(@Owning @MustCall({}) Object o) {
         @MustCall("close") Object o1 = id(o);
         @MustCall({}) Object o2 = id(o);
     }
@@ -25,18 +26,18 @@ class PolyTests {
 
     }
 
-    static void test3(@MustCall({"close"}) Object o) {
+    static void test3(@Owning @MustCall({"close"}) Object o) {
         @MustCall("close") Object o1 = new PolyTests(o);
         // :: error: assignment.type.incompatible
         @MustCall({}) Object o2 = new PolyTests(o);
     }
 
-    static void test4(@MustCall({}) Object o) {
+    static void test4(@Owning @MustCall({}) Object o) {
         @MustCall("close") Object o1 = new PolyTests(o);
         @MustCall({}) Object o2 = new PolyTests(o);
     }
 
-    static void testArbitary(PolyTests p) {
+    static void testArbitary(@Owning PolyTests p) {
         @MustCall("close") Object o1 = p;
         // :: error: assignment.type.incompatible
         @MustCall({}) Object o2 = p;
