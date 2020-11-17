@@ -1,7 +1,5 @@
 package org.checkerframework.checker.mustcall;
 
-import static javax.lang.model.element.ElementKind.CONSTRUCTOR;
-import static javax.lang.model.element.ElementKind.METHOD;
 import static javax.lang.model.element.ElementKind.PARAMETER;
 import static org.checkerframework.common.value.ValueCheckerUtils.getValueOfAnnotationWithStringArgument;
 
@@ -20,14 +18,12 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -266,37 +262,10 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
       Element elt = TreeUtils.elementFromTree(node);
-      if (elt.getKind() != PARAMETER) {
-        return super.visitIdentifier(node, type);
-      }
-      /// This code derived from ElementUtils#enclosingClass
-      Element enclosing = elt;
-      while (enclosing != null && !(isMethodElement(enclosing))) {
-        @Nullable Element encl = enclosing.getEnclosingElement();
-        enclosing = encl;
-      }
-      ///
-      if (enclosing != null) {
-        ExecutableElement enclosingMethod = (ExecutableElement) enclosing;
-        VariableElement decl = null;
-        for (VariableElement param : enclosingMethod.getParameters()) {
-          // Scoping rules should mean these are the same - there can only one
-          // parameter in a given method with a particular simple name.
-          if (param.getSimpleName().contentEquals(elt.getSimpleName())) {
-            decl = param;
-            break;
-          }
-        }
-        if (decl != null && getDeclAnnotation(decl, Owning.class) == null) {
-          type.replaceAnnotation(BOTTOM);
-        }
+      if (elt.getKind() == PARAMETER && getDeclAnnotation(elt, Owning.class) == null) {
+        type.replaceAnnotation(BOTTOM);
       }
       return super.visitIdentifier(node, type);
-    }
-
-    /** Equivalent to ElementUtils#isClassElement for methods. */
-    private boolean isMethodElement(Element elt) {
-      return elt.getKind() == METHOD || elt.getKind() == CONSTRUCTOR;
     }
   }
 }
