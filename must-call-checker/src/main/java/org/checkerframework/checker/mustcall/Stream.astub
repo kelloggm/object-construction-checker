@@ -214,3 +214,18 @@ class DigestOutputStream extends FilterOutputStream {
     void on(boolean arg0);
     String toString();
 }
+
+package java.util;
+
+class Scanner {
+    @PolyMustCall Scanner(@PolyMustCall File source);
+    @PolyMustCall Scanner(@PolyMustCall File source, String charsetName);
+    @PolyMustCall Scanner(@PolyMustCall InputStream in);
+    @PolyMustCall Scanner(@PolyMustCall InputStream source, String charsetName);
+    @PolyMustCall Scanner(@PolyMustCall Path source);
+    @PolyMustCall Scanner(@PolyMustCall Path source, String charsetName);
+    @PolyMustCall Scanner(@PolyMustCall Readable source);
+    @PolyMustCall Scanner(@PolyMustCall ReadableByteChannel source);
+    @PolyMustCall Scanner(@PolyMustCall ReadableByteChannel source, String charsetName);
+    @MustCall({}) Scanner(String source);
+}
