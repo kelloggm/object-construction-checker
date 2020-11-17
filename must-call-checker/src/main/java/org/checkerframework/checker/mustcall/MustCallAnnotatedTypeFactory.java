@@ -2,6 +2,7 @@ package org.checkerframework.checker.mustcall;
 
 import static javax.lang.model.element.ElementKind.CONSTRUCTOR;
 import static javax.lang.model.element.ElementKind.METHOD;
+import static javax.lang.model.element.ElementKind.PARAMETER;
 import static org.checkerframework.common.value.ValueCheckerUtils.getValueOfAnnotationWithStringArgument;
 
 import com.sun.source.tree.ExpressionTree;
@@ -265,6 +266,9 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
       Element elt = TreeUtils.elementFromTree(node);
+      if (elt.getKind() != PARAMETER) {
+        return super.visitIdentifier(node, type);
+      }
       /// This code derived from ElementUtils#enclosingClass
       Element enclosing = elt;
       while (enclosing != null && !(isMethodElement(enclosing))) {
@@ -276,8 +280,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         ExecutableElement enclosingMethod = (ExecutableElement) enclosing;
         VariableElement decl = null;
         for (VariableElement param : enclosingMethod.getParameters()) {
-          // scoping rules should mean these are the same? I hope?
-          // TODO: find a better way to associate an identifier with a method parameter...
+          // Scoping rules should mean these are the same - there can only one
+          // parameter in a given method with a particular simple name.
           if (param.getSimpleName().contentEquals(elt.getSimpleName())) {
             decl = param;
             break;
