@@ -220,6 +220,7 @@ class MustCallInvokedChecker {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
       return typeFactory.returnsThis(methodInvokeTree)
           || TreeUtils.isSuperConstructorCall(methodInvokeTree)
+          || TreeUtils.isThisConstructorCall(methodInvokeTree)
           || typeFactory.getDeclAnnotation(
                   TreeUtils.elementFromUse(methodInvokeTree), NotOwning.class)
               != null;
