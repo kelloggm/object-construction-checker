@@ -16,10 +16,12 @@ import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.mustcall.qual.PolyMustCall;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -103,6 +105,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   boolean hasMustCallChoice(Tree tree) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
             getTypeFactoryOfSubchecker(MustCallChecker.class);
-    return (mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCallChoice.class) != null);
+    AnnotatedTypeMirror mustCallAnnotatedType =
+            mustCallAnnotatedTypeFactory.getAnnotatedType(TreeUtils.elementFromTree(tree));
+
+    return (mustCallAnnotatedType.getUnderlyingType().getAnnotation(MustCallChoice.class) != null);
   }
 }
