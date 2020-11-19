@@ -15,6 +15,7 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
@@ -97,5 +98,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
 
   boolean hasMustCall(Tree t) {
     return !getMustCallValue(t).isEmpty();
+  }
+
+  boolean hasMustCallChoice(Tree tree) {
+    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
+            getTypeFactoryOfSubchecker(MustCallChecker.class);
+    return (mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCallChoice.class) != null);
   }
 }
