@@ -25,6 +25,7 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
+import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
@@ -409,7 +410,8 @@ class MustCallInvokedChecker {
     List<Node> arguments = getArgumentsOfMethodOrConstructor(node);
     List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
     for (int i = 0; i < arguments.size(); i++) {
-      if (typeFactory.getDeclAnnotation(formals.get(i), MustCallChoice.class) == null) {
+      if (typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class)
+              .getDeclAnnotationNoAliases(formals.get(i), MustCallChoice.class) == null) {
         continue;
       }
 

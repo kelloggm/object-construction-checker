@@ -37,5 +37,5 @@ import java.lang.annotation.Target;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
+@Target({ElementType.PARAMETER, ElementType.CONSTRUCTOR, ElementType.METHOD})
 public @interface MustCallChoice {}
