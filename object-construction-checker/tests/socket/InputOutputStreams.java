@@ -3,12 +3,18 @@
 import java.io.*;
 import java.net.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
+import java.io.IOException;
 
 class InputOutputStreams {
     void test_close_sock(@Owning Socket sock) throws IOException {
-        InputStream is = sock.getInputStream();
-        OutputStream os = sock.getOutputStream();
-        sock.close();
+        try{
+            InputStream is = sock.getInputStream();
+            OutputStream os = sock.getOutputStream();
+        } catch (IOException e) {
+
+        } finally {
+            sock.close();
+        }
     }
 
     void test_close_is(@Owning Socket sock) throws IOException {

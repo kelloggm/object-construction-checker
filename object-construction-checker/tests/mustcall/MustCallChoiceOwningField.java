@@ -7,7 +7,7 @@ import java.io.*;
 
 public @MustCall("shutdown") class MustCallChoiceOwningField {
 
-    private @Owning BufferedInputStream input;
+    private final @Owning BufferedInputStream input;
 
     public MustCallChoiceOwningField(@Owning BufferedInputStream input, boolean b) {
         this.input = input;

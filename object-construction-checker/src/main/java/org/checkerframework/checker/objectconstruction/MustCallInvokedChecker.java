@@ -11,6 +11,7 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodParameterC
 import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodReturnContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.MethodAccessNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
@@ -374,9 +376,9 @@ class MustCallInvokedChecker {
       if ((rhs instanceof ObjectCreationNode) || (rhs instanceof MethodInvocationNode
               && !hasNotOwningReturnType((MethodInvocationNode) rhs))) {
         if (typeFactory.hasMustCallChoice(rhs.getTree())) {
-          LocalVariableNode n = getMustCallChoiceParam(rhs);
-          if (n!=null && isVarInDefs(newDefs, n)) {
-            getSetContainsAssignmentTreeOfVar(newDefs, n).add(new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree()));
+          Node n = getMustCallChoiceParam(rhs);
+          if (n!=null && isVarInDefs(newDefs, (LocalVariableNode) n)) {
+            getSetContainsAssignmentTreeOfVar(newDefs, (LocalVariableNode) n).add(new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree()));
           } else {
             LocalVarWithTree lhsLocalVarWithTreeNew = new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
             Set<LocalVarWithTree> newSet = new HashSet<>();
@@ -406,9 +408,19 @@ class MustCallInvokedChecker {
     }
   }
 
-  private LocalVariableNode getMustCallChoiceParam(Node node) {
+  private Node getMustCallChoiceParam(Node node) {
+    if (node instanceof TypeCastNode) {
+      node = ((TypeCastNode) node).getOperand();
+    }
     List<Node> arguments = getArgumentsOfMethodOrConstructor(node);
     List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
+    if (arguments.size() == 0) {
+      Node n = ((MethodInvocationNode) node).getTarget().getReceiver();
+      if (n instanceof LocalVariableNode) {
+        return n;
+      }
+      return getMustCallChoiceParam(n);
+    }
     for (int i = 0; i < arguments.size(); i++) {
       if (typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class)
               .getDeclAnnotationNoAliases(formals.get(i), MustCallChoice.class) == null) {
@@ -420,9 +432,9 @@ class MustCallInvokedChecker {
         LocalVariableNode local = (LocalVariableNode) n;
         return local;
       } else if (n instanceof ObjectCreationNode) {
-        getMustCallChoiceParam(n);
+        return getMustCallChoiceParam(n);
       } else if (n instanceof MethodInvocationNode) {
-        getMustCallChoiceParam(n);
+        return getMustCallChoiceParam(n);
       }
     }
     return null;
@@ -616,8 +628,9 @@ class MustCallInvokedChecker {
     AnnotationMirror cmAnno;
 
     Set<LocalVarWithTree> defsCopy = new HashSet<>(localVarWithTreeSet);
-
-    for (LocalVarWithTree localVarWithTree: defsCopy) {
+    Iterator<LocalVarWithTree> iter = defsCopy.iterator();
+    while (iter.hasNext()) {
+      LocalVarWithTree localVarWithTree = iter.next();
       // sometimes the store is null!  this looks like a bug in checker dataflow.
       // TODO track down and report the root-cause bug
       CFValue lhsCFValue = store != null ? store.getValue(localVarWithTree.localVar) : null;
@@ -635,7 +648,9 @@ class MustCallInvokedChecker {
                         .getAnnotationInHierarchy(typeFactory.top);
       }
 
-      if (!calledMethodsSatisfyMustCall(mustCallValue, cmAnno) && defsCopy.size() == 1) {
+      if (calledMethodsSatisfyMustCall(mustCallValue, cmAnno)) {
+        return;
+      } else if (!iter.hasNext()) {
         if (!reportedMustCallErrors.contains(localVarWithTree)) {
           reportedMustCallErrors.add(localVarWithTree);
 
@@ -648,7 +663,7 @@ class MustCallInvokedChecker {
         }
       }
 
-      defsCopy.remove(localVarWithTree);
+      iter.remove();
 
     }
   }
