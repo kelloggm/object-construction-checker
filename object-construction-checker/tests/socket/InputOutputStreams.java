@@ -57,7 +57,7 @@ class InputOutputStreams {
     void test_close_os3(@Owning Socket sock) throws IOException {
         OutputStream os = null;
         try {
-            InputStream isSpecial = sock.getInputStream();
+            InputStream is = sock.getInputStream();
         } catch (IOException e) { }
         try {
             os = sock.getOutputStream();
