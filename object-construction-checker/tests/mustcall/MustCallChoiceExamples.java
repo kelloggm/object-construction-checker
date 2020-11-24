@@ -12,7 +12,7 @@ class MustCallChoiceExamples {
         Socket socket = null;
         try {
             socket = new Socket( address, 80 );
-            DataInputStream dSpecial = new DataInputStream(socket.getInputStream());
+            DataInputStream d = new DataInputStream(socket.getInputStream());
         } catch (IOException e){
 
         }finally {

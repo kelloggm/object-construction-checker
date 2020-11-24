@@ -17,23 +17,39 @@ class InputOutputStreams {
         }
     }
 
+    // :: error: required.method.not.called
     void test_close_is(@Owning Socket sock) throws IOException {
-        InputStream is = sock.getInputStream();
-        OutputStream os = sock.getOutputStream();
-        is.close();
+        InputStream is = null;
+        OutputStream os = null;
+        try {
+            is = sock.getInputStream();
+            os = sock.getOutputStream();
+        } catch (IOException e) {
+
+        } finally {
+            is.close();
+        }
     }
 
+    // :: error: required.method.not.called
     void test_close_os(@Owning Socket sock) throws IOException {
         InputStream is = sock.getInputStream();
         OutputStream os = sock.getOutputStream();
         os.close();
     }
 
+    // :: error: required.method.not.called
     void test_close_buff(@Owning Socket sock) throws IOException {
-        InputStream is = sock.getInputStream();
-        OutputStream os = sock.getOutputStream();
-        BufferedOutputStream buff = new BufferedOutputStream(os);
-        buff.close();
+        BufferedOutputStream buff = null;
+        try {
+            InputStream is = sock.getInputStream();
+            OutputStream os = sock.getOutputStream();
+            buff = new BufferedOutputStream(os);
+        } catch (IOException e) {
+
+        } finally {
+            buff.close();
+        }
     }
 
     void test_write(String host, int port) {

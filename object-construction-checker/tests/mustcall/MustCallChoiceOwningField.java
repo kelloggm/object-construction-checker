@@ -12,7 +12,8 @@ public @MustCall("shutdown") class MustCallChoiceOwningField {
     public MustCallChoiceOwningField(@Owning BufferedInputStream input, boolean b) {
         this.input = input;
         if (b) {
-            authenticate(new DataInputStream(input));
+            DataInputStream d = new DataInputStream(input);
+            authenticate(d);
         }
     }
 

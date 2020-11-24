@@ -479,7 +479,7 @@ public class ACSocketTest
 
 
     private void updateSocketAddresses( SelectionKey sockKey ) {
-        // error: required.method.not.called
+        // :: error: required.method.not.called
         Socket socket = ((SocketChannel) sockKey.channel()).socket();
         SocketAddress localSocketAddress = socket.getLocalSocketAddress();
         SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();

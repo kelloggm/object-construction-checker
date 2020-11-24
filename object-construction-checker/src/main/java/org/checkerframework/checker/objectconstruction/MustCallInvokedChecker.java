@@ -43,6 +43,7 @@ import org.checkerframework.dataflow.cfg.node.AssignmentContext.LambdaReturnCont
 import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodParameterContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodReturnContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
+import org.checkerframework.dataflow.cfg.node.ImplicitThisLiteralNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodAccessNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
@@ -104,7 +105,7 @@ class MustCallInvokedChecker {
     BlockWithLocals firstBlockLocals =
         new BlockWithLocals(cfg.getEntryBlock(), (computeOwningParameters(cfg)));
 
-    Set<BlockWithLocals> visited = new HashSet<>();
+    Set<BlockWithLocals> visited = new LinkedHashSet<>();
     Deque<BlockWithLocals> worklist = new ArrayDeque<>();
 
     worklist.add(firstBlockLocals);
@@ -115,7 +116,7 @@ class MustCallInvokedChecker {
       BlockWithLocals curBlockLocals = worklist.removeLast();
       List<Node> nodes = curBlockLocals.block.getNodes();
       // defs to be tracked in successor blocks, updated by code below
-      Set<Set<LocalVarWithTree>> newDefs = new HashSet<>(curBlockLocals.localSetInfo);
+      Set<Set<LocalVarWithTree>> newDefs = new LinkedHashSet<>(curBlockLocals.localSetInfo);
 
       for (Node node : nodes) {
 
@@ -126,7 +127,7 @@ class MustCallInvokedChecker {
         } else if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
           handleInvocation(newDefs, node);
         } else if (node instanceof TypeCastNode) {
-          handleTypeCast((TypeCastNode) node);
+          handleTypeCast((TypeCastNode) node, newDefs);
         }
       }
 
@@ -134,11 +135,11 @@ class MustCallInvokedChecker {
     }
   }
 
-  private void handleTypeCast(TypeCastNode node) {
+  private void handleTypeCast(TypeCastNode node, Set<Set<LocalVarWithTree>> defs) {
     Node operand = node.getOperand();
     if (operand instanceof MethodInvocationNode || operand instanceof ObjectCreationNode) {
       if (!shouldSkipInvokePseudoAssignCheck(operand.getTree())) {
-        checkPseudoAssignToOwning(node);
+        checkPseudoAssignToOwning(node, defs);
       }
     }
   }
@@ -148,7 +149,7 @@ class MustCallInvokedChecker {
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
     if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node.getTree())) {
-      checkPseudoAssignToOwning(node);
+      checkPseudoAssignToOwning(node, newDefs);
     }
   }
 
@@ -157,25 +158,25 @@ class MustCallInvokedChecker {
    * {@code @MustCall} type, then its result is pseudo-assigned to some location that can take
    * ownership of the result
    */
-  private void checkPseudoAssignToOwning(Node node) {
+  private void checkPseudoAssignToOwning(Node node, Set<Set<LocalVarWithTree>> defs) {
     Tree tree = node.getTree();
     List<String> mustCallVal = typeFactory.getMustCallValue(tree);
     if (mustCallVal.isEmpty()) {
       return;
     }
-    boolean assignedToOwning = false;
+    boolean assignedToOwningOrMustCallChoice = false;
     AssignmentContext assignmentContext = node.getAssignmentContext();
     if (assignmentContext != null) {
       Element elementForType = assignmentContext.getElementForType();
       if (assignmentContext instanceof AssignmentLhsContext) {
         // lhs should be a local variable
-        assignedToOwning = isOwningAssignmentLhs(elementForType);
+        assignedToOwningOrMustCallChoice = isOwningAssignmentLhs(elementForType);
       } else if (assignmentContext instanceof MethodParameterContext) {
         // must be an @Owning parameter
-        assignedToOwning = typeFactory.getDeclAnnotation(elementForType, Owning.class) != null;
+        assignedToOwningOrMustCallChoice = typeFactory.getDeclAnnotation(elementForType, Owning.class) != null || typeFactory.hasMustCallChoice(elementForType);
       } else if (assignmentContext instanceof MethodReturnContext) {
         // must be an @Owning return
-        assignedToOwning =
+        assignedToOwningOrMustCallChoice =
             TRANSFER_OWNERSHIP_AT_RETURN
                 ? typeFactory.getDeclAnnotation(
                         TreeUtils.elementFromTree(assignmentContext.getContextTree()),
@@ -187,8 +188,13 @@ class MustCallInvokedChecker {
       } else {
         throw new BugInCF("unexpected AssignmentContext type " + assignmentContext.getClass());
       }
+    } else {
+      Node mustCallChoiceParam = getMustCallChoiceParam(node, defs);
+      if (mustCallChoiceParam != null && isVarInDefs(defs, (LocalVariableNode) mustCallChoiceParam)) {
+        assignedToOwningOrMustCallChoice = true;
+      }
     }
-    if (!assignedToOwning) {
+    if (!assignedToOwningOrMustCallChoice) {
       // check if @CalledMethods type of return satisfies the @MustCall obligation
       AnnotationMirror cmAnno =
           typeFactory.getAnnotatedType(tree).getAnnotationInHierarchy(typeFactory.top);
@@ -263,21 +269,9 @@ class MustCallInvokedChecker {
    * call
    */
   private void doOwnershipTransferToParameters(Set<Set<LocalVarWithTree>> newDefs, Node node) {
-    List<Node> arguments;
-    ExecutableElement executableElement;
-    if (node instanceof MethodInvocationNode) {
-      MethodInvocationNode invocationNode = (MethodInvocationNode) node;
-      arguments = invocationNode.getArguments();
-      executableElement = TreeUtils.elementFromUse(invocationNode.getTree());
-    } else {
-      if (!(node instanceof ObjectCreationNode)) {
-        throw new BugInCF("unexpected node type " + node.getClass());
-      }
-      arguments = ((ObjectCreationNode) node).getArguments();
-      executableElement = TreeUtils.elementFromUse(((ObjectCreationNode) node).getTree());
-    }
+    List<Node> arguments = getArgumentsOfMethodOrConstructor(node);
+    List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
 
-    List<? extends VariableElement> formals = executableElement.getParameters();
     if (arguments.size() != formals.size()) {
       // this could happen, e.g., with varargs, or with strange cases like generated Enum
       // constructors
@@ -376,18 +370,13 @@ class MustCallInvokedChecker {
       if ((rhs instanceof ObjectCreationNode) || (rhs instanceof MethodInvocationNode
               && !hasNotOwningReturnType((MethodInvocationNode) rhs))) {
         if (typeFactory.hasMustCallChoice(rhs.getTree())) {
-          Node n = getMustCallChoiceParam(rhs);
+          Node n = getMustCallChoiceParam(rhs, newDefs);
           if (n!=null && isVarInDefs(newDefs, (LocalVariableNode) n)) {
             getSetContainsAssignmentTreeOfVar(newDefs, (LocalVariableNode) n).add(new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree()));
-          } else {
-            LocalVarWithTree lhsLocalVarWithTreeNew = new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
-            Set<LocalVarWithTree> newSet = new HashSet<>();
-            newSet.add(lhsLocalVarWithTreeNew);
-            newDefs.add(newSet);
           }
         } else {
           LocalVarWithTree lhsLocalVarWithTreeNew = new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
-          Set<LocalVarWithTree> newSet = new HashSet<>();
+          Set<LocalVarWithTree> newSet = new LinkedHashSet<>();
           newSet.add(lhsLocalVarWithTreeNew);
           newDefs.add(newSet);
         }
@@ -400,7 +389,7 @@ class MustCallInvokedChecker {
         // literals), then it adds the localVariableNode to the newDefs
         Set<LocalVarWithTree> setContainsRhs = getSetContainsAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
         LocalVarWithTree lhsLocalVarWithTreeNew = new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
-        Set<LocalVarWithTree> newSet = new HashSet<>();
+        Set<LocalVarWithTree> newSet = new LinkedHashSet<>();
         newSet.add(lhsLocalVarWithTreeNew);
         newDefs.add(newSet);
         newDefs.remove(setContainsRhs);
@@ -408,7 +397,7 @@ class MustCallInvokedChecker {
     }
   }
 
-  private Node getMustCallChoiceParam(Node node) {
+  private Node getMustCallChoiceParam(Node node, Set<Set<LocalVarWithTree>> defs) {
     if (node instanceof TypeCastNode) {
       node = ((TypeCastNode) node).getOperand();
     }
@@ -418,8 +407,10 @@ class MustCallInvokedChecker {
       Node n = ((MethodInvocationNode) node).getTarget().getReceiver();
       if (n instanceof LocalVariableNode) {
         return n;
+      } else if (n instanceof ImplicitThisLiteralNode) {
+        return null;
       }
-      return getMustCallChoiceParam(n);
+      return getMustCallChoiceParam(n, defs);
     }
     for (int i = 0; i < arguments.size(); i++) {
       if (typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class)
@@ -432,9 +423,9 @@ class MustCallInvokedChecker {
         LocalVariableNode local = (LocalVariableNode) n;
         return local;
       } else if (n instanceof ObjectCreationNode) {
-        return getMustCallChoiceParam(n);
+        return getMustCallChoiceParam(n, defs);
       } else if (n instanceof MethodInvocationNode) {
-        return getMustCallChoiceParam(n);
+        return getMustCallChoiceParam(n, defs);
       }
     }
     return null;
@@ -520,11 +511,11 @@ class MustCallInvokedChecker {
     }
     List<Node> nodes = block.getNodes();
     for (Block succ : getRelevantSuccessors(block)) {
-      Set<Set<LocalVarWithTree>> defsCopy = new HashSet<>(defs);
-      Set<Set<LocalVarWithTree>> toRemove = new HashSet<>();
+      Set<Set<LocalVarWithTree>> defsCopy = new LinkedHashSet<>(defs);
+      Set<Set<LocalVarWithTree>> toRemove = new LinkedHashSet<>();
 
       CFStore succRegularStore = analysis.getInput(succ).getRegularStore();
-      for (Set<LocalVarWithTree> setAssign : defs) {
+      for (Set<LocalVarWithTree> setAssign : defsCopy) {
 
         // If the successor block is the exit block or if the variable is going out of scope
         if (succ instanceof SpecialBlockImpl
@@ -555,7 +546,7 @@ class MustCallInvokedChecker {
    * @return
    */
   private Set<Set<LocalVarWithTree>> computeOwningParameters(ControlFlowGraph cfg) {
-    Set<Set<LocalVarWithTree>> init = new HashSet<>();
+    Set<Set<LocalVarWithTree>> init = new LinkedHashSet<>();
     UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
     if (underlyingAST instanceof UnderlyingAST.CFGMethod) {
       // TODO what about lambdas?
@@ -563,7 +554,7 @@ class MustCallInvokedChecker {
       for (VariableTree param : method.getParameters()) {
         Element paramElement = TreeUtils.elementFromDeclaration(param);
         if (typeFactory.hasMustCall(param) && paramElement.getAnnotation(Owning.class) != null) {
-          Set<LocalVarWithTree> setOfLocals = new HashSet<>();
+          Set<LocalVarWithTree> setOfLocals = new LinkedHashSet<>();
           setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
           init.add(setOfLocals);
         }
@@ -627,7 +618,7 @@ class MustCallInvokedChecker {
     }
     AnnotationMirror cmAnno;
 
-    Set<LocalVarWithTree> defsCopy = new HashSet<>(localVarWithTreeSet);
+    Set<LocalVarWithTree> defsCopy = new LinkedHashSet<>(localVarWithTreeSet);
     Iterator<LocalVarWithTree> iter = defsCopy.iterator();
     while (iter.hasNext()) {
       LocalVarWithTree localVarWithTree = iter.next();
@@ -664,7 +655,6 @@ class MustCallInvokedChecker {
       }
 
       iter.remove();
-
     }
   }
 

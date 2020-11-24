@@ -10,12 +10,18 @@ import org.checkerframework.checker.objectconstruction.qual.*;
 
 class OptionalSocket {
     void test_close_get_null(@Owning Optional<Socket> sock) throws IOException {
+        // TODO can't handle this
+        // :: error: required.method.not.called
         if (sock.get() != null) {
+            // TODO can't handle this
+            // :: error: required.method.not.called
             sock.get().close();
         }
     }
 
     void test_close_get(@Owning Optional<Socket> sock) throws IOException {
+        // TODO can't handle this
+        // :: error: required.method.not.called
         sock.get().close();
     }
 }
