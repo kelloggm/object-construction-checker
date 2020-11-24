@@ -355,6 +355,7 @@ class MustCallInvokedChecker {
             getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
         if (setContainsLatestAssignmentPair.size() == 1) {
           checkMustCall(
+              newDefs,
               setContainsLatestAssignmentPair,
               typeFactory.getStoreBefore(node),
               "variable overwritten by assignment " + node.getTree());
@@ -530,16 +531,18 @@ class MustCallInvokedChecker {
             || setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null)) {
           if (nodes.size() == 0) { // If the cur block is special or conditional block
-            checkMustCall(setAssign, succRegularStore, outOfScopeReason);
+            checkMustCall(defs, setAssign, succRegularStore, outOfScopeReason);
 
           } else { // If the cur block is Exception/Regular block then it checks MustCall
             // annotation in the store right after the last node
             Node last = nodes.get(nodes.size() - 1);
             CFStore storeAfter = typeFactory.getStoreAfter(last);
-            checkMustCall(setAssign, storeAfter, outOfScopeReason);
+            checkMustCall(defs, setAssign, storeAfter, outOfScopeReason);
           }
 
           toRemove.add(setAssign);
+        } else {
+          setAssign.removeIf(assign -> succRegularStore.getValue(assign.localVar) == null);
         }
       }
 
@@ -621,7 +624,10 @@ class MustCallInvokedChecker {
    * the check fails.
    */
   private void checkMustCall(
-      Set<LocalVarWithTree> localVarWithTreeSet, CFStore store, String outOfScopeReason) {
+      Set<Set<LocalVarWithTree>> defs,
+      Set<LocalVarWithTree> localVarWithTreeSet,
+      CFStore store,
+      String outOfScopeReason) {
 
     List<String> mustCallValue =
         typeFactory.getMustCallValue(localVarWithTreeSet.iterator().next().tree);
@@ -655,7 +661,8 @@ class MustCallInvokedChecker {
       if (calledMethodsSatisfyMustCall(mustCallValue, cmAnno)) {
         return;
       } else if (!iter.hasNext()) {
-        if (!reportedMustCallErrors.contains(localVarWithTree)) {
+        if (reportedMustCallErrors.stream()
+            .noneMatch(localVarTree -> localVarWithTreeSet.contains(localVarTree))) {
           reportedMustCallErrors.add(localVarWithTree);
 
           checker.reportError(
