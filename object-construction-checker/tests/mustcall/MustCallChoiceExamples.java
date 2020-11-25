@@ -15,7 +15,7 @@ class MustCallChoiceExamples {
             DataInputStream d = new DataInputStream(socket.getInputStream());
         } catch (IOException e){
 
-        }finally {
+        } finally {
             closeSocket(socket);
         }
     }

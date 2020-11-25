@@ -102,26 +102,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   }
 
   boolean hasMustCallChoice(Tree tree) {
-    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
-        getTypeFactoryOfSubchecker(MustCallChecker.class);
     Element elt = TreeUtils.elementFromTree(tree);
-    // Debugging code:
-    // System.out.println("tree: " + tree);
-    // System.out.println("has choice? " +
-    // (mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallChoice.class) !=
-    // null));
-    return mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallChoice.class)
-        != null;
+    return hasMustCallChoice(elt);
   }
 
   boolean hasMustCallChoice(Element elt) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
-    // Debugging code:
-    // System.out.println("tree: " + tree);
-    // System.out.println("has choice? " +
-    // (mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallChoice.class) !=
-    // null));
     return mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallChoice.class)
         != null;
   }

@@ -21,9 +21,11 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
@@ -52,6 +54,7 @@ import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -97,7 +100,7 @@ class MustCallInvokedChecker {
   void checkMustCallInvoked(ControlFlowGraph cfg) {
     // add any owning parameters to initial set of variables to track
     BlockWithLocals firstBlockLocals =
-        new BlockWithLocals(cfg.getEntryBlock(), (computeOwningParameters(cfg)));
+        new BlockWithLocals(cfg.getEntryBlock(), computeOwningParameters(cfg));
 
     Set<BlockWithLocals> visited = new LinkedHashSet<>();
     Deque<BlockWithLocals> worklist = new ArrayDeque<>();
@@ -167,6 +170,7 @@ class MustCallInvokedChecker {
         assignedToOwningOrMustCallChoice = isOwningAssignmentLhs(elementForType);
       } else if (assignmentContext instanceof MethodParameterContext) {
         // must be an @Owning parameter
+
         assignedToOwningOrMustCallChoice =
             typeFactory.getDeclAnnotation(elementForType, Owning.class) != null
                 || typeFactory.hasMustCallChoice(elementForType);
@@ -185,9 +189,11 @@ class MustCallInvokedChecker {
         throw new BugInCF("unexpected AssignmentContext type " + assignmentContext.getClass());
       }
     } else {
-      Node mustCallChoiceParam = getMustCallChoiceParam(node, defs);
+      // In this case, we are handling method invocation nodes that are not assigned to a local
+      // variable node but the receiver of the method is in the defs
+      LocalVariableNode mustCallChoiceParam = getMustCallChoiceParam(node);
       if (mustCallChoiceParam != null
-          && isVarInDefs(defs, (LocalVariableNode) mustCallChoiceParam)) {
+          && isVarInDefs(defs, mustCallChoiceParam)) {
         assignedToOwningOrMustCallChoice = true;
       }
     }
@@ -371,9 +377,9 @@ class MustCallInvokedChecker {
           || (rhs instanceof MethodInvocationNode
               && !hasNotOwningReturnType((MethodInvocationNode) rhs))) {
         if (typeFactory.hasMustCallChoice(rhs.getTree())) {
-          Node n = getMustCallChoiceParam(rhs, newDefs);
-          if (n != null && isVarInDefs(newDefs, (LocalVariableNode) n)) {
-            getSetContainsAssignmentTreeOfVar(newDefs, (LocalVariableNode) n)
+          LocalVariableNode n = getMustCallChoiceParam(rhs);
+          if (n != null && isVarInDefs(newDefs, n)) {
+            getSetContainsAssignmentTreeOfVar(newDefs, n)
                 .add(
                     new LocalVarWithTree(
                         new LocalVariable((LocalVariableNode) lhs), node.getTree()));
@@ -404,21 +410,15 @@ class MustCallInvokedChecker {
     }
   }
 
-  private Node getMustCallChoiceParam(Node node, Set<Set<LocalVarWithTree>> defs) {
+  /**
+   * given a method invocation or object creation node returns the receiver parameter if the receiver parameter is a local variable node that has @MustCallChoice annotation, null otherwise
+   * */
+  private @Nullable LocalVariableNode getMustCallChoiceParam(Node node) {
     if (node instanceof TypeCastNode) {
       node = ((TypeCastNode) node).getOperand();
     }
     List<Node> arguments = getArgumentsOfMethodOrConstructor(node);
     List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
-    if (arguments.size() == 0) {
-      Node n = ((MethodInvocationNode) node).getTarget().getReceiver();
-      if (n instanceof LocalVariableNode) {
-        return n;
-      } else if (n instanceof ImplicitThisLiteralNode) {
-        return null;
-      }
-      return getMustCallChoiceParam(n, defs);
-    }
     for (int i = 0; i < arguments.size(); i++) {
       if (typeFactory
               .getTypeFactoryOfSubchecker(MustCallChecker.class)
@@ -432,10 +432,19 @@ class MustCallInvokedChecker {
         LocalVariableNode local = (LocalVariableNode) n;
         return local;
       } else if (n instanceof ObjectCreationNode) {
-        return getMustCallChoiceParam(n, defs);
+        return getMustCallChoiceParam(n);
       } else if (n instanceof MethodInvocationNode) {
-        return getMustCallChoiceParam(n, defs);
+        return getMustCallChoiceParam(n);
       }
+    }
+    if (node instanceof MethodInvocationNode) {
+      Node n = ((MethodInvocationNode) node).getTarget().getReceiver();
+      if (n instanceof LocalVariableNode) {
+        return (LocalVariableNode) n;
+      } else if (n instanceof ImplicitThisLiteralNode) {
+        return null;
+      }
+      return getMustCallChoiceParam(n);
     }
     return null;
   }
