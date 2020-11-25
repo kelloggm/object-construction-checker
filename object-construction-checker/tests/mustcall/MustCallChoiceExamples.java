@@ -20,6 +20,7 @@ class MustCallChoiceExamples {
         }
     }
 
+    // :: error: required.method.not.called
     void test_close_wrapper(@Owning InputStream b) throws IOException {
         DataInputStream d = new DataInputStream(b);
         d.close();
@@ -30,8 +31,8 @@ class MustCallChoiceExamples {
         b.close();
     }
 
+    // :: error: required.method.not.called
     void test_no_close(@Owning InputStream b) {
-        // :: error: required.method.not.called
         DataInputStream d = new DataInputStream(b);
     }
 
