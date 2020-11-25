@@ -483,7 +483,7 @@ public class ACSocketTest
     }
 
     private void updateSocketAddressesWithOwning(@Owning SelectionKey sockKey ) {
-        // :: error: required.method.not.called
+        // TODO we should report a warning here
         Socket socket = ((SocketChannel) sockKey.channel()).socket();
         SocketAddress localSocketAddress = socket.getLocalSocketAddress();
         SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();

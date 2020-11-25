@@ -30,6 +30,7 @@ import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.com.google.common.collect.FluentIterable;
+import org.checkerframework.com.google.common.collect.ImmutableSet;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
@@ -743,13 +744,13 @@ class MustCallInvokedChecker {
    */
   private static class BlockWithLocals {
     public final Block block;
-    public final Set<Set<LocalVarWithTree>> localSetInfo;
+    public final ImmutableSet<ImmutableSet<LocalVarWithTree>> localSetInfo;
 
     public BlockWithLocals(Block b, Set<Set<LocalVarWithTree>> ls) {
       this.block = b;
-      Set<Set<LocalVarWithTree>> immutableSet = new LinkedHashSet<>();
-      ls.stream().forEach(set -> immutableSet.add(Collections.unmodifiableSet(set)));
-      this.localSetInfo = Collections.unmodifiableSet(immutableSet);
+      Set<ImmutableSet<LocalVarWithTree>> immutableSet = new LinkedHashSet<>();
+      ls.stream().forEach(set -> immutableSet.add(ImmutableSet.copyOf(set)));
+      this.localSetInfo = ImmutableSet.copyOf(immutableSet);
     }
 
     @Override
