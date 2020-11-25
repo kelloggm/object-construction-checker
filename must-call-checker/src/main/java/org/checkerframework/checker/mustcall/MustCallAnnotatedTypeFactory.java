@@ -1,8 +1,10 @@
 package org.checkerframework.checker.mustcall;
 
+import static javax.lang.model.element.ElementKind.PARAMETER;
 import static org.checkerframework.common.value.ValueCheckerUtils.getValueOfAnnotationWithStringArgument;
 
 import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
@@ -31,6 +33,8 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayTyp
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.MostlyNoElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
+import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.BugInCF;
@@ -68,6 +72,11 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   @Override
+  protected TreeAnnotator createTreeAnnotator() {
+    return new ListTreeAnnotator(super.createTreeAnnotator(), new MustCallTreeAnnotator(this));
+  }
+
+  @Override
   protected void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
     super.addComputedTypeAnnotations(tree, type, iUseFlow);
     // All primitives are @MustCall({}). This code is needed to avoid primitive conversions, taking
@@ -88,7 +97,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
   }
 
-  /** Treat non-owning method parameters as @MustCallUnknown. */
+  /** Treat non-owning method parameters as @MustCallUnknown when the method is called. */
   @Override
   public void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
     ExecutableElement declaration;
@@ -99,7 +108,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else {
       throw new BugInCF("unexpected type of method tree: " + tree.getKind());
     }
-    changeParameterTypesToTop(declaration, type);
+    changeNonOwningParametersTypes(declaration, type);
     super.methodFromUsePreSubstitution(tree, type);
   }
 
@@ -107,11 +116,18 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   protected void constructorFromUsePreSubstitution(
       NewClassTree tree, AnnotatedExecutableType type) {
     ExecutableElement declaration = TreeUtils.elementFromUse(tree);
-    changeParameterTypesToTop(declaration, type);
+    changeNonOwningParametersTypes(declaration, type);
     super.constructorFromUsePreSubstitution(tree, type);
   }
 
-  private void changeParameterTypesToTop(
+  /**
+   * Changes the type of each parameter not annotated as @Owning to top. Also replaces the component
+   * type of the varargs array, if applicable.
+   *
+   * @param declaration a method or constructor declaration
+   * @param type the method or constructor's type
+   */
+  private void changeNonOwningParametersTypes(
       ExecutableElement declaration, AnnotatedExecutableType type) {
     for (int i = 0; i < type.getParameterTypes().size(); i++) {
       Element paramDecl = declaration.getParameters().get(i);
@@ -233,6 +249,23 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       Set<String> superVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(superAnno));
 
       return superVal.containsAll(subVal);
+    }
+  }
+
+  private class MustCallTreeAnnotator extends TreeAnnotator {
+    public MustCallTreeAnnotator(MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory) {
+      super(mustCallAnnotatedTypeFactory);
+    }
+
+    // When they appear in the body of a method or constructor, treat non-owning parameters
+    // as bottom regardless of their declared type.
+    @Override
+    public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
+      Element elt = TreeUtils.elementFromTree(node);
+      if (elt.getKind() == PARAMETER && getDeclAnnotation(elt, Owning.class) == null) {
+        type.replaceAnnotation(BOTTOM);
+      }
+      return super.visitIdentifier(node, type);
     }
   }
 }
