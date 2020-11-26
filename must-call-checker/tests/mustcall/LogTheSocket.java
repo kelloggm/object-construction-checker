@@ -18,7 +18,7 @@ import java.net.ServerSocket;
 import java.nio.channels.SocketChannel;
 import java.io.IOException;
 
-import org.checkerframework.checker.objectconstruction.qual.NotOwning;
+import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 
 class LogTheSocket {
@@ -27,7 +27,7 @@ class LogTheSocket {
 
     @MustCall("") Object s2;
 
-    void testAssign(ServerSocket s1) {
+    void testAssign(@Owning ServerSocket s1) {
         s = s1;
         // :: error: assignment.type.incompatible
         s2 = s1;
