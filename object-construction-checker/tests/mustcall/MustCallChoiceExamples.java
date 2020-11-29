@@ -36,6 +36,11 @@ class MustCallChoiceExamples {
         DataInputStream d = new DataInputStream(b);
     }
 
+    // :: error: required.method.not.called
+    void test_no_assign(@Owning InputStream b) {
+        new DataInputStream(new BufferedInputStream(b));
+    }
+
     @EnsuresCalledMethods(value = "#1", methods = "close")
     void closeSocket(Socket sock) {
         try {
