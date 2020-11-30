@@ -66,6 +66,23 @@ class InputOutputStreams {
         }
     }
 
+    //TODO pass this case
+//    void test_close_os4(@Owning Socket sockSpecial) throws IOException {
+//        OutputStream os = null;
+//        try {
+//            InputStream is = sockSpecial.getInputStream();
+//        } catch (IOException e) { }
+//        try {
+//            os = sockSpecial.getOutputStream();
+//        } finally {
+//            if (os != null) {
+//                os.close();
+//            } else {
+//                sockSpecial.close();
+//            }
+//        }
+//    }
+
     // :: error: required.method.not.called
     void test_close_buff(@Owning Socket sock) throws IOException {
         BufferedOutputStream buff = null;

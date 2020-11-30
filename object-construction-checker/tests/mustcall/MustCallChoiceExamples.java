@@ -20,7 +20,6 @@ class MustCallChoiceExamples {
         }
     }
 
-    // :: error: required.method.not.called
     void test_close_wrapper(@Owning InputStream b) throws IOException {
         DataInputStream d = new DataInputStream(b);
         d.close();
