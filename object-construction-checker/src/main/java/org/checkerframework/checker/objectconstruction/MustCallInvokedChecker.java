@@ -160,11 +160,11 @@ class MustCallInvokedChecker {
    * {@code @MustCall} type, then its result is pseudo-assigned to some location that can take
    * ownership of the result
    */
-  private Set<ImmutableSet<LocalVarWithTree>> checkPseudoAssignToOwning(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
+  private void checkPseudoAssignToOwning(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
     Tree tree = node.getTree();
     List<String> mustCallVal = typeFactory.getMustCallValue(tree);
     if (mustCallVal.isEmpty()) {
-      return defs;
+      return;
     }
     boolean assignedToOwningOrMustCallChoice = false;
     AssignmentContext assignmentContext = node.getAssignmentContext();
@@ -214,7 +214,6 @@ class MustCallInvokedChecker {
             "never assigned to an @Owning location");
       }
     }
-    return defs;
   }
 
   /**
@@ -704,8 +703,6 @@ class MustCallInvokedChecker {
               outOfScopeReason);
         }
       }
-
-      iter.remove();
     }
   }
 

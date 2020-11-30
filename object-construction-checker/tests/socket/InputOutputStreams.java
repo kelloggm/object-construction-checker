@@ -17,6 +17,14 @@ class InputOutputStreams {
         }
     }
 
+    // getInputStream()/getOutputStream() can throw IOException in three different scenarios:
+    // 1) The underlying socket is already closed
+    // 2) The underlying socket is not connected
+    // 3) The underlysing socket input is shutdown
+    // In the first case our checker always reports a false positive but for the second case
+    // and third case our checker has to verify that close is called on the underlying resource.
+    // So, because sock.getInputStream() can throw IOException, "is" can be null, then sock will
+    // remain open. So, it's a true pasitive warning.
     // :: error: required.method.not.called
     void test_close_is(@Owning Socket sock) throws IOException {
         InputStream is = null;
@@ -67,21 +75,21 @@ class InputOutputStreams {
     }
 
     //TODO pass this case
-//    void test_close_os4(@Owning Socket sockSpecial) throws IOException {
-//        OutputStream os = null;
-//        try {
-//            InputStream is = sockSpecial.getInputStream();
-//        } catch (IOException e) { }
-//        try {
-//            os = sockSpecial.getOutputStream();
-//        } finally {
-//            if (os != null) {
-//                os.close();
-//            } else {
-//                sockSpecial.close();
-//            }
-//        }
-//    }
+    void test_close_os4(@Owning Socket sock) throws IOException {
+        OutputStream os = null;
+        try {
+            InputStream is = sock.getInputStream();
+        } catch (IOException e) { }
+        try {
+            os = sock.getOutputStream();
+        } finally {
+            if (os != null) {
+                os.close();
+            } else {
+                sock.close();
+            }
+        }
+    }
 
     // :: error: required.method.not.called
     void test_close_buff(@Owning Socket sock) throws IOException {

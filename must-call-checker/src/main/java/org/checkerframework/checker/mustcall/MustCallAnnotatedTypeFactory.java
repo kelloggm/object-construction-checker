@@ -22,6 +22,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
@@ -68,10 +69,20 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
     addAliasedAnnotation(InheritableMustCall.class, MustCall.class, true);
+    addAliasedAnnotation(MustCallChoice.class, POLY);
     this.postInit();
   }
 
   @Override
+  protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
+    // Because MustCallChoice is in the qual directory, the qualifiers have to be explicitly named
+    // or
+    // MustCallChoice will be reflectively loaded - making it unavailable as an alias for
+    // @PolyMustCall.
+    return new LinkedHashSet<>(
+            Arrays.asList(MustCall.class, MustCallUnknown.class, PolyMustCall.class));
+  }
+
   protected TreeAnnotator createTreeAnnotator() {
     return new ListTreeAnnotator(super.createTreeAnnotator(), new MustCallTreeAnnotator(this));
   }
@@ -114,7 +125,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @Override
   protected void constructorFromUsePreSubstitution(
-      NewClassTree tree, AnnotatedExecutableType type) {
+          NewClassTree tree, AnnotatedExecutableType type) {
     ExecutableElement declaration = TreeUtils.elementFromUse(tree);
     changeNonOwningParametersTypes(declaration, type);
     super.constructorFromUsePreSubstitution(tree, type);
@@ -128,7 +139,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * @param type the method or constructor's type
    */
   private void changeNonOwningParametersTypes(
-      ExecutableElement declaration, AnnotatedExecutableType type) {
+          ExecutableElement declaration, AnnotatedExecutableType type) {
     for (int i = 0; i < type.getParameterTypes().size(); i++) {
       Element paramDecl = declaration.getParameters().get(i);
       if (getDeclAnnotation(paramDecl, Owning.class) == null) {
@@ -157,20 +168,20 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       AnnotationMirror inheritableMustCall = getDeclAnnotation(elt, InheritableMustCall.class);
       if (inheritableMustCall != null) {
         List<String> mustCallVal =
-            ValueCheckerUtils.getValueOfAnnotationWithStringArgument(inheritableMustCall);
+                ValueCheckerUtils.getValueOfAnnotationWithStringArgument(inheritableMustCall);
         AnnotationMirror inheritedMCAnno = createMustCall(mustCallVal.toArray(new String[0]));
         // Ensure that there isn't an inconsistent, user-written @MustCall annotation and
         // issue an error if there is. Otherwise, replace the implicit @MustCall({}) with
         // the inherited must-call annotation.
         AnnotationMirror writtenMCAnno = type.getAnnotationInHierarchy(this.TOP);
         if (writtenMCAnno != null
-            && !this.getQualifierHierarchy().isSubtype(inheritedMCAnno, writtenMCAnno)) {
+                && !this.getQualifierHierarchy().isSubtype(inheritedMCAnno, writtenMCAnno)) {
           checker.reportError(
-              elt,
-              "inconsistent.mustcall.subtype",
-              elt.getSimpleName(),
-              writtenMCAnno,
-              inheritableMustCall);
+                  elt,
+                  "inconsistent.mustcall.subtype",
+                  elt.getSimpleName(),
+                  writtenMCAnno,
+                  inheritableMustCall);
         } else {
           type.replaceAnnotation(inheritedMCAnno);
         }
@@ -204,7 +215,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   private class MustCallQualifierHierarchy extends MostlyNoElementQualifierHierarchy {
 
     protected MustCallQualifierHierarchy(
-        Collection<Class<? extends Annotation>> qualifierClasses, Elements elements) {
+            Collection<Class<? extends Annotation>> qualifierClasses, Elements elements) {
       super(qualifierClasses, elements);
     }
 
@@ -215,11 +226,11 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     @Override
     protected AnnotationMirror greatestLowerBoundWithElements(
-        AnnotationMirror a1,
-        QualifierKind qualifierKind1,
-        AnnotationMirror a2,
-        QualifierKind qualifierKind2,
-        QualifierKind glbKind) {
+            AnnotationMirror a1,
+            QualifierKind qualifierKind1,
+            AnnotationMirror a2,
+            QualifierKind qualifierKind2,
+            QualifierKind glbKind) {
       Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
       Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
       a1Val.retainAll(a2Val);
@@ -228,11 +239,11 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     @Override
     protected AnnotationMirror leastUpperBoundWithElements(
-        AnnotationMirror a1,
-        QualifierKind qualifierKind1,
-        AnnotationMirror a2,
-        QualifierKind qualifierKind2,
-        QualifierKind glbKind) {
+            AnnotationMirror a1,
+            QualifierKind qualifierKind1,
+            AnnotationMirror a2,
+            QualifierKind qualifierKind2,
+            QualifierKind glbKind) {
       Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
       Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
       a1Val.addAll(a2Val);
@@ -241,10 +252,10 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     @Override
     protected boolean isSubtypeWithElements(
-        AnnotationMirror subAnno,
-        QualifierKind subKind,
-        AnnotationMirror superAnno,
-        QualifierKind superKind) {
+            AnnotationMirror subAnno,
+            QualifierKind subKind,
+            AnnotationMirror superAnno,
+            QualifierKind superKind) {
       Set<String> subVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(subAnno));
       Set<String> superVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(superAnno));
 
