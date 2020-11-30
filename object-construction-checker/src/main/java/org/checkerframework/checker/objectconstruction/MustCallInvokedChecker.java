@@ -8,6 +8,7 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Type;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -115,8 +116,7 @@ class MustCallInvokedChecker {
       BlockWithLocals curBlockLocals = worklist.removeLast();
       List<Node> nodes = curBlockLocals.block.getNodes();
       // defs to be tracked in successor blocks, updated by code below
-      Set<ImmutableSet<LocalVarWithTree>> newDefs =
-          new LinkedHashSet<>(curBlockLocals.localSetInfo);
+      Set<ImmutableSet<LocalVarWithTree>> newDefs = new LinkedHashSet<>(curBlockLocals.localSetInfo);
 
       for (Node node : nodes) {
 
@@ -135,8 +135,7 @@ class MustCallInvokedChecker {
     }
   }
 
-  private Set<ImmutableSet<LocalVarWithTree>> handleTypeCast(
-      TypeCastNode node, Set<ImmutableSet<LocalVarWithTree>> defs) {
+  private Set<ImmutableSet<LocalVarWithTree>> handleTypeCast(TypeCastNode node, Set<ImmutableSet<LocalVarWithTree>> defs) {
     Node operand = node.getOperand();
     if (operand instanceof MethodInvocationNode || operand instanceof ObjectCreationNode) {
       if (!shouldSkipInvokePseudoAssignCheck(operand.getTree())) {
@@ -146,8 +145,7 @@ class MustCallInvokedChecker {
     return defs;
   }
 
-  private Set<ImmutableSet<LocalVarWithTree>> handleInvocation(
-      Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
+  private Set<ImmutableSet<LocalVarWithTree>> handleInvocation(Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
     doOwnershipTransferToParameters(newDefs, node);
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
@@ -339,8 +337,7 @@ class MustCallInvokedChecker {
     return false;
   }
 
-  private Set<ImmutableSet<LocalVarWithTree>> handleAssignment(
-      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
+  private Set<ImmutableSet<LocalVarWithTree>> handleAssignment(AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     Node lhs = node.getTarget();
     Node rhs = node.getExpression();
 
@@ -379,9 +376,7 @@ class MustCallInvokedChecker {
               FluentIterable.from(setContainingLatestAssignmentPair)
                   .filter(assignment -> assignment.equals(latestAssignmentPair))
                   .toSet();
-          newDefs =
-              updateDefs(
-                  newDefs, setContainingLatestAssignmentPair, newSetContainingLatestAssignmentPair);
+          newDefs = updateDefs(newDefs, setContainingLatestAssignmentPair, newSetContainingLatestAssignmentPair);
         }
       }
 
@@ -402,6 +397,7 @@ class MustCallInvokedChecker {
                             new LocalVariable((LocalVariableNode) lhs), node.getTree()))
                     .toSet();
             newDefs = updateDefs(newDefs, immutableSet, newImmutableSet);
+
           }
         } else {
           LocalVarWithTree lhsLocalVarWithTreeNew =
@@ -576,10 +572,7 @@ class MustCallInvokedChecker {
           toRemove.add(setAssignCopy);
         } else {
           setAssignCopy.removeIf(assign -> succRegularStore.getValue(assign.localVar) == null);
-          defsCopy =
-              defsCopy.stream()
-                  .map(set -> set.equals(setAssign) ? setAssignCopy : set)
-                  .collect(toSet());
+          defsCopy = defsCopy.stream().map(set -> set.equals(setAssign) ? setAssignCopy : set).collect(toSet());
         }
       }
 
@@ -662,7 +655,9 @@ class MustCallInvokedChecker {
    * the check fails.
    */
   private void checkMustCall(
-      Set<LocalVarWithTree> localVarWithTreeSet, CFStore store, String outOfScopeReason) {
+      Set<LocalVarWithTree> localVarWithTreeSet,
+      CFStore store,
+      String outOfScopeReason) {
 
     List<String> mustCallValue =
         typeFactory.getMustCallValue(localVarWithTreeSet.iterator().next().tree);
@@ -701,7 +696,7 @@ class MustCallInvokedChecker {
           reportedMustCallErrors.add(localVarWithTree);
 
           checker.reportError(
-              localVarWithTreeSet.iterator().next().tree,
+                  localVarWithTreeSet.iterator().next().tree,
               "required.method.not.called",
               formatMissingMustCallMethods(mustCallValue),
               localVarWithTree.localVar.getType().toString(),
