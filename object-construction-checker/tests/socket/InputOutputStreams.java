@@ -74,7 +74,13 @@ class InputOutputStreams {
         }
     }
 
-    //TODO pass this case
+    // TODO this case requires more general tracking of additional boolean conditions
+    // If getOutputStream() throws an IOException, then the os variable remains definitely null.
+    // When our worklist analysis gets to the finally block along the corresponding CFG edge,
+    // it does not know that os is definitely null, and it is only tracking sock as a name for
+    // the resource. So, it analyzes a path through the "then" branch of the conditional,
+    // where sock.close() is not invoked, and reports an error.
+    // :: error: required.method.not.called
     void test_close_os4(@Owning Socket sock) throws IOException {
         OutputStream os = null;
         try {

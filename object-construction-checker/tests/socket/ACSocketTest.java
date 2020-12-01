@@ -482,6 +482,7 @@ public class ACSocketTest
         SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();
     }
 
+    // SelectionKey doesn't implement Closeable
 //    private void updateSocketAddressesWithOwning(@Owning SelectionKey sockKey ) {
 //        // TODO we should report a warning here
 //        Socket socket = ((SocketChannel) sockKey.channel()).socket();

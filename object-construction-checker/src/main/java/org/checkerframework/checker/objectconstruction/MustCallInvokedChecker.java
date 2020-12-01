@@ -44,7 +44,6 @@ import org.checkerframework.dataflow.cfg.node.AssignmentContext.LambdaReturnCont
 import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodParameterContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodReturnContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
-import org.checkerframework.dataflow.cfg.node.ImplicitThisLiteralNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
@@ -139,8 +138,8 @@ class MustCallInvokedChecker {
       TypeCastNode node, Set<ImmutableSet<LocalVarWithTree>> defs) {
     Node operand = node.getOperand();
     if (operand instanceof MethodInvocationNode || operand instanceof ObjectCreationNode) {
-      if (!shouldSkipInvokePseudoAssignCheck(operand.getTree())) {
-        checkPseudoAssignToOwning(node, defs);
+      if (!shouldSkipInvokePseudoAssignCheck(operand, defs)) {
+        checkPseudoAssignToOwning(node);
       }
     }
     return defs;
@@ -151,8 +150,8 @@ class MustCallInvokedChecker {
     doOwnershipTransferToParameters(newDefs, node);
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
-    if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node.getTree())) {
-      checkPseudoAssignToOwning(node, newDefs);
+    if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
+      checkPseudoAssignToOwning(node);
     }
     return newDefs;
   }
@@ -162,28 +161,28 @@ class MustCallInvokedChecker {
    * {@code @MustCall} type, then its result is pseudo-assigned to some location that can take
    * ownership of the result
    */
-  private void checkPseudoAssignToOwning(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
+  private void checkPseudoAssignToOwning(Node node) {
     Tree tree = node.getTree();
     List<String> mustCallVal = typeFactory.getMustCallValue(tree);
     if (mustCallVal.isEmpty()) {
       return;
     }
-    boolean assignedToOwningOrMustCallChoice = false;
+    boolean assignedToOwning = false;
     AssignmentContext assignmentContext = node.getAssignmentContext();
     if (assignmentContext != null) {
       Element elementForType = assignmentContext.getElementForType();
       if (assignmentContext instanceof AssignmentLhsContext) {
         // lhs should be a local variable
-        assignedToOwningOrMustCallChoice = isOwningAssignmentLhs(elementForType);
+        assignedToOwning = isOwningAssignmentLhs(elementForType);
       } else if (assignmentContext instanceof MethodParameterContext) {
-        // must be an @Owning parameter
-
-        assignedToOwningOrMustCallChoice =
+        // must be an @Owning or @MustCallChoice parameter
+        // TODO check @MustCallChoice in shouldSkipInvokePseudoAssignCheck()
+        assignedToOwning =
             typeFactory.getDeclAnnotation(elementForType, Owning.class) != null
                 || typeFactory.hasMustCallChoice(elementForType);
       } else if (assignmentContext instanceof MethodReturnContext) {
         // must be an @Owning return
-        assignedToOwningOrMustCallChoice =
+        assignedToOwning =
             TRANSFER_OWNERSHIP_AT_RETURN
                 ? typeFactory.getDeclAnnotation(
                         TreeUtils.elementFromTree(assignmentContext.getContextTree()),
@@ -195,15 +194,8 @@ class MustCallInvokedChecker {
       } else {
         throw new BugInCF("unexpected AssignmentContext type " + assignmentContext.getClass());
       }
-    } else {
-      // In this case, we are handling method invocation nodes that are not assigned to a local
-      // variable node but the receiver of the method is in the defs
-      LocalVariableNode mustCallChoiceParam = getMustCallChoiceParam(node);
-      if (mustCallChoiceParam != null && isVarInDefs(defs, mustCallChoiceParam)) {
-        assignedToOwningOrMustCallChoice = true;
-      }
     }
-    if (!assignedToOwningOrMustCallChoice) {
+    if (!assignedToOwning) {
       // check if @CalledMethods type of return satisfies the @MustCall obligation
       AnnotationMirror cmAnno =
           typeFactory.getAnnotatedType(tree).getAnnotationInHierarchy(typeFactory.top);
@@ -239,9 +231,25 @@ class MustCallInvokedChecker {
    * return type is {@link org.checkerframework.common.returnsreceiver.qual.This}, the invocation is
    * a super constructor call, or the method's return type is annotated {@link NotOwning}
    */
-  private boolean shouldSkipInvokePseudoAssignCheck(Tree callTree) {
+  private boolean shouldSkipInvokePseudoAssignCheck(
+      Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
+    Tree callTree = node.getTree();
+    List<String> mustCallVal = typeFactory.getMustCallValue(callTree);
+    if (mustCallVal.isEmpty()) {
+      return true;
+    }
+    // In this case, we are handling method invocation nodes that are not assigned to a local
+    // variable node but the receiver of the method is in the defs
+    if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION
+        || callTree.getKind() == Tree.Kind.NEW_CLASS) {
+      LocalVariableNode mustCallChoiceParam = getMustCallChoiceParam(node);
+      if (mustCallChoiceParam != null && isVarInDefs(defs, mustCallChoiceParam)) {
+        return true;
+      }
+    }
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
+
       return typeFactory.returnsThis(methodInvokeTree)
           || TreeUtils.isSuperConstructorCall(methodInvokeTree)
           || TreeUtils.isThisConstructorCall(methodInvokeTree)
@@ -434,43 +442,43 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * given a method invocation or object creation node returns the receiver parameter if the
-   * receiver parameter is a local variable node that has @MustCallChoice annotation, null otherwise
+   * Finds the {@code @MustCallChoice} parameter. If {@code node} represents a method invocation or
+   * object creation node: 1) If there is a formal parameter with {@link @MustCallChoice}
+   * annotation, it passes the parameter to a recursive call to handle nested calls 2) If there is
+   * no formal parameter with {@link @MustCallChoice} annotation, then it checks the receiver
+   * parameter. If the receiver parameter has @MustCallChoice annotation, then it passes the
+   * receiver parameter to a recursive call to handle sequence of method calls
+   *
+   * @param node
+   * @return {@code node} iff {@code node} represents a local variable, otherwise null
    */
   private @Nullable LocalVariableNode getMustCallChoiceParam(Node node) {
     if (node instanceof TypeCastNode) {
       node = ((TypeCastNode) node).getOperand();
     }
-    List<Node> arguments = getArgumentsOfMethodOrConstructor(node);
-    List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
-    for (int i = 0; i < arguments.size(); i++) {
-      if (typeFactory
-              .getTypeFactoryOfSubchecker(MustCallChecker.class)
-              .getDeclAnnotationNoAliases(formals.get(i), MustCallChoice.class)
-          == null) {
-        continue;
-      }
 
-      Node n = arguments.get(i);
-      if (n instanceof LocalVariableNode) {
-        LocalVariableNode local = (LocalVariableNode) n;
-        return local;
-      } else if (n instanceof ObjectCreationNode) {
+    if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
+      List<Node> arguments = getArgumentsOfMethodOrConstructor(node);
+      List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
+
+      for (int i = 0; i < arguments.size(); i++) {
+        if (typeFactory
+                .getTypeFactoryOfSubchecker(MustCallChecker.class)
+                .getDeclAnnotationNoAliases(formals.get(i), MustCallChoice.class)
+            == null) {
+          continue;
+        }
+        Node n = arguments.get(i);
         return getMustCallChoiceParam(n);
-      } else if (n instanceof MethodInvocationNode) {
+      }
+      // If node does't have @MustCallChoice parameter then it checks the receiver parameter
+      if (node instanceof MethodInvocationNode && typeFactory.hasMustCallChoice(node.getTree())) {
+        Node n = ((MethodInvocationNode) node).getTarget().getReceiver();
         return getMustCallChoiceParam(n);
       }
     }
-    if (node instanceof MethodInvocationNode) {
-      Node n = ((MethodInvocationNode) node).getTarget().getReceiver();
-      if (n instanceof LocalVariableNode) {
-        return (LocalVariableNode) n;
-      } else if (n instanceof ImplicitThisLiteralNode) {
-        return null;
-      }
-      return getMustCallChoiceParam(n);
-    }
-    return null;
+
+    return (node != null && node instanceof LocalVariableNode) ? (LocalVariableNode) node : null;
   }
 
   private List<Node> getArgumentsOfMethodOrConstructor(Node node) {
