@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -51,6 +52,7 @@ import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -507,27 +509,34 @@ class MustCallInvokedChecker {
    * get all successor blocks for some block, except for those corresponding to ignored exceptions
    *
    * @param block input block
-   * @return set of relevant successors for block
+   * @return set of pairs (b, t), where b is a relevant successor block, and t is the type of
+   *     exception for the CFG edge from block to b, or {@code null} if b is a non-exceptional
+   *     successor
    */
-  private Set<Block> getRelevantSuccessors(Block block) {
+  private Set<Pair<Block, @Nullable TypeMirror>> getRelevantSuccessors(Block block) {
     if (block.getType() == Block.BlockType.EXCEPTION_BLOCK) {
       ExceptionBlock excBlock = (ExceptionBlock) block;
-      Set<Block> result = new LinkedHashSet<>();
+      Set<Pair<Block, @Nullable TypeMirror>> result = new LinkedHashSet<>();
       // regular successor
       Block regularSucc = excBlock.getSuccessor();
       if (regularSucc != null) {
-        result.add(regularSucc);
+        result.add(Pair.of(regularSucc, null));
       }
       // relevant exception successors
-      Map<TypeMirror, Set<Block>> exSucc = excBlock.getExceptionalSuccessors();
-      for (Map.Entry<TypeMirror, Set<Block>> pair : exSucc.entrySet()) {
-        if (!isIgnoredExceptionType(((Type) pair.getKey()).tsym.getQualifiedName())) {
-          result.addAll(pair.getValue());
+      Map<TypeMirror, Set<Block>> exceptionalSuccessors = excBlock.getExceptionalSuccessors();
+      for (Map.Entry<TypeMirror, Set<Block>> entry : exceptionalSuccessors.entrySet()) {
+        TypeMirror exceptionType = entry.getKey();
+        if (!isIgnoredExceptionType(((Type) exceptionType).tsym.getQualifiedName())) {
+          for (Block exSucc : entry.getValue()) {
+            result.add(Pair.of(exSucc, exceptionType));
+          }
         }
       }
       return result;
     } else {
-      return block.getSuccessors();
+      return block.getSuccessors().stream()
+          .map(b -> Pair.<Block, TypeMirror>of(b, null))
+          .collect(Collectors.toSet());
     }
   }
 
@@ -546,10 +555,15 @@ class MustCallInvokedChecker {
       outOfScopeReason = "regular method exit";
     }
     List<Node> nodes = block.getNodes();
-    for (Block succ : getRelevantSuccessors(block)) {
+    for (Pair<Block, @Nullable TypeMirror> succAndExcType : getRelevantSuccessors(block)) {
       Set<ImmutableSet<LocalVarWithTree>> defsCopy = new LinkedHashSet<>(defs);
       Set<ImmutableSet<LocalVarWithTree>> toRemove = new LinkedHashSet<>();
-
+      Block succ = succAndExcType.first;
+      TypeMirror exceptionType = succAndExcType.second;
+      String reasonForSucc =
+          exceptionType == null
+              ? outOfScopeReason
+              : outOfScopeReason + " with exception type " + exceptionType.toString();
       CFStore succRegularStore = analysis.getInput(succ).getRegularStore();
       for (ImmutableSet<LocalVarWithTree> setAssign : defs) {
         // If the successor block is the exit block or if the variable is going out of scope
@@ -557,13 +571,13 @@ class MustCallInvokedChecker {
             || setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null)) {
           if (nodes.size() == 0) { // If the cur block is special or conditional block
-            checkMustCall(setAssign, succRegularStore, outOfScopeReason);
+            checkMustCall(setAssign, succRegularStore, reasonForSucc);
 
           } else { // If the cur block is Exception/Regular block then it checks MustCall
             // annotation in the store right after the last node
             Node last = nodes.get(nodes.size() - 1);
             CFStore storeAfter = typeFactory.getStoreAfter(last);
-            checkMustCall(setAssign, storeAfter, outOfScopeReason);
+            checkMustCall(setAssign, storeAfter, reasonForSucc);
           }
 
           toRemove.add(setAssign);
