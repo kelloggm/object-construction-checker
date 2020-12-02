@@ -444,6 +444,11 @@ class MustCallInvokedChecker {
     }
 
     if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
+
+      if(!typeFactory.hasMustCallChoice(node.getTree())) {
+        return null;
+      }
+
       List<Node> arguments = getArgumentsOfMethodOrConstructor(node);
       List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
 
@@ -455,7 +460,7 @@ class MustCallInvokedChecker {
         return getLocalPassedAsMustCallChoiceParam(n);
       }
       // If node does't have @MustCallChoice parameter then it checks the receiver parameter
-      if (node instanceof MethodInvocationNode && typeFactory.hasMustCallChoice(node.getTree())) {
+      if (node instanceof MethodInvocationNode) {
         Node n = ((MethodInvocationNode) node).getTarget().getReceiver();
         return getLocalPassedAsMustCallChoiceParam(n);
       }
