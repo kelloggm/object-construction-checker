@@ -10,6 +10,7 @@
 rootProject.name = 'object-construction-checker'
 
 include ':unconnected-socket-qual'
+include ':unconnected-socket-checker'
 include ':must-call-checker'
 include ':must-call-qual'
 include ':object-construction-checker'
