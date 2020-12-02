@@ -77,7 +77,7 @@ class ServerSocket implements Closeable {
     InetAddress getInetAddress();
     int getLocalPort();
     SocketAddress getLocalSocketAddress();
-    @MustCallChoice Socket accept(@MustCallChoice ServerSocket this) throws IOException;
+    Socket accept() throws IOException;
     protected void implAccept(Socket arg0) throws IOException;
     void close() throws IOException;
     @MustCallChoice ServerSocketChannel getChannel(@MustCallChoice ServerSocket this);

@@ -24,7 +24,7 @@ class InputOutputStreams {
     // In the first case our checker always reports a false positive but for the second case
     // and third case our checker has to verify that close is called on the underlying resource.
     // So, because sock.getInputStream() can throw IOException, "is" can be null, then sock will
-    // remain open. So, it's a true pasitive warning.
+    // remain open. So, it's a true positive warning.
     // :: error: required.method.not.called
     void test_close_is(@Owning Socket sock) throws IOException {
         InputStream is = null;

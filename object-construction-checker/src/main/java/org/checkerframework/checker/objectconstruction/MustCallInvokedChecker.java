@@ -21,8 +21,6 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
-import org.checkerframework.checker.mustcall.MustCallChecker;
-import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
@@ -225,7 +223,8 @@ class MustCallInvokedChecker {
    * Checks for cases where we do not need to ensure that a method invocation gets pseudo-assigned
    * to a variable / field that takes ownership. We can skip the check when the invoked method's
    * return type is {@link org.checkerframework.common.returnsreceiver.qual.This}, the invocation is
-   * a super constructor call, or the method's return type is annotated {@link NotOwning}
+   * a super constructor call, the method's return type is annotated {@link NotOwning}, or the
+   * receiver parameter is in the {@code defs} and has @MustCallChoice annotation.
    */
   private boolean shouldSkipInvokePseudoAssignCheck(
       Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
@@ -449,10 +448,7 @@ class MustCallInvokedChecker {
       List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
 
       for (int i = 0; i < arguments.size(); i++) {
-        if (typeFactory
-                .getTypeFactoryOfSubchecker(MustCallChecker.class)
-                .getDeclAnnotationNoAliases(formals.get(i), MustCallChoice.class)
-            == null) {
+        if (!typeFactory.hasMustCallChoice(formals.get(i))) {
           continue;
         }
         Node n = arguments.get(i);
