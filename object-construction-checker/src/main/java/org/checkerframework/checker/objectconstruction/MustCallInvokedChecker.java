@@ -8,7 +8,6 @@ import com.sun.tools.javac.code.Type;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -665,14 +664,12 @@ class MustCallInvokedChecker {
     if (mustCallValue.isEmpty()) {
       return;
     }
-
-    Iterator<LocalVarWithTree> iter = localVarWithTreeSet.iterator();
-    while (iter.hasNext()) {
-      AnnotationMirror cmAnno;
-      LocalVarWithTree localVarWithTree = iter.next();
+    boolean mustCallSatisfied = false;
+    for (LocalVarWithTree localVarWithTree : localVarWithTreeSet) {
       // sometimes the store is null!  this looks like a bug in checker dataflow.
       // TODO track down and report the root-cause bug
       CFValue lhsCFValue = store != null ? store.getValue(localVarWithTree.localVar) : null;
+      AnnotationMirror cmAnno;
 
       if (lhsCFValue != null) { // When store contains the lhs
         cmAnno =
@@ -688,19 +685,23 @@ class MustCallInvokedChecker {
       }
 
       if (calledMethodsSatisfyMustCall(mustCallValue, cmAnno)) {
-        return;
-      } else if (!iter.hasNext()) {
-        if (reportedMustCallErrors.stream()
-            .noneMatch(localVarTree -> localVarWithTreeSet.contains(localVarTree))) {
-          reportedMustCallErrors.add(localVarWithTree);
+        mustCallSatisfied = true;
+        break;
+      }
+    }
 
-          checker.reportError(
-              localVarWithTreeSet.iterator().next().tree,
-              "required.method.not.called",
-              formatMissingMustCallMethods(mustCallValue),
-              localVarWithTree.localVar.getType().toString(),
-              outOfScopeReason);
-        }
+    if (!mustCallSatisfied) {
+      if (reportedMustCallErrors.stream()
+          .noneMatch(localVarTree -> localVarWithTreeSet.contains(localVarTree))) {
+        LocalVarWithTree firstlocalVarWithTree = localVarWithTreeSet.iterator().next();
+        reportedMustCallErrors.add(firstlocalVarWithTree);
+
+        checker.reportError(
+            firstlocalVarWithTree.tree,
+            "required.method.not.called",
+            formatMissingMustCallMethods(mustCallValue),
+            firstlocalVarWithTree.localVar.getType().toString(),
+            outOfScopeReason);
       }
     }
   }
