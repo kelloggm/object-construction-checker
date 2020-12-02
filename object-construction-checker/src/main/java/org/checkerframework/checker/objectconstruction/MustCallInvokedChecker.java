@@ -439,7 +439,7 @@ class MustCallInvokedChecker {
    * @return {@code node} iff {@code node} represents a local variable, otherwise null
    */
   private @Nullable LocalVariableNode getLocalPassedAsMustCallChoiceParam(Node node) {
-    if (node instanceof TypeCastNode) {
+    while (node instanceof TypeCastNode) {
       node = ((TypeCastNode) node).getOperand();
     }
 

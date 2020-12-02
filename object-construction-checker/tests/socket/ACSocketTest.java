@@ -482,6 +482,15 @@ public class ACSocketTest
         SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();
     }
 
+
+    private void recieverParameterWithCasting(@Owning SelectableChannel channel1) throws IOException {
+        try {
+            ((SocketChannel) channel1).socket();
+        } finally {
+            channel1.close();
+        }
+    }
+
     // SelectionKey doesn't implement Closeable
 //    private void updateSocketAddressesWithOwning(@Owning SelectionKey sockKey ) {
 //        // TODO we should report a warning here
