@@ -12,6 +12,7 @@ public class MustCallChoiceImpl implements Closeable {
 
     final @Owning Closeable foo;
 
+    // I got this error here: (type.invalid.annotations.on.use)
     public @MustCallChoice MustCallChoiceImpl(@MustCallChoice Closeable foo) {
         this.foo = foo;
     }
