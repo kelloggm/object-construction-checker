@@ -433,9 +433,9 @@ class MustCallInvokedChecker {
 
   /**
    * This method tries to find a local variable passed as a @MustCallChoice parameter. In the base
-   * case, if {@code node} is a local variable, it just gets returned. Otherwise, if node is a call (or a
-   * call wrapped in a cast), the code finds the parameter passed in the @MustCallChoice position,
-   * and recurses on that parameter.
+   * case, if {@code node} is a local variable, it just gets returned. Otherwise, if node is a call
+   * (or a call wrapped in a cast), the code finds the parameter passed in the @MustCallChoice
+   * position, and recurses on that parameter.
    *
    * @param node
    * @return {@code node} iff {@code node} represents a local variable, otherwise null
