@@ -18,4 +18,5 @@ package java.nio.channels;
 
 class SocketChannel {
     static @Unconnected SocketChannel open();
+    @PolyConnected Socket socket(@PolyConnected SocketChannel this);
 }
