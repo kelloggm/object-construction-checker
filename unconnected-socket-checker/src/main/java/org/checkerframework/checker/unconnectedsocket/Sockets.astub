@@ -1,0 +1,21 @@
+// This stub file contains the assumptions that the unconnected socket checker makes
+// about which socket-producing methods produce unconnected sockets.
+
+import org.checkerframework.checker.unconnectedsocket.qual.*;
+
+package java.net;
+
+class Socket {
+    @Unconnected Socket();
+    @Unconnected Socket(Proxy proxy);
+}
+
+class ServerSocket {
+    @Unconnected ServerSocket();
+}
+
+package java.nio.channels;
+
+class SocketChannel {
+    static @Unconnected SocketChannel open();
+}
