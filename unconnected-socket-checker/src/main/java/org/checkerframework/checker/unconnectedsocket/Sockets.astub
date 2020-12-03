@@ -8,15 +8,35 @@ package java.net;
 class Socket {
     @Unconnected Socket();
     @Unconnected Socket(Proxy proxy);
+    
+    @CannotConnect void setKeepAlive(boolean on);
+    @CannotConnect void setOOBInline(boolean on);
+    @CannotConnect void setPerformancePreferences(int connectionTime, int latency, int bandwidth);
+    @CannotConnect void setReceiveBufferSize(int size);
+    @CannotConnect void setReuseAddress(boolean on);
+    @CannotConnect void setSendBufferSize(int size);
+    @CannotConnect void setSoLinger(boolean on, int linger);
+    @CannotConnect void setSoTimeout(int timeout);
+    @CannotConnect void setTcpNoDelay(boolean on);
+    @CannotConnect void setTrafficClass(int tc);
 }
 
 class ServerSocket {
     @Unconnected ServerSocket();
+
+    @CannotConnect void setPerformancePreferences(int connectionTime, int latency, int bandwidth);
+    @CannotConnect void setReceiveBufferSize(int size);
+    @CannotConnect void setReuseAddress(boolean on);
+    @CannotConnect void setSoTimeout(int timeout);
 }
 
 package java.nio.channels;
 
 class SocketChannel {
     static @Unconnected SocketChannel open();
+    
     @PolyConnected Socket socket(@PolyConnected SocketChannel this);
+    
+    @CannotConnect
+    abstract <T> SocketChannel setOption(SocketOption<T> name, T value);
 }

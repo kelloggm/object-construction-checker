@@ -1,5 +1,6 @@
 package org.checkerframework.checker.unconnectedsocket;
 
+import org.checkerframework.checker.unconnectedsocket.qual.CannotConnect;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
@@ -12,6 +13,7 @@ import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFTransfer;
 import org.checkerframework.framework.flow.CFValue;
+import org.checkerframework.javacutil.TreeUtils;
 
 public class UnconnectedSocketTransfer extends CFTransfer {
 
@@ -34,6 +36,10 @@ public class UnconnectedSocketTransfer extends CFTransfer {
   @Override
   public TransferResult<CFValue, CFStore> visitMethodInvocation(
       MethodInvocationNode n, TransferInput<CFValue, CFStore> in) {
+    if (factory.getDeclAnnotation(TreeUtils.elementFromUse(n.getTree()), CannotConnect.class)
+        != null) {
+      return super.visitMethodInvocation(n, in);
+    }
     Node receiverNode = n.getTarget().getReceiver();
     if (receiverNode != null) {
       goToTop(receiverNode, in);
