@@ -50,11 +50,11 @@ class CallsToConnect {
     }
 
     // all assignments to this that aren't null should fail - this doesn't make sense
+    // :: error: unconnected.field
     private @Unconnected Socket mySock2 = null;
 
     void simple_test_field2(SocketAddress endpoint) throws IOException {
         Socket sock = new Socket();
-        // :: error: assignment.type.incompatible
         mySock2 = sock;
         // :: error: assignment.type.incompatible
         @Unconnected Socket sock2 = sock;
