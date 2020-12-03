@@ -1,5 +1,6 @@
 // This stub file contains the assumptions that the unconnected socket checker makes
-// about which socket-producing methods produce unconnected sockets.
+// about which socket-producing methods produce unconnected sockets, and which methods
+// on sockets are safe to call without possibly connecting the socket.
 
 import org.checkerframework.checker.unconnectedsocket.qual.*;
 
