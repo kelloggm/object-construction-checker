@@ -1,6 +1,7 @@
 // A test that the @InheritedMustCall declaration annotation works correctly.
 
 import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
 
 @InheritableMustCall("a")
 public class Subtype0 {
@@ -10,7 +11,7 @@ public class Subtype0 {
     }
     public class Subtype2 extends Subtype1 { }
 
-    static void test(Subtype0 s0, Subtype1 s1, Subtype2 s2, Subtype3 s3, Subtype4 s4) {
+    static void test(@Owning Subtype0 s0, @Owning Subtype1 s1, @Owning Subtype2 s2, @Owning Subtype3 s3, @Owning Subtype4 s4) {
         // :: error: assignment.type.incompatible
         @MustCall({}) Object obj1 = s0;
         @MustCall({"a"}) Object obj2 = s0;
