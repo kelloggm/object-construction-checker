@@ -129,7 +129,7 @@ class MustCallInvokedChecker {
     }
   }
 
-  private Set<ImmutableSet<LocalVarWithTree>> handleTypeCast(
+  private void handleTypeCast(
       TypeCastNode node, Set<ImmutableSet<LocalVarWithTree>> defs) {
     Node operand = node.getOperand();
     if (operand instanceof MethodInvocationNode || operand instanceof ObjectCreationNode) {
@@ -137,10 +137,9 @@ class MustCallInvokedChecker {
         checkPseudoAssignToOwning(node);
       }
     }
-    return defs;
   }
 
-  private Set<ImmutableSet<LocalVarWithTree>> handleInvocation(
+  private void handleInvocation(
       Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
     doOwnershipTransferToParameters(newDefs, node);
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
@@ -148,7 +147,6 @@ class MustCallInvokedChecker {
     if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
       checkPseudoAssignToOwning(node);
     }
-    return newDefs;
   }
 
   /**
@@ -312,7 +310,7 @@ class MustCallInvokedChecker {
     }
   }
 
-  private Set<ImmutableSet<LocalVarWithTree>> handleReturn(
+  private void handleReturn(
       ReturnNode node, ControlFlowGraph cfg, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     if (isTransferOwnershipAtReturn(cfg)) {
       Node result = node.getResult();
@@ -320,7 +318,6 @@ class MustCallInvokedChecker {
         newDefs.remove(getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) result));
       }
     }
-    return newDefs;
   }
 
   /**
@@ -342,7 +339,7 @@ class MustCallInvokedChecker {
     return false;
   }
 
-  private Set<ImmutableSet<LocalVarWithTree>> handleAssignment(
+  private void handleAssignment(
       AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     Node lhs = node.getTarget();
     Node rhs = node.getExpression();
@@ -426,7 +423,6 @@ class MustCallInvokedChecker {
         newDefs.remove(setContainingRhs);
       }
     }
-    return newDefs;
   }
 
   /**
@@ -436,7 +432,7 @@ class MustCallInvokedChecker {
    * position, and recurses on that parameter.
    *
    * @param node
-   * @return {@code node} iff {@code node} represents a local variable, otherwise null
+   * @return {@code node} iff {@code node} represents a local variable that is passed as a @MustCallChoice parameter, otherwise null
    */
   private @Nullable LocalVariableNode getLocalPassedAsMustCallChoiceParam(Node node) {
     while (node instanceof TypeCastNode) {
