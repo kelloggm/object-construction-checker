@@ -103,12 +103,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   }
 
   /**
-   * Returns true iff the unconnected sockets checker determined that
-   * this tree represents a socket that is definitely unconnected.
+   * Returns true iff the unconnected sockets checker determined that this tree represents a socket
+   * that is definitely unconnected.
    */
   public boolean isUnconnectedSocket(Tree tree) {
     UnconnectedSocketAnnotatedTypeFactory usatf =
-            getTypeFactoryOfSubchecker(UnconnectedSocketChecker.class);
+        getTypeFactoryOfSubchecker(UnconnectedSocketChecker.class);
     AnnotatedTypeMirror usatm = usatf.getAnnotatedType(tree);
     return usatm.hasAnnotation(Unconnected.class);
   }
