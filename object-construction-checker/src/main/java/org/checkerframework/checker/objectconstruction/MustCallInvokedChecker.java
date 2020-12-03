@@ -520,6 +520,11 @@ class MustCallInvokedChecker {
     if (mustCallValue.isEmpty()) {
       return;
     }
+
+    if (typeFactory.isUnconnectedSocket(localVarWithTree.tree)) {
+      return;
+    }
+
     AnnotationMirror cmAnno;
 
     // sometimes the store is null!  this looks like a bug in checker dataflow.
