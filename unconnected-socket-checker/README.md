@@ -1,99 +1,36 @@
-### MustCall Checker
+### Unconnected Socket Checker
 
-The MustCall Checker tracks the methods that an object should call before it is deallocated.
-To enforce that the methods are actually called, use
-the `-AcheckMustCall` flag to the Object Construction Checker. You should use the Object
-Construction Checker rather than using the MustCall Checker alone.
+The Object Construction Checker's must-call mode can enforce that sockets
+and other similar structures are always closed.
+Warnings about failures to call close on an unconnected socket 
+are false positives, because the underlying socket resource 
+(i.e. the file descriptor stored in the `fd` field in `SocketImpl`) is 
+only created when a connection is established - the socket constructor on 
+its own does not allocate a file descriptor.
 
-The MustCall Checker produces a conservative overapproximation of the set of methods that might
-actually need to be called on an object. The Object Construction Checker then conservatively assumes
-that this approximation (the `@MustCall` type) must be fulfilled.
+The Unconnected Socket Checker prevents (some of) these false positives
+by tracking which sockets are definitely unconnected. The Object Construction
+Checker uses this information to avoid issuing the false positives.
 
-For example, an object whose type is `java.io.OutputStream` might
-have an obligation to call the `close()` method, to release an underlying file resource. Or,
-such an `OutputStream` might not have such an obligation, if the underlying resource is, for
-example, a byte array. Either of these obligations can be represented by the static type
-`@MustCall({"close"}) OutputStream`, which can be read as "an OutputStream that might need
-to call close before it is deallocated". The Object Construction Checker would enforce that the
-type of such an object in its hierarchy is a subtype of `@CalledMethods({"close"})` at each
-point it may become unreachable.
+There are two types in this type system, with the following names and subtyping relationship:
 
-### Explanation of qualifiers and type hierarchy
+`@PossiblyConnected` :> `@Unconnected`
 
-The MustCall Checker supports two qualifiers: `@MustCall` and `@MustCallUnknown`. The `@MustCall`
-qualifier's arguments are the methods that the annotated type
-should call. The type `@MustCall({"a"}) Object obj` means
-that before `obj` is deallocated, `obj.a()` should be called.
-The type hierarchy is:
+`@PossiblyConnected` is the default type qualifier. 
 
-                     @MustCallUnknown
-                           |
-                          ...
-                           |
-               @MustCall({"m1", "m2"})     ...
-                    /             \
-       @MustCall({"m1"})     @MustCall({"m2"})  ...
-                    \            /
-                    @MustCall({})
+The value produced by the no-arguments `java.net.Socket` and `java.net.ServerSocket` constructors and the 
+return type of `SocketChannel#open` are `@Unconnected`; these are specified in stub files.
 
-Note that `@MustCall({"m1", "m2"}) Object` represents more possible values than
-`@MustCall({"m1"}) Object` does, because `@MustCall({"m1"}) Object` can only
-contain an object that needs to call `m1` or one that needs to call nothing - an
-object that needs to call `m2` (or both `m1` and `m2`) is not permitted.
-`@MustCall({"m1", "m2"}) Object` represents all objects that need to
-call `m1`, `m2`, both, or neither; it cannot not represent an object that needs
-to call some *other* method.
+Calls to any method that takes an `@Unconnected` object as a parameter (including the receiver parameter)
+change the type of that parameter to `@PossiblyConnected` - any code with access to the socket may call
+`connect`. Similarly, assigning an `@Unconnected` object into a field will change its type locally to
+`@PossiblyConnected`.
 
-The default type in unannotated code is `@MustCall({})`.
-A completely unannotated program will always type-check without warnings.
-For the MustCall Checker to be useful, the programmer should supply at least one non-empty
-`@MustCall` annotation, either in source code or in a stub file.
+It is always illegal to use `@Unconnected` as the type of a field. Doing so will result in an `unconnected.field` error.
 
-The programmer should rarely (if ever) write the top annotation (`@MustCallUnknown`), because
-the Object Construction Checker cannot verify it by matching with a corresponding `@CalledMethods`
-annotation. `@MustCallUnknown` theoretically represents a value with an unknowable or infinite set
-of must-call methods.
+A method can be marked as trusted not to call connect on a socket using the declaration annotation `@CannotConnect`.
+This annotation is TRUSTED, NOT CHECKED. It is usually only be written in stub files. The file `Sockets.astub` in the
+checker's source directory contains a default list of trusted `Socket` methods, all of which are configuration methods
+that are often called before connecting the socket.
 
-### Example use
-
-If a user annotates a class declaration with a `@MustCall(...)` annotation, any use of the class's
-type has that `@MustCall` annotation by default. For example, given the following class annotation:
-
-    package java.net;
-    
-    import org.checkerframework.checker.mustcall.qual.MustCall;
-    
-    @MustCall({"close"}) class Socket { }
-    
-any use of `Socket` defaults to `@MustCall({"close"}) Socket`.
-
-### InheritableMustCall annotation
-
-A declaration annotation `@InheritedMustCall(String[])` is also supported. This annotation can only
-be written on a class declaration. It adds an `@MustCall` annotation with the same arguments to
-the class declaration on which it is written, and also to all subclasses, freeing the user of the need
-to write the `@MustCall` annotation on every subclass.
-
-### Ownership transfer
-
-The MustCall Checker respects the same rules and annotations as the Object Construction with respect to ownership 
-transfer. See its documentation for an explanation of these rules.
-
-### Implementation details and caveats
-
-This type system should not be used to track a must-call obligation for a `String`, because it treats all
-String concatenations as having the type `@MustCall({})`. 
-Normally it is the case that a newly-constructed String (whether created via new String or a string literal 
-or concatenation) has no must-call obligation, just like any other object whose type declaration isn't annotated with a 
-non-empty `@MustCall` type. `java.lang.String` is an exception: even if the declaration of `java.lang.String` were 
-annotated with a non-empty `@MustCall` annotation, the result of a string concatenation would still be `@MustCall({})`. 
-
-This special-casing is to avoid cases where
-an object with a must-call obligation is implicitly converted to a `String`, creating a must-call obligation
-that could never be fulfilled (this is not unsound, but it does reduce precision). For example, suppose that
-all `Socket` objects are `@MustCall({"close"})`. Without special-casing string concatenations, the type of
-`str` in the following code would be `@MustCall({"close"})`, even though `str`'s dynamic type is `String`, not
-`Socket`:
-
-    Socket sock = ...;
-    String str = "this is the result of my socket's toString() function, which is invoked implicitly: " + sock;
+The unconnected socket checker supports a standard polymorphic annotation: `@PolyConnected`.
