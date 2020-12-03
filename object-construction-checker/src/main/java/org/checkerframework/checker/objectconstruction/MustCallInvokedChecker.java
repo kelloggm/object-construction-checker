@@ -234,8 +234,12 @@ class MustCallInvokedChecker {
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION
         || callTree.getKind() == Tree.Kind.NEW_CLASS) {
       LocalVariableNode mustCallChoiceParam = getLocalPassedAsMustCallChoiceParam(node);
-      if (mustCallChoiceParam != null && isVarInDefs(defs, mustCallChoiceParam)) {
-        return true;
+      if (mustCallChoiceParam != null) {
+        if (isVarInDefs(defs, mustCallChoiceParam)) {
+          return true;
+        } else {
+          return false;
+        }
       }
     }
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
@@ -386,11 +390,11 @@ class MustCallInvokedChecker {
       if ((rhs instanceof ObjectCreationNode)
           || (rhs instanceof MethodInvocationNode
               && !hasNotOwningReturnType((MethodInvocationNode) rhs))) {
-        if (typeFactory.hasMustCallChoice(rhs.getTree())) {
-          LocalVariableNode n = getLocalPassedAsMustCallChoiceParam(rhs);
-          if (n != null && isVarInDefs(newDefs, n)) {
+        LocalVariableNode mustCallChoiceParamLocal = getLocalPassedAsMustCallChoiceParam(rhs);
+        if (mustCallChoiceParamLocal != null) {
+          if (isVarInDefs(newDefs, mustCallChoiceParamLocal)) {
             ImmutableSet<LocalVarWithTree> immutableSet =
-                getSetContainingAssignmentTreeOfVar(newDefs, n);
+                getSetContainingAssignmentTreeOfVar(newDefs, mustCallChoiceParamLocal);
             ImmutableSet<LocalVarWithTree> newImmutableSet =
                 FluentIterable.from(immutableSet)
                     .append(
