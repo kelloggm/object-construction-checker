@@ -129,8 +129,7 @@ class MustCallInvokedChecker {
     }
   }
 
-  private void handleTypeCast(
-      TypeCastNode node, Set<ImmutableSet<LocalVarWithTree>> defs) {
+  private void handleTypeCast(TypeCastNode node, Set<ImmutableSet<LocalVarWithTree>> defs) {
     Node operand = node.getOperand();
     if (operand instanceof MethodInvocationNode || operand instanceof ObjectCreationNode) {
       if (!shouldSkipInvokePseudoAssignCheck(operand, defs)) {
@@ -139,8 +138,7 @@ class MustCallInvokedChecker {
     }
   }
 
-  private void handleInvocation(
-      Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
+  private void handleInvocation(Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
     doOwnershipTransferToParameters(newDefs, node);
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
@@ -339,8 +337,7 @@ class MustCallInvokedChecker {
     return false;
   }
 
-  private void handleAssignment(
-      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
+  private void handleAssignment(AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     Node lhs = node.getTarget();
     Node rhs = node.getExpression();
 
@@ -432,7 +429,8 @@ class MustCallInvokedChecker {
    * position, and recurses on that parameter.
    *
    * @param node
-   * @return {@code node} iff {@code node} represents a local variable that is passed as a @MustCallChoice parameter, otherwise null
+   * @return {@code node} iff {@code node} represents a local variable that is passed as
+   *     a @MustCallChoice parameter, otherwise null
    */
   private @Nullable LocalVariableNode getLocalPassedAsMustCallChoiceParam(Node node) {
     while (node instanceof TypeCastNode) {
@@ -441,7 +439,7 @@ class MustCallInvokedChecker {
 
     if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
 
-      if(!typeFactory.hasMustCallChoice(node.getTree())) {
+      if (!typeFactory.hasMustCallChoice(node.getTree())) {
         return null;
       }
 
