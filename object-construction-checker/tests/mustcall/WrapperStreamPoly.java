@@ -12,8 +12,8 @@ class WrapperStreamPoly {
         DataInputStream d = new DataInputStream(b);
     }
 
+    // :: error: required.method.not.called
     void test_close_needed(@Owning InputStream b) {
-        // :: error: required.method.not.called
         DataInputStream d = new DataInputStream(b);
     }
 }

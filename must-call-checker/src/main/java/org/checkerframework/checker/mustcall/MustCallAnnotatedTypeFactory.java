@@ -22,6 +22,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
@@ -68,10 +69,20 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
     addAliasedAnnotation(InheritableMustCall.class, MustCall.class, true);
+    addAliasedAnnotation(MustCallChoice.class, POLY);
     this.postInit();
   }
 
   @Override
+  protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
+    // Because MustCallChoice is in the qual directory, the qualifiers have to be explicitly named
+    // or
+    // MustCallChoice will be reflectively loaded - making it unavailable as an alias for
+    // @PolyMustCall.
+    return new LinkedHashSet<>(
+        Arrays.asList(MustCall.class, MustCallUnknown.class, PolyMustCall.class));
+  }
+
   protected TreeAnnotator createTreeAnnotator() {
     return new ListTreeAnnotator(super.createTreeAnnotator(), new MustCallTreeAnnotator(this));
   }
