@@ -19,7 +19,7 @@ public class UnconnectedSocketVisitor
     VariableElement decl = TreeUtils.elementFromDeclaration(node);
     if (decl.getKind() == ElementKind.FIELD) {
       AnnotatedTypeMirror type = atypeFactory.getAnnotatedType(node);
-      if (!type.hasAnnotation(atypeFactory.TOP)) {
+      if (type.hasExplicitAnnotation(atypeFactory.BOTTOM)) {
         checker.reportError(node, "unconnected.field");
       }
     }

@@ -20,8 +20,7 @@ public class UnconnectedSocketChecker extends BaseTypeChecker {
     Properties messages = super.getMessagesProperties();
     messages.setProperty(
         "unconnected.field",
-        "This checker must treat all fields as @PossiblyConnected, for soundness. "
-            + "Remove any annotations you have written on this field.");
+        "@Unconnected is an invalid type for a field. Fields should only store possibly-connected sockets.");
     return messages;
   }
 }
