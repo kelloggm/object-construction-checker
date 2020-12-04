@@ -235,10 +235,8 @@ class MustCallInvokedChecker {
         || callTree.getKind() == Tree.Kind.NEW_CLASS) {
       LocalVariableNode mustCallChoiceParam = getLocalPassedAsMustCallChoiceParam(node);
       if (mustCallChoiceParam != null) {
-        if (isVarInDefs(defs, mustCallChoiceParam)) {
-          return true;
-        } else {
-          return false;
+        if (mustCallChoiceParam != null) {
+          return isVarInDefs(defs, mustCallChoiceParam);
         }
       }
     }
