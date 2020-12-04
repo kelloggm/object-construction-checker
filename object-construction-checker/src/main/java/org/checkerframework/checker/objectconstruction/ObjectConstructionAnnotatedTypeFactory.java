@@ -16,6 +16,9 @@ import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.unconnectedsocket.UnconnectedSocketAnnotatedTypeFactory;
+import org.checkerframework.checker.unconnectedsocket.UnconnectedSocketChecker;
+import org.checkerframework.checker.unconnectedsocket.qual.Unconnected;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
@@ -99,6 +102,17 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
 
   boolean hasMustCall(Tree t) {
     return !getMustCallValue(t).isEmpty();
+  }
+
+  /**
+   * Returns true iff the unconnected sockets checker determined that this tree represents a socket
+   * that is definitely unconnected.
+   */
+  public boolean isUnconnectedSocket(Tree tree) {
+    UnconnectedSocketAnnotatedTypeFactory usatf =
+        getTypeFactoryOfSubchecker(UnconnectedSocketChecker.class);
+    AnnotatedTypeMirror usatm = usatf.getAnnotatedType(tree);
+    return usatm.hasAnnotation(Unconnected.class);
   }
 
   boolean hasMustCallChoice(Tree tree) {

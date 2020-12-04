@@ -675,8 +675,14 @@ class MustCallInvokedChecker {
     if (mustCallValue.isEmpty()) {
       return;
     }
+
     boolean mustCallSatisfied = false;
     for (LocalVarWithTree localVarWithTree : localVarWithTreeSet) {
+
+      if (typeFactory.isUnconnectedSocket(localVarWithTree.tree)) {
+        return;
+      }
+
       // sometimes the store is null!  this looks like a bug in checker dataflow.
       // TODO track down and report the root-cause bug
       CFValue lhsCFValue = store != null ? store.getValue(localVarWithTree.localVar) : null;

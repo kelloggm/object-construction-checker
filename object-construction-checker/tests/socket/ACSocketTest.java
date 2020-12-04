@@ -227,25 +227,6 @@ public class ACSocketTest
 //        }
 //    }
 
-
-    Optional<ServerSocket> createServerSocket(InetSocketAddress address) {
-        ServerSocket serverSocket;
-        try {
-            // :: error: required.method.not.called
-            serverSocket = new ServerSocket();
-
-            serverSocket.setReuseAddress(true);
-            serverSocket.bind(address);
-            return Optional.of(serverSocket);
-        } catch (IOException e) {
-
-        }
-        return Optional.empty();
-    }
-
-
-
-
     public static void ruok(String host, int port) {
         Socket s = null;
         try {
@@ -419,24 +400,20 @@ public class ACSocketTest
 //    }
 
 
-    void createNewServerSocket(InetSocketAddress address) throws IOException {
+    void createNewServerSocket(InetSocketAddress address, boolean b, boolean c) throws IOException {
         ServerSocket socket;
 
-        if (true) {
-            // :: error: required.method.not.called
+        if (b) {
             socket = new ServerSocket();
-        } else if (false) {
-            // :: error: required.method.not.called
+        } else if (c) {
             socket = new ServerSocket();
         } else {
-            // :: error: required.method.not.called
             socket = new ServerSocket();
         }
 
         socket.setReuseAddress(true);
         socket.bind(address);
         closeServerSocket(socket);
-//        return socket;
     }
 
 
@@ -502,16 +479,6 @@ public class ACSocketTest
 
     @NotOwning Socket getSocket(Socket s) {
         return s;
-    }
-
-    SocketChannel createSock() throws IOException {
-        SocketChannel sock;
-        // :: error: required.method.not.called
-        sock = SocketChannel.open();
-        sock.configureBlocking(false);
-        sock.socket().setSoLinger(false, -1);
-        sock.socket().setTcpNoDelay(true);
-        return sock;
     }
 }
 
