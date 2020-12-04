@@ -24,7 +24,6 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
-import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -65,14 +64,14 @@ class MustCallInvokedChecker {
 
   private final ObjectConstructionAnnotatedTypeFactory typeFactory;
 
-  private final BaseTypeChecker checker;
+  private final ObjectConstructionChecker checker;
 
   private final CFAnalysis analysis;
 
   /* package-private */
   MustCallInvokedChecker(
       ObjectConstructionAnnotatedTypeFactory typeFactory,
-      BaseTypeChecker checker,
+      ObjectConstructionChecker checker,
       CFAnalysis analysis) {
     this.typeFactory = typeFactory;
     this.checker = checker;
@@ -558,9 +557,13 @@ class MustCallInvokedChecker {
    */
   private boolean calledMethodsSatisfyMustCall(
       List<String> mustCallValue, AnnotationMirror cmAnno) {
+
+    if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
+      checker.numMustCall++;
+    }
+
     AnnotationMirror cmAnnoForMustCallMethods =
         typeFactory.createCalledMethods(mustCallValue.toArray(new String[0]));
-
     return typeFactory.getQualifierHierarchy().isSubtype(cmAnno, cmAnnoForMustCallMethods);
   }
 
