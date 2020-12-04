@@ -165,8 +165,6 @@ public class ACSocketTest
         {
             // :: error: required.method.not.called
             Socket socket = new Socket( address, 80 );
-
-            // :: error: required.method.not.called
             PrintStream out = new PrintStream( socket.getOutputStream() );
             BufferedReader in = new BufferedReader( new InputStreamReader( socket.getInputStream() ) );
             in.close();
@@ -456,7 +454,24 @@ public class ACSocketTest
 
 
     private void updateSocketAddresses( SelectionKey sockKey ) {
-        // error: required.method.not.called
+        // :: error: required.method.not.called
+        Socket socket = ((SocketChannel) sockKey.channel()).socket();
+        SocketAddress localSocketAddress = socket.getLocalSocketAddress();
+        SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();
+    }
+
+
+    private void recieverParameterWithCasting(@Owning SelectableChannel channel1) throws IOException {
+        try {
+            ((SocketChannel) channel1).socket();
+        } finally {
+            channel1.close();
+        }
+    }
+
+    // SelectionKey doesn't implement Closeable
+    private void updateSocketAddressesWithOwning(@Owning SelectionKey sockKey ) {
+        // :: error: required.method.not.called
         Socket socket = ((SocketChannel) sockKey.channel()).socket();
         SocketAddress localSocketAddress = socket.getLocalSocketAddress();
         SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();

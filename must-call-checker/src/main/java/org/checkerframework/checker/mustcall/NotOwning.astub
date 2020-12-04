@@ -24,7 +24,7 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
     <T> SocketChannel setOption(SocketOption<T> arg0, T arg1) throws IOException;
     SocketChannel shutdownInput() throws IOException;
     SocketChannel shutdownOutput() throws IOException;
-    @NotOwning Socket socket();
+    @MustCallChoice Socket socket(@MustCallChoice SocketChannel this);
     boolean isConnected();
     boolean isConnectionPending();
     boolean connect(SocketAddress arg0) throws IOException;
@@ -46,7 +46,7 @@ class ServerSocketChannel extends AbstractSelectableChannel implements NetworkCh
     ServerSocketChannel bind(SocketAddress arg0) throws IOException;
     ServerSocketChannel bind(SocketAddress arg0, int arg1) throws IOException;
     <T> ServerSocketChannel setOption(SocketOption<T> arg0, T arg1) throws IOException;
-    @NotOwning ServerSocket socket();
+    @MustCallChoice ServerSocket socket(@MustCallChoice ServerSocketChannel this);
     SocketChannel accept() throws IOException;
     SocketAddress getLocalAddress() throws IOException;
 }
@@ -54,5 +54,5 @@ class ServerSocketChannel extends AbstractSelectableChannel implements NetworkCh
 package java.nio.channels.spi;
 
 class AbstractSelectableChannel {
-    @NotOwning SelectableChannel configureBlocking(boolean b);
+    @MustCallChoice SelectableChannel configureBlocking(@MustCallChoice AbstractSelectableChannel this, boolean b);
 }
