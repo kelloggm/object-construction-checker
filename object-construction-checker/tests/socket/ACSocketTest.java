@@ -493,12 +493,12 @@ public class ACSocketTest
     }
 
     // SelectionKey doesn't implement Closeable
-//    private void updateSocketAddressesWithOwning(@Owning SelectionKey sockKey ) {
-//        // TODO we should report a warning here
-//        Socket socket = ((SocketChannel) sockKey.channel()).socket();
-//        SocketAddress localSocketAddress = socket.getLocalSocketAddress();
-//        SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();
-//    }
+    private void updateSocketAddressesWithOwning(@Owning SelectionKey sockKey ) {
+        // :: error: required.method.not.called
+        Socket socket = ((SocketChannel) sockKey.channel()).socket();
+        SocketAddress localSocketAddress = socket.getLocalSocketAddress();
+        SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress();
+    }
 
     @NotOwning Socket getSocket(Socket s) {
         return s;
