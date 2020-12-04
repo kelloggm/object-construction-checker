@@ -15,10 +15,10 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.checker.unconnectedsocket.UnconnectedSocketAnnotatedTypeFactory;
 import org.checkerframework.checker.unconnectedsocket.UnconnectedSocketChecker;
 import org.checkerframework.checker.unconnectedsocket.qual.Unconnected;
-import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
@@ -110,7 +110,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
    */
   public boolean isUnconnectedSocket(Tree tree) {
     UnconnectedSocketAnnotatedTypeFactory usatf =
-            getTypeFactoryOfSubchecker(UnconnectedSocketChecker.class);
+        getTypeFactoryOfSubchecker(UnconnectedSocketChecker.class);
     AnnotatedTypeMirror usatm = usatf.getAnnotatedType(tree);
     return usatm.hasAnnotation(Unconnected.class);
   }
