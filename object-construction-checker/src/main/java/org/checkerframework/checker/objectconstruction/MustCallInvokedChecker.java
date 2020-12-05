@@ -138,6 +138,7 @@ class MustCallInvokedChecker {
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
     if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node.getTree())) {
+      increaseNumMustCall();
       checkPseudoAssignToOwning(node);
     }
   }
@@ -551,17 +552,18 @@ class MustCallInvokedChecker {
     }
   }
 
+  private void increaseNumMustCall() {
+    if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
+      checker.numMustCall++;
+    }
+  }
+
   /**
    * Do the called methods represented by the {@link CalledMethods} type {@code cmAnno} include all
    * the methods in {@code mustCallValue}?
    */
   private boolean calledMethodsSatisfyMustCall(
       List<String> mustCallValue, AnnotationMirror cmAnno) {
-
-    if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
-      checker.numMustCall++;
-    }
-
     AnnotationMirror cmAnnoForMustCallMethods =
         typeFactory.createCalledMethods(mustCallValue.toArray(new String[0]));
     return typeFactory.getQualifierHierarchy().isSubtype(cmAnno, cmAnnoForMustCallMethods);
