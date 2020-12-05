@@ -138,7 +138,6 @@ class MustCallInvokedChecker {
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
     if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node.getTree())) {
-      increaseNumMustCall();
       checkPseudoAssignToOwning(node);
     }
   }
@@ -154,6 +153,7 @@ class MustCallInvokedChecker {
     if (mustCallVal.isEmpty()) {
       return;
     }
+    increaseNumMustCall();
     boolean assignedToOwning = false;
     AssignmentContext assignmentContext = node.getAssignmentContext();
     if (assignmentContext != null) {
