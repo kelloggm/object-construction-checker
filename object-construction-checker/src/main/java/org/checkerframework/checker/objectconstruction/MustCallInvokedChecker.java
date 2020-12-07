@@ -144,11 +144,11 @@ class MustCallInvokedChecker {
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
     if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
-        // If the node is not skipped by the shouldSkipInvokePseudoAssignCheck() it means we have a
-        // method invocation or object creation node that creates a new resource, so we increment
-        // the numMustCall
-        incrementNumMustCall();
-        checkPseudoAssignToOwning(node);
+      // If the node is not skipped by the shouldSkipInvokePseudoAssignCheck() it means we have a
+      // method invocation or object creation node that creates a new resource, so we increment
+      // the numMustCall
+      incrementNumMustCall();
+      checkPseudoAssignToOwning(node);
     }
   }
 
