@@ -6,6 +6,7 @@ import static org.checkerframework.checker.objectconstruction.ObjectConstruction
 import java.util.LinkedHashSet;
 import java.util.Properties;
 import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
+import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.unconnectedsocket.UnconnectedSocketChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -78,6 +79,14 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
   @Override
   protected BaseTypeVisitor<?> createSourceVisitor() {
     return new ObjectConstructionVisitor(this);
+  }
+
+  @Override
+  public void reportError(Object source, @CompilerMessageKey String messageKey, Object... args) {
+    if (messageKey.equals("required.method.not.called")) {
+      numMustCallFailed++;
+    }
+    super.reportError(source, messageKey, args);
   }
 
   @Override

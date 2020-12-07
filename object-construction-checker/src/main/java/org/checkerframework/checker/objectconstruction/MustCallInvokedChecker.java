@@ -144,7 +144,11 @@ class MustCallInvokedChecker {
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
     if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
-      checkPseudoAssignToOwning(node);
+        // If the node is not skipped by the shouldSkipInvokePseudoAssignCheck() it means we have a
+        // method invocation or object creation node that creates a new resource, so we increment
+        // the numMustCall
+        incrementNumMustCall();
+        checkPseudoAssignToOwning(node);
     }
   }
 
@@ -159,7 +163,7 @@ class MustCallInvokedChecker {
     if (mustCallVal.isEmpty()) {
       return;
     }
-    increaseNumMustCall();
+
     boolean assignedToOwning = false;
     AssignmentContext assignmentContext = node.getAssignmentContext();
     if (assignmentContext != null) {
@@ -169,9 +173,7 @@ class MustCallInvokedChecker {
         assignedToOwning = isOwningAssignmentLhs(elementForType);
       } else if (assignmentContext instanceof MethodParameterContext) {
         // must be an @Owning or @MustCallChoice parameter
-        assignedToOwning =
-            typeFactory.getDeclAnnotation(elementForType, Owning.class) != null
-                || typeFactory.hasMustCallChoice(elementForType);
+        assignedToOwning = typeFactory.getDeclAnnotation(elementForType, Owning.class) != null;
       } else if (assignmentContext instanceof MethodReturnContext) {
         // must be an @Owning return
         assignedToOwning =
@@ -192,7 +194,6 @@ class MustCallInvokedChecker {
       AnnotationMirror cmAnno =
           typeFactory.getAnnotatedType(tree).getAnnotationInHierarchy(typeFactory.top);
       if (!calledMethodsSatisfyMustCall(mustCallVal, cmAnno)) {
-        checker.numMustCallFailed++;
         checker.reportError(
             tree,
             "required.method.not.called",
@@ -232,15 +233,14 @@ class MustCallInvokedChecker {
     if (mustCallVal.isEmpty()) {
       return true;
     }
-    // In this case, we are handling method invocation nodes that are not assigned to a local
-    // variable node but the receiver of the method is in the defs
+    // In this case, we are handling method invocation or object creation node that has
+    // MustCallChoice annotation and the local variable passed as the @MustCallChoice parameter is
+    // in the defs
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION
         || callTree.getKind() == Tree.Kind.NEW_CLASS) {
       LocalVariableNode mustCallChoiceParam = getLocalPassedAsMustCallChoiceParam(node);
       if (mustCallChoiceParam != null) {
-        if (mustCallChoiceParam != null) {
-          return isVarInDefs(defs, mustCallChoiceParam);
-        }
+        return isVarInDefs(defs, mustCallChoiceParam);
       }
     }
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
@@ -612,7 +612,8 @@ class MustCallInvokedChecker {
           Set<LocalVarWithTree> setOfLocals = new LinkedHashSet<>();
           setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
           init.add(ImmutableSet.copyOf(setOfLocals));
-          increaseNumMustCall();
+          // Increment numMustCall for each @Owning parameter tracked by the enclosing method
+          incrementNumMustCall();
         }
       }
     }
@@ -714,7 +715,6 @@ class MustCallInvokedChecker {
           .noneMatch(localVarTree -> localVarWithTreeSet.contains(localVarTree))) {
         LocalVarWithTree firstlocalVarWithTree = localVarWithTreeSet.iterator().next();
         reportedMustCallErrors.add(firstlocalVarWithTree);
-        checker.numMustCallFailed++;
 
         checker.reportError(
             firstlocalVarWithTree.tree,
@@ -726,7 +726,7 @@ class MustCallInvokedChecker {
     }
   }
 
-  private void increaseNumMustCall() {
+  private void incrementNumMustCall() {
     if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
       checker.numMustCall++;
     }
