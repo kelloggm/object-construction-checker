@@ -28,7 +28,6 @@ import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.com.google.common.collect.FluentIterable;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
-import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;

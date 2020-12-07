@@ -85,7 +85,8 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
     if (hasOption(COUNT_MUST_CALL)) {
       System.out.printf("Found %d must call obligation(s).%n", numMustCall);
       System.out.printf(
-          "Found %d must call obligation(s) that were handled correctly.%n", numMustCall - numMustCallFailed);
+          "Found %d must call obligation(s) that were handled correctly.%n",
+          numMustCall - numMustCallFailed);
     }
     super.typeProcessingOver();
   }
