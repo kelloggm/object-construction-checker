@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.Properties;
 import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
 import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.checker.unconnectedsocket.UnconnectedSocketChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.qual.StubFiles;
@@ -39,7 +40,7 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
    */
   int numMustCall = 0;
 
-  int numMustCallPassed = 0;
+  int numMustCallFailed = 0;
 
   @Override
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
@@ -48,6 +49,7 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
 
     if (this.processingEnv.getOptions().containsKey(CHECK_MUST_CALL)) {
       checkers.add(MustCallChecker.class);
+      checkers.add(UnconnectedSocketChecker.class);
     }
 
     return checkers;
@@ -83,7 +85,7 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
     if (hasOption(COUNT_MUST_CALL)) {
       System.out.printf("Found %d must call obligation(s).%n", numMustCall);
       System.out.printf(
-          "Found %d must call obligation(s) that were handled correctly.%n", numMustCallPassed);
+          "Found %d must call obligation(s) that were handled correctly.%n", numMustCall - numMustCallFailed);
     }
     super.typeProcessingOver();
   }

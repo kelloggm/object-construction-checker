@@ -9,8 +9,6 @@ sourceCompatibility = 1.8
 dependencies {
     // re-export these dependencies so clients don't need to explicitly import them
     api "org.checkerframework:checker-qual:${versions.checkerFramework}"
-    api project(':must-call-qual')
-    api project(':unconnected-socket-qual')
 }
 
 tasks.withType(JavaCompile).all {

@@ -6,7 +6,7 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 
 class DataOutputStream extends FilterOutputStream implements DataOutput {
     protected int written;
-    @PolyMustCall DataOutputStream(@Owning @PolyMustCall OutputStream arg0);
+    @MustCallChoice DataOutputStream(@MustCallChoice OutputStream arg0);
     void write(int arg0) throws IOException;
     void write(byte[] arg0, int arg1, int arg2) throws IOException;
     void flush() throws IOException;
@@ -30,7 +30,7 @@ class InputStream { }
 
 class FilterOutputStream extends OutputStream {
     protected OutputStream out;
-    @PolyMustCall FilterOutputStream(@PolyMustCall @Owning OutputStream arg0);
+    @MustCallChoice FilterOutputStream(@MustCallChoice OutputStream arg0);
     void write(int arg0) throws IOException;
     void write(byte[] arg0) throws IOException;
     void write(byte[] arg0, int arg1, int arg2) throws IOException;
@@ -39,10 +39,10 @@ class FilterOutputStream extends OutputStream {
 }
 
 class PrintStream extends FilterOutputStream implements Appendable, Closeable {
-    @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0);
-    @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0, boolean arg1);
-    @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0, boolean arg1, String arg2) throws UnsupportedEncodingException;
-    @PolyMustCall PrintStream(@PolyMustCall @Owning OutputStream arg0, boolean arg1, Charset arg2);
+    @MustCallChoice PrintStream(@MustCallChoice OutputStream arg0);
+    @MustCallChoice PrintStream(@MustCallChoice OutputStream arg0, boolean arg1);
+    @MustCallChoice PrintStream(@MustCallChoice OutputStream arg0, boolean arg1, String arg2) throws UnsupportedEncodingException;
+    @MustCallChoice PrintStream(@MustCallChoice OutputStream arg0, boolean arg1, Charset arg2);
     @NotOwning PrintStream printf(String arg0, Object[] arg1);
     @NotOwning PrintStream printf(Locale arg0, String arg1, Object[] arg2);
     @NotOwning PrintStream format(String arg0, Object[] arg1);
@@ -53,8 +53,8 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
 }
 
 class BufferedReader extends Reader {
-    @PolyMustCall BufferedReader(@PolyMustCall @Owning Reader arg0, int arg1);
-    @PolyMustCall BufferedReader(@PolyMustCall @Owning Reader arg0);
+    @MustCallChoice BufferedReader(@MustCallChoice Reader arg0, int arg1);
+    @MustCallChoice BufferedReader(@MustCallChoice Reader arg0);
     int read() throws IOException;
     int read(char[] arg0, int arg1, int arg2) throws IOException;
     String readLine() throws IOException;
@@ -70,15 +70,15 @@ class BufferedReader extends Reader {
 class BufferedOutputStream extends FilterOutputStream {
     protected byte[] buf;
     protected int count;
-    @PolyMustCall BufferedOutputStream(@PolyMustCall @Owning OutputStream arg0);
-    @PolyMustCall BufferedOutputStream(@PolyMustCall @Owning OutputStream arg0, int arg1);
+    @MustCallChoice BufferedOutputStream(@MustCallChoice OutputStream arg0);
+    @MustCallChoice BufferedOutputStream(@MustCallChoice OutputStream arg0, int arg1);
     void write(int arg0) throws IOException;
     void write(byte[] arg0, int arg1, int arg2) throws IOException;
     void flush() throws IOException;
 }
 
 class DataInputStream extends FilterInputStream implements DataInput {
-    @PolyMustCall DataInputStream(@Owning @PolyMustCall InputStream arg0);
+    @MustCallChoice DataInputStream(@MustCallChoice InputStream arg0);
     int read(byte[] arg0) throws IOException;
     int read(byte[] arg0, int arg1, int arg2) throws IOException;
     void readFully(byte[] arg0) throws IOException;
@@ -102,7 +102,7 @@ String readLine() throws IOException;
 
 class FilterInputStream extends InputStream {
     protected InputStream in;
-    protected FilterInputStream(@Owning InputStream arg0);
+    protected @MustCallChoice FilterInputStream(@MustCallChoice InputStream arg0);
     int read() throws IOException;
     int read(byte[] arg0) throws IOException;
     int read(byte[] arg0, int arg1, int arg2) throws IOException;
@@ -120,8 +120,8 @@ class BufferedInputStream extends FilterInputStream {
     protected int pos;
     protected int markpos;
     protected int marklimit;
-    @PolyMustCall BufferedInputStream(@PolyMustCall @Owning InputStream arg0);
-    @PolyMustCall BufferedInputStream(@PolyMustCall @Owning InputStream arg0, int arg1);
+    @MustCallChoice BufferedInputStream(@MustCallChoice InputStream arg0);
+    @MustCallChoice BufferedInputStream(@MustCallChoice InputStream arg0, int arg1);
     int read() throws IOException;
     int read(byte[] arg0, int arg1, int arg2) throws IOException;
     long skip(long arg0) throws IOException;
@@ -133,10 +133,10 @@ class BufferedInputStream extends FilterInputStream {
 }
 
 class InputStreamReader extends Reader {
-    @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0);
-    @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0, String arg1) throws UnsupportedEncodingException;
-    @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0, Charset arg1);
-    @PolyMustCall InputStreamReader(@PolyMustCall @Owning InputStream arg0, CharsetDecoder arg1);
+    @MustCallChoice InputStreamReader(@MustCallChoice InputStream arg0);
+    @MustCallChoice InputStreamReader(@MustCallChoice InputStream arg0, String arg1) throws UnsupportedEncodingException;
+    @MustCallChoice InputStreamReader(@MustCallChoice InputStream arg0, Charset arg1);
+    @MustCallChoice InputStreamReader(@MustCallChoice InputStream arg0, CharsetDecoder arg1);
     String getEncoding();
     int read() throws IOException;
     int read(char[] arg0, int arg1, int arg2) throws IOException;
@@ -145,8 +145,8 @@ class InputStreamReader extends Reader {
 }
 
 class BufferedWriter extends Writer {
-    @PolyMustCall BufferedWriter(@PolyMustCall @Owning Writer arg0);
-    @PolyMustCall BufferedWriter(@PolyMustCall @Owning Writer arg0, int arg1);
+    @MustCallChoice BufferedWriter(@MustCallChoice Writer arg0);
+    @MustCallChoice BufferedWriter(@MustCallChoice Writer arg0, int arg1);
     void write(int arg0) throws IOException;
     void write(char[] arg0, int arg1, int arg2) throws IOException;
     void write(String arg0, int arg1, int arg2) throws IOException;
@@ -156,17 +156,17 @@ class BufferedWriter extends Writer {
 }
 
 class PrintWriter extends Writer {
-    @PolyMustCall PrintWriter(@PolyMustCall @Owning Writer arg0);
-    @PolyMustCall PrintWriter(@PolyMustCall @Owning Writer arg0, boolean arg1);
-    @PolyMustCall PrintWriter(@PolyMustCall @Owning OutputStream arg0);
-    @PolyMustCall PrintWriter(@PolyMustCall @Owning OutputStream arg0, boolean arg1);
-    @PolyMustCall PrintWriter(@PolyMustCall @Owning OutputStream arg0, boolean arg1, Charset arg2);
+    @MustCallChoice PrintWriter(@MustCallChoice Writer arg0);
+    @MustCallChoice PrintWriter(@MustCallChoice Writer arg0, boolean arg1);
+    @MustCallChoice PrintWriter(@MustCallChoice OutputStream arg0);
+    @MustCallChoice PrintWriter(@MustCallChoice OutputStream arg0, boolean arg1);
+    @MustCallChoice PrintWriter(@MustCallChoice OutputStream arg0, boolean arg1, Charset arg2);
     PrintWriter(String arg0) throws FileNotFoundException;
     PrintWriter(String arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
     PrintWriter(String arg0, Charset arg1) throws IOException;
-    @PolyMustCall PrintWriter(@Owning @PolyMustCall File arg0) throws FileNotFoundException;
-    @PolyMustCall PrintWriter(@Owning @PolyMustCall File arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
-    @PolyMustCall PrintWriter(@Owning @PolyMustCall File arg0, Charset arg1) throws IOException;
+    @MustCallChoice PrintWriter(@MustCallChoice File arg0) throws FileNotFoundException;
+    @MustCallChoice PrintWriter(@MustCallChoice File arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    @MustCallChoice PrintWriter(@MustCallChoice File arg0, Charset arg1) throws IOException;
     @NotOwning PrintWriter printf(String arg0, Object[] arg1);
     @NotOwning PrintWriter printf(Locale arg0, String arg1, Object[] arg2);
     @NotOwning PrintWriter format(String arg0, Object[] arg1);
@@ -177,10 +177,10 @@ class PrintWriter extends Writer {
 }
 
 class OutputStreamWriter extends Writer {
-    @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0, String arg1) throws UnsupportedEncodingException;
-    @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0);
-    @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0, Charset arg1);
-    @PolyMustCall OutputStreamWriter(@PolyMustCall @Owning OutputStream arg0, CharsetEncoder arg1);
+    @MustCallChoice OutputStreamWriter(@MustCallChoice OutputStream arg0, String arg1) throws UnsupportedEncodingException;
+    @MustCallChoice OutputStreamWriter(@MustCallChoice OutputStream arg0);
+    @MustCallChoice OutputStreamWriter(@MustCallChoice OutputStream arg0, Charset arg1);
+    @MustCallChoice OutputStreamWriter(@MustCallChoice OutputStream arg0, CharsetEncoder arg1);
     String getEncoding();
     void write(int arg0) throws IOException;
     void write(char[] arg0, int arg1, int arg2) throws IOException;
@@ -206,7 +206,7 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 
 class DigestOutputStream extends FilterOutputStream {
     protected MessageDigest digest;
-    @PolyMustCall DigestOutputStream(@PolyMustCall @Owning OutputStream arg0, MessageDigest arg1);
+    @MustCallChoice DigestOutputStream(@MustCallChoice OutputStream arg0, MessageDigest arg1);
     MessageDigest getMessageDigest();
     void setMessageDigest(MessageDigest arg0);
     void write(int arg0) throws IOException;
@@ -218,14 +218,14 @@ class DigestOutputStream extends FilterOutputStream {
 package java.util;
 
 class Scanner {
-    @PolyMustCall Scanner(@PolyMustCall File source);
-    @PolyMustCall Scanner(@PolyMustCall File source, String charsetName);
-    @PolyMustCall Scanner(@PolyMustCall InputStream in);
-    @PolyMustCall Scanner(@PolyMustCall InputStream source, String charsetName);
-    @PolyMustCall Scanner(@PolyMustCall Path source);
-    @PolyMustCall Scanner(@PolyMustCall Path source, String charsetName);
-    @PolyMustCall Scanner(@PolyMustCall Readable source);
-    @PolyMustCall Scanner(@PolyMustCall ReadableByteChannel source);
-    @PolyMustCall Scanner(@PolyMustCall ReadableByteChannel source, String charsetName);
+    @MustCallChoice Scanner(@MustCallChoice File source);
+    @MustCallChoice Scanner(@MustCallChoice File source, String charsetName);
+    @MustCallChoice Scanner(@MustCallChoice InputStream in);
+    @MustCallChoice Scanner(@MustCallChoice InputStream source, String charsetName);
+    @MustCallChoice Scanner(@MustCallChoice Path source);
+    @MustCallChoice Scanner(@MustCallChoice Path source, String charsetName);
+    @MustCallChoice Scanner(@MustCallChoice Readable source);
+    @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source);
+    @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source, String charsetName);
     @MustCall({}) Scanner(String source);
 }
