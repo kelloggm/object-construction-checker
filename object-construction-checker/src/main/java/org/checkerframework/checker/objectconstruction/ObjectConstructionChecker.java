@@ -39,6 +39,8 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
    */
   int numMustCall = 0;
 
+  int numMustCallPassed = 0;
+
   @Override
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
     LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
@@ -80,6 +82,8 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
   public void typeProcessingOver() {
     if (hasOption(COUNT_MUST_CALL)) {
       System.out.printf("Found %d must call obligation(s).%n", numMustCall);
+      System.out.printf(
+          "Found %d must call obligation(s) that were handled correctly.%n", numMustCallPassed);
     }
     super.typeProcessingOver();
   }

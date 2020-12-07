@@ -122,6 +122,7 @@ class MustCallInvokedChecker {
 
       handleSuccessorBlocks(visited, worklist, newDefs, curBlockLocals.block);
     }
+    checker.numMustCallPassed = checker.numMustCall - reportedMustCallErrors.size();
   }
 
   private void handleTypeCast(TypeCastNode node) {
