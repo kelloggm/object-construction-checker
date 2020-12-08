@@ -61,7 +61,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   public void postAnalyze(ControlFlowGraph cfg) {
     if (checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)) {
       MustCallInvokedChecker mustCallInvokedChecker =
-          new MustCallInvokedChecker(this, this.checker, this.analysis);
+          new MustCallInvokedChecker(this, (ObjectConstructionChecker) this.checker, this.analysis);
       mustCallInvokedChecker.checkMustCallInvoked(cfg);
     }
     super.postAnalyze(cfg);
