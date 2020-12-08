@@ -27,7 +27,7 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
 
   public static final String CHECK_MUST_CALL = "checkMustCall";
 
-  public static final String Disable_Unconnected_Socket = "disableUnConnectedSock";
+  public static final String DISABLE_UNCONNECTED_SOCKET = "disableUnConnectedSock";
 
   @Override
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
@@ -36,7 +36,9 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
 
     if (this.processingEnv.getOptions().containsKey(CHECK_MUST_CALL)) {
       checkers.add(MustCallChecker.class);
-      checkers.add(UnconnectedSocketChecker.class);
+      if (!this.processingEnv.getOptions().containsKey(DISABLE_UNCONNECTED_SOCKET)) {
+        checkers.add(UnconnectedSocketChecker.class);
+      }
     }
 
     return checkers;
