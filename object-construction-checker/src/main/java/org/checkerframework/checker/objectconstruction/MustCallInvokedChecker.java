@@ -173,7 +173,9 @@ class MustCallInvokedChecker {
         assignedToOwning = isOwningAssignmentLhs(elementForType);
       } else if (assignmentContext instanceof MethodParameterContext) {
         // must be an @Owning or @MustCallChoice parameter
-        assignedToOwning = typeFactory.getDeclAnnotation(elementForType, Owning.class) != null;
+        assignedToOwning =
+            typeFactory.getDeclAnnotation(elementForType, Owning.class) != null
+                || typeFactory.hasMustCallChoice(elementForType);
       } else if (assignmentContext instanceof MethodReturnContext) {
         // must be an @Owning return
         assignedToOwning =
