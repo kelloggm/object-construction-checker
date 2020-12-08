@@ -109,6 +109,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
    * that is definitely unconnected.
    */
   public boolean isUnconnectedSocket(Tree tree) {
+    if (checker.hasOption(ObjectConstructionChecker.Disable_Unconnected_Socket)) {
+        return false;
+    }
     UnconnectedSocketAnnotatedTypeFactory usatf =
         getTypeFactoryOfSubchecker(UnconnectedSocketChecker.class);
     AnnotatedTypeMirror usatm = usatf.getAnnotatedType(tree);
