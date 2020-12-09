@@ -1,7 +1,6 @@
 package org.checkerframework.checker.mustcall;
 
 import static javax.lang.model.element.ElementKind.PARAMETER;
-import static org.checkerframework.common.value.ValueCheckerUtils.getValueOfAnnotationWithStringArgument;
 
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
@@ -9,17 +8,12 @@ import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
-import java.lang.annotation.Annotation;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
-import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
@@ -32,11 +26,10 @@ import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
-import org.checkerframework.framework.type.MostlyNoElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.framework.type.SubtypeIsSubsetQualifierHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
-import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
@@ -205,62 +198,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @Override
   public QualifierHierarchy createQualifierHierarchy() {
-    return new MustCallQualifierHierarchy(this.getSupportedTypeQualifiers(), this.elements);
-  }
-
-  /**
-   * The qualifier hierarchy is responsible for lub, glb, and subtyping between qualifiers without
-   * declaratively-defined subtyping relationships, like our @MustCall annotation.
-   */
-  private class MustCallQualifierHierarchy extends MostlyNoElementQualifierHierarchy {
-
-    protected MustCallQualifierHierarchy(
-        Collection<Class<? extends Annotation>> qualifierClasses, Elements elements) {
-      super(qualifierClasses, elements);
-    }
-
-    @Override
-    public AnnotationMirror getTopAnnotation(final AnnotationMirror start) {
-      return TOP;
-    }
-
-    @Override
-    protected AnnotationMirror greatestLowerBoundWithElements(
-        AnnotationMirror a1,
-        QualifierKind qualifierKind1,
-        AnnotationMirror a2,
-        QualifierKind qualifierKind2,
-        QualifierKind glbKind) {
-      Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
-      Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
-      a1Val.retainAll(a2Val);
-      return createMustCall(a1Val.toArray(new String[0]));
-    }
-
-    @Override
-    protected AnnotationMirror leastUpperBoundWithElements(
-        AnnotationMirror a1,
-        QualifierKind qualifierKind1,
-        AnnotationMirror a2,
-        QualifierKind qualifierKind2,
-        QualifierKind glbKind) {
-      Set<String> a1Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a1));
-      Set<String> a2Val = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(a2));
-      a1Val.addAll(a2Val);
-      return createMustCall(a1Val.toArray(new String[0]));
-    }
-
-    @Override
-    protected boolean isSubtypeWithElements(
-        AnnotationMirror subAnno,
-        QualifierKind subKind,
-        AnnotationMirror superAnno,
-        QualifierKind superKind) {
-      Set<String> subVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(subAnno));
-      Set<String> superVal = new LinkedHashSet<>(getValueOfAnnotationWithStringArgument(superAnno));
-
-      return superVal.containsAll(subVal);
-    }
+    return new SubtypeIsSubsetQualifierHierarchy(
+        this.getSupportedTypeQualifiers(), this.getProcessingEnv());
   }
 
   private class MustCallTreeAnnotator extends TreeAnnotator {
