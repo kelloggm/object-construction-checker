@@ -573,8 +573,7 @@ class MustCallInvokedChecker {
             || setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null)) {
           if (nodes.size() == 0) { // If the cur block is special or conditional block
-            checkMustCall(setAssign, succRegularStore, reasonForSucc);
-
+            checkMustCall(setAssign, analysis.getInput(block).getRegularStore(), reasonForSucc);
           } else { // If the cur block is Exception/Regular block then it checks MustCall
             // annotation in the store right after the last node
             Node last = nodes.get(nodes.size() - 1);
