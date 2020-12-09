@@ -115,7 +115,6 @@ class MustCallInvokedChecker {
           new LinkedHashSet<>(curBlockLocals.localSetInfo);
 
       for (Node node : nodes) {
-
         if (node instanceof AssignmentNode) {
           handleAssignment((AssignmentNode) node, newDefs);
         } else if (node instanceof ReturnNode) {
@@ -160,7 +159,10 @@ class MustCallInvokedChecker {
     if (mustCallVal.isEmpty()) {
       return;
     }
-    boolean assignedToOwning = false;
+    // Default to assuming that non-source nodes will always be assigned to
+    // an owning location, but that source nodes will not. This allows the checker
+    // to correctly handle foreach loops.
+    boolean assignedToOwning = !node.getInSource();
     AssignmentContext assignmentContext = node.getAssignmentContext();
     if (assignmentContext != null) {
       Element elementForType = assignmentContext.getElementForType();
@@ -237,9 +239,7 @@ class MustCallInvokedChecker {
         || callTree.getKind() == Tree.Kind.NEW_CLASS) {
       LocalVariableNode mustCallChoiceParam = getLocalPassedAsMustCallChoiceParam(node);
       if (mustCallChoiceParam != null) {
-        if (mustCallChoiceParam != null) {
-          return isVarInDefs(defs, mustCallChoiceParam);
-        }
+        return isVarInDefs(defs, mustCallChoiceParam);
       }
     }
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
@@ -712,7 +712,6 @@ class MustCallInvokedChecker {
           .noneMatch(localVarTree -> localVarWithTreeSet.contains(localVarTree))) {
         LocalVarWithTree firstlocalVarWithTree = localVarWithTreeSet.iterator().next();
         reportedMustCallErrors.add(firstlocalVarWithTree);
-
         checker.reportError(
             firstlocalVarWithTree.tree,
             "required.method.not.called",
