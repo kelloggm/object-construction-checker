@@ -23,4 +23,14 @@ class EnhancedFor {
             } catch (IOException io) { }
         }
     }
+
+    void test3(List<Socket> list) {
+        // This error is issued because `s` is a local variable, and
+        // the foreach loop under the hood assigns the result of a call
+        // to Iterator#next into it (which is owning by default, because it's
+        // a method return type).
+        // :: error: required.method.not.called
+        for (Socket s : list) {
+        }
+    }
 }
