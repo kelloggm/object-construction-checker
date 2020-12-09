@@ -107,6 +107,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   /**
    * Returns true iff the unconnected sockets checker determined that this tree represents a socket
    * that is definitely unconnected.
+   *
+   * @param tree a tree
+   * @return true iff the unconnected sockets checker proved that tree represents a
+   *     definitely-unconnected socket
    */
   public boolean isUnconnectedSocket(Tree tree) {
     if (checker.hasOption(ObjectConstructionChecker.DISABLE_UNCONNECTED_SOCKET)) {
