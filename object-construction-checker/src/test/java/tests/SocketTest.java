@@ -16,6 +16,7 @@ public class SocketTest extends CheckerFrameworkPerDirectoryTest {
         //        "-Astubs=stubs",
         "-AuseValueChecker",
         "-AcheckMustCall",
+        "-AcountMustCall",
         "-nowarn");
   }
 

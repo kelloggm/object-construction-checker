@@ -28,7 +28,6 @@ import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.com.google.common.collect.FluentIterable;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
-import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -70,14 +69,14 @@ class MustCallInvokedChecker {
 
   private final ObjectConstructionAnnotatedTypeFactory typeFactory;
 
-  private final BaseTypeChecker checker;
+  private final ObjectConstructionChecker checker;
 
   private final CFAnalysis analysis;
 
   /* package-private */
   MustCallInvokedChecker(
       ObjectConstructionAnnotatedTypeFactory typeFactory,
-      BaseTypeChecker checker,
+      ObjectConstructionChecker checker,
       CFAnalysis analysis) {
     this.typeFactory = typeFactory;
     this.checker = checker;
@@ -145,6 +144,10 @@ class MustCallInvokedChecker {
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
     if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
+      // If the node is not skipped by the shouldSkipInvokePseudoAssignCheck() it means we have a
+      // method invocation or object creation node that creates a new resource, so we increment
+      // the numMustCall
+      incrementNumMustCall();
       checkPseudoAssignToOwning(node);
     }
   }
@@ -160,6 +163,7 @@ class MustCallInvokedChecker {
     if (mustCallVal.isEmpty()) {
       return;
     }
+
     boolean assignedToOwning = false;
     AssignmentContext assignmentContext = node.getAssignmentContext();
     if (assignmentContext != null) {
@@ -231,15 +235,14 @@ class MustCallInvokedChecker {
     if (mustCallVal.isEmpty()) {
       return true;
     }
-    // In this case, we are handling method invocation nodes that are not assigned to a local
-    // variable node but the receiver of the method is in the defs
+    // In this case, we are handling method invocation or object creation node that has
+    // MustCallChoice annotation and the local variable passed as the @MustCallChoice parameter is
+    // in the defs
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION
         || callTree.getKind() == Tree.Kind.NEW_CLASS) {
       LocalVariableNode mustCallChoiceParam = getLocalPassedAsMustCallChoiceParam(node);
       if (mustCallChoiceParam != null) {
-        if (mustCallChoiceParam != null) {
-          return isVarInDefs(defs, mustCallChoiceParam);
-        }
+        return isVarInDefs(defs, mustCallChoiceParam);
       }
     }
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
@@ -611,6 +614,8 @@ class MustCallInvokedChecker {
           Set<LocalVarWithTree> setOfLocals = new LinkedHashSet<>();
           setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
           init.add(ImmutableSet.copyOf(setOfLocals));
+          // Increment numMustCall for each @Owning parameter tracked by the enclosing method
+          incrementNumMustCall();
         }
       }
     }
@@ -723,6 +728,12 @@ class MustCallInvokedChecker {
     }
   }
 
+  private void incrementNumMustCall() {
+    if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
+      checker.numMustCall++;
+    }
+  }
+
   /**
    * Do the called methods represented by the {@link CalledMethods} type {@code cmAnno} include all
    * the methods in {@code mustCallValue}?
@@ -731,7 +742,6 @@ class MustCallInvokedChecker {
       List<String> mustCallValue, AnnotationMirror cmAnno) {
     AnnotationMirror cmAnnoForMustCallMethods =
         typeFactory.createCalledMethods(mustCallValue.toArray(new String[0]));
-
     return typeFactory.getQualifierHierarchy().isSubtype(cmAnno, cmAnnoForMustCallMethods);
   }
 

@@ -14,6 +14,7 @@ public class MustCallTest extends CheckerFrameworkPerDirectoryTest {
         "mustcall",
         "-Anomsgtext",
         "-AcheckMustCall",
+        "-AcountMustCall",
         "-nowarn");
   }
 

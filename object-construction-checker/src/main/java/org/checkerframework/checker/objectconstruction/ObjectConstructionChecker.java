@@ -1,13 +1,18 @@
 package org.checkerframework.checker.objectconstruction;
 
+import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.CHECK_MUST_CALL;
+import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.COUNT_MUST_CALL;
+
 import java.util.LinkedHashSet;
 import java.util.Properties;
 import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
+import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.unconnectedsocket.UnconnectedSocketChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.qual.StubFiles;
+import org.checkerframework.framework.source.SupportedOptions;
 import org.checkerframework.framework.source.SuppressWarningsPrefix;
 
 /**
@@ -23,11 +28,22 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   "NoObligationStreams.astub",
   "IOUtils.astub"
 })
+@SupportedOptions({CHECK_MUST_CALL, COUNT_MUST_CALL})
 public class ObjectConstructionChecker extends CalledMethodsChecker {
 
   public static final String CHECK_MUST_CALL = "checkMustCall";
 
   public static final String DISABLE_UNCONNECTED_SOCKET = "disableUnConnectedSock";
+
+  public static final String COUNT_MUST_CALL = "countMustCall";
+
+  /**
+   * The number of expressions with must-call obligations that were checked. Incremented only if the
+   * {@link #COUNT_MUST_CALL} option was supplied.
+   */
+  int numMustCall = 0;
+
+  int numMustCallFailed = 0;
 
   @Override
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
@@ -67,5 +83,24 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
   @Override
   protected BaseTypeVisitor<?> createSourceVisitor() {
     return new ObjectConstructionVisitor(this);
+  }
+
+  @Override
+  public void reportError(Object source, @CompilerMessageKey String messageKey, Object... args) {
+    if (messageKey.equals("required.method.not.called")) {
+      numMustCallFailed++;
+    }
+    super.reportError(source, messageKey, args);
+  }
+
+  @Override
+  public void typeProcessingOver() {
+    if (hasOption(COUNT_MUST_CALL)) {
+      System.out.printf("Found %d must call obligation(s).%n", numMustCall);
+      System.out.printf(
+          "Found %d must call obligation(s) that were handled correctly.%n",
+          numMustCall - numMustCallFailed);
+    }
+    super.typeProcessingOver();
   }
 }
