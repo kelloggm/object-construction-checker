@@ -569,7 +569,8 @@ class MustCallInvokedChecker {
       CFStore succRegularStore = analysis.getInput(succ).getRegularStore();
       for (ImmutableSet<LocalVarWithTree> setAssign : defs) {
         // If the successor block is the exit block or if the variable is going out of scope
-        boolean noSuccInfo = setAssign.stream()
+        boolean noSuccInfo =
+            setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null);
         if (succ instanceof SpecialBlockImpl || noSuccInfo) {
           if (nodes.size() == 0) { // If the cur block is special or conditional block
@@ -581,7 +582,8 @@ class MustCallInvokedChecker {
             // not have any information about it, by construction, and
             // any information in the previous store remains true. If any locals do appear
             // in succRegularStore, we will always use that store.
-            CFStore storeToUse = noSuccInfo ? analysis.getInput(block).getRegularStore() : succRegularStore;
+            CFStore storeToUse =
+                noSuccInfo ? analysis.getInput(block).getRegularStore() : succRegularStore;
             checkMustCall(setAssign, storeToUse, reasonForSucc);
           } else { // If the cur block is Exception/Regular block then it checks MustCall
             // annotation in the store right after the last node
