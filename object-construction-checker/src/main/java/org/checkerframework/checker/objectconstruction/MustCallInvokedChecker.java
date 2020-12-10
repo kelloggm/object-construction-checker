@@ -573,7 +573,19 @@ class MustCallInvokedChecker {
             || setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null)) {
           if (nodes.size() == 0) { // If the cur block is special or conditional block
+            // Use the store from the block actually being analyzed, rather than succRegularStore.
+            // In the case where none of the local variables in setAssign appear in
+            // succRegularStore, the variable is going out of scope, and it doesn't make
+            // sense to pass succRegularStore to checkMustCall - the successor store will
+            // not have any information about it, by construction, and
+            // any information in the previous store remains true.
+            // In the the case where some local variable does appear in succRegularStore,
+            // since we know nodes.size() == 0, it is not possible that some variable type in
+            // succRegularStore could differ from its type in
+            // analysis.getInput(block).getRegularStore() - there are
+            // no nodes that could cause the type to change.
             checkMustCall(setAssign, analysis.getInput(block).getRegularStore(), reasonForSucc);
+            // TODO: delete? checkMustCall(setAssign, succRegularStore, reasonForSucc);
           } else { // If the cur block is Exception/Regular block then it checks MustCall
             // annotation in the store right after the last node
             Node last = nodes.get(nodes.size() - 1);
