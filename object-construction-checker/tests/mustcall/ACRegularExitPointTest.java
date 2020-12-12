@@ -312,4 +312,48 @@ class ACRegularExitPointTest {
         // :: error: required.method.not.called
         SubFoo f = new SubFoo();
     }
+
+    static void takeOwnership(@Owning Foo foo) {
+        foo.a();
+    }
+
+    void testTernary(boolean b) {
+        Foo ternary1 = b ? new Foo() : makeFoo();
+        ternary1.a();
+
+        // :: error: required.method.not.called
+        Foo ternary2 = b ? new Foo() : makeFoo();
+
+        // :: error: required.method.not.called
+        Foo x = new Foo();
+        Foo ternary3 = b ? new Foo() : x;
+        ternary3.a();
+
+        // :: error: required.method.not.called
+        if ((b ? new Foo() : null) != null) {
+            b = !b;
+        }
+        // :: error: required.method.not.called
+        if ((b ? makeFoo() : null) != null) {
+            b = !b;
+        }
+
+        takeOwnership(b ? new Foo() : makeFoo());
+
+        // :: error: required.method.not.called
+        Foo x2 = new Foo();
+        takeOwnership(b ? x2 : null);
+
+    }
+
+    @Owning Foo testTernaryReturnOk(boolean b) {
+        return b ? new Foo() : makeFoo();
+    }
+
+    @Owning Foo testTernaryReturnBad(boolean b) {
+        // :: error: required.method.not.called
+        Foo x = new Foo();
+        return b ? x : makeFoo();
+    }
+
 }

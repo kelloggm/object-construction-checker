@@ -5,6 +5,7 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Type;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
@@ -44,6 +45,7 @@ import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
+import org.checkerframework.dataflow.cfg.node.TernaryExpressionNode;
 import org.checkerframework.dataflow.cfg.node.TypeCastNode;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFAnalysis;
@@ -143,7 +145,7 @@ class MustCallInvokedChecker {
     doOwnershipTransferToParameters(newDefs, node);
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
-    if (!nestedInTypeCast(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
+    if (!nestedInCastOrTernary(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
       // If the node is not skipped by the shouldSkipInvokePseudoAssignCheck() it means we have a
       // method invocation or object creation node that creates a new resource, so we increment
       // the numMustCall
@@ -259,10 +261,10 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Checks if {@code node} is an invocation nested inside a TypeCastNode, by looking at the
-   * successor block in the CFG
+   * Checks if {@code node} is an invocation nested inside a {@link TypeCastNode} or a {@link
+   * TernaryExpressionNode}, by looking at the successor block in the CFG
    */
-  private boolean nestedInTypeCast(Node node) {
+  private boolean nestedInCastOrTernary(Node node) {
     if (!(node instanceof MethodInvocationNode || node instanceof ObjectCreationNode)) {
       throw new BugInCF("unexpected node type " + node.getClass());
     }
@@ -271,10 +273,16 @@ class MustCallInvokedChecker {
       return false;
     }
     Block successorBlock = ((ExceptionBlock) node.getBlock()).getSuccessor();
-    if (successorBlock instanceof ExceptionBlock) {
-      Node succNode = ((ExceptionBlock) successorBlock).getNode();
-      return succNode instanceof TypeCastNode
-          && ((TypeCastNode) succNode).getOperand().equals(node);
+    List<Node> succNodes = successorBlock.getNodes();
+    if (succNodes.size() > 0) {
+      Node succNode = succNodes.get(0);
+      if (succNode instanceof TypeCastNode) {
+        return ((TypeCastNode) succNode).getOperand().equals(node);
+      } else if (succNode instanceof TernaryExpressionNode) {
+        TernaryExpressionNode ternaryExpressionNode = (TernaryExpressionNode) succNode;
+        return ternaryExpressionNode.getThenOperand().equals(node)
+            || ternaryExpressionNode.getElseOperand().equals(node);
+      }
     }
     return false;
   }
@@ -345,13 +353,68 @@ class MustCallInvokedChecker {
   }
 
   private void handleAssignment(AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
-    Node lhs = node.getTarget();
-    Node rhs = node.getExpression();
+    Node rhs = removeCasts(node.getExpression());
 
-    while (rhs instanceof TypeCastNode) {
-      rhs = ((TypeCastNode) rhs).getOperand();
+    if (rhs instanceof TernaryExpressionNode) {
+      recurseThroughTernaryExpr(node, newDefs, (TernaryExpressionNode) rhs);
+    } else {
+      handleAssignFromRHS(node, newDefs, rhs);
     }
+  }
 
+  /**
+   * Recursively find all method calls nested under a ternary expression on the right-hand side of
+   * an assignment, and handle each as if it were directly assigned to the left-hand side variable.
+   *
+   * @param node original assignment
+   * @param newDefs currently-tracked definitions
+   * @param rhsTernary
+   */
+  private void recurseThroughTernaryExpr(
+      AssignmentNode node,
+      Set<ImmutableSet<LocalVarWithTree>> newDefs,
+      TernaryExpressionNode rhsTernary) {
+    // If handling the then operand of the ternary expression results in adding the assignment to
+    // newDefs, we do not want to also handle the else operand.  Otherwise, for an assignment like
+    // x = b ? new Foo() : new Foo();, the algorithm would add the assignment for the then case, but
+    // then report a false positive error for the else case, since based on the updated state of
+    // newDefs it looks like a tracked variable x is being overwritten.  To avoid these false
+    // positives, we track the size of newDefs before and after handling the then operand, and only
+    // recurse to the else operand if the size does not change.
+    int totalDefs = countDefs(newDefs);
+    handleTernaryOperand(node, newDefs, removeCasts(rhsTernary.getThenOperand()));
+    if (countDefs(newDefs) == totalDefs) {
+      handleTernaryOperand(node, newDefs, removeCasts(rhsTernary.getElseOperand()));
+    }
+  }
+
+  /**
+   * counts the total number of {@link LocalVarWithTree}s contained in all sets contained in {@code
+   * defs}
+   */
+  private int countDefs(Set<ImmutableSet<LocalVarWithTree>> defs) {
+    return defs.stream().collect(Collectors.summingInt(ImmutableSet::size));
+  }
+
+  private void handleTernaryOperand(
+      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs, Node operand) {
+    if (operand instanceof TernaryExpressionNode) {
+      recurseThroughTernaryExpr(node, newDefs, (TernaryExpressionNode) operand);
+    } else if (operand instanceof MethodInvocationNode || operand instanceof ObjectCreationNode) {
+      handleAssignFromRHS(node, newDefs, operand);
+    }
+  }
+
+  private Node removeCasts(Node node) {
+    while (node instanceof TypeCastNode) {
+      node = ((TypeCastNode) node).getOperand();
+    }
+    return node;
+  }
+
+  private void handleAssignFromRHS(
+      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs, Node rhs) {
+    Node lhs = node.getTarget();
     Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
 
     // Ownership transfer to @Owning field
@@ -440,9 +503,7 @@ class MustCallInvokedChecker {
    *     a @MustCallChoice parameter, otherwise null
    */
   private @Nullable LocalVariableNode getLocalPassedAsMustCallChoiceParam(Node node) {
-    while (node instanceof TypeCastNode) {
-      node = ((TypeCastNode) node).getOperand();
-    }
+    node = removeCasts(node);
 
     if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
 
