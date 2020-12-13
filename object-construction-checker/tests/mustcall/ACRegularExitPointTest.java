@@ -317,7 +317,10 @@ class ACRegularExitPointTest {
         foo.a();
     }
 
-    void testTernary(boolean b) {
+    /**
+     * cases where ternary expressions are assigned to a variable
+     */
+    void testTernaryAssigned(boolean b) {
         Foo ternary1 = b ? new Foo() : makeFoo();
         ternary1.a();
 
@@ -329,21 +332,48 @@ class ACRegularExitPointTest {
         Foo ternary3 = b ? new Foo() : x;
         ternary3.a();
 
-        // :: error: required.method.not.called
-        if ((b ? new Foo() : null) != null) {
-            b = !b;
-        }
-        // :: error: required.method.not.called
-        if ((b ? makeFoo() : null) != null) {
-            b = !b;
-        }
-
         takeOwnership(b ? new Foo() : makeFoo());
 
         // :: error: required.method.not.called
         Foo x2 = new Foo();
         takeOwnership(b ? x2 : null);
 
+        int i = 10;
+        Foo ternaryInLoop = null;
+        while (i > 0) {
+            // :: error: required.method.not.called
+            ternaryInLoop = b ? null : new Foo();
+            i--;
+        }
+        ternaryInLoop.a();
+    }
+
+    /**
+     * tests where ternary and cast expressions (possibly nested) may or may not be assigned to a variable
+     */
+    void testTernaryCastUnassigned(boolean b) {
+        // :: error: required.method.not.called
+        if ((b ? new Foo() : null) != null) {
+            b = !b;
+        }
+
+        // :: error: required.method.not.called
+        if ((b ? makeFoo() : null) != null) {
+            b = !b;
+        }
+
+        // :: error: required.method.not.called
+        if (((Foo) new Foo()) != null) {
+            b = !b;
+        }
+
+        // double cast; no error
+        Foo doubleCast = (Foo) ((Foo) makeFoo());
+        doubleCast.a();
+
+        // nesting casts and ternary expressions; no error
+        Foo deepNesting = (b ? (!b ? makeFoo() : (Foo) makeFoo()) : ((Foo) new Foo()));
+        deepNesting.a();
     }
 
     @Owning Foo testTernaryReturnOk(boolean b) {
