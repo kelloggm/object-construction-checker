@@ -386,4 +386,13 @@ class ACRegularExitPointTest {
         return b ? x : makeFoo();
     }
 
+    @MustCall("toString") static class Sub1 extends Object { }
+    @MustCall("clone") static class Sub2 extends Object { }
+
+    static void test_ternary(boolean b) {
+        // :: error: required.method.not.called
+        Object toStringAndClone = b ? new Sub1() : new Sub2();
+        // at this point, for soundness, we should be responsible for calling both toString and clone on obj...
+        toStringAndClone.toString();
+    }
 }
