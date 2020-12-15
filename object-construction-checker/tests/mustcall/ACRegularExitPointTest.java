@@ -362,6 +362,12 @@ class ACRegularExitPointTest {
             b = !b;
         }
 
+        Foo x = new Foo();
+        if ((b ? x : null) != null) {
+            b = !b;
+        }
+        x.a();
+
         // :: error: required.method.not.called
         if (((Foo) new Foo()) != null) {
             b = !b;
