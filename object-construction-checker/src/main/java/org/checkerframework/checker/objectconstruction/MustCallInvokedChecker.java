@@ -299,15 +299,17 @@ class MustCallInvokedChecker {
       return false;
     }
     Block successorBlock = ((SingleSuccessorBlock) node.getBlock()).getSuccessor();
-    List<Node> succNodes = successorBlock.getNodes();
-    if (succNodes.size() > 0) {
-      Node succNode = succNodes.get(0);
-      if (succNode instanceof TypeCastNode) {
-        return ((TypeCastNode) succNode).getOperand().equals(node);
-      } else if (succNode instanceof TernaryExpressionNode) {
-        TernaryExpressionNode ternaryExpressionNode = (TernaryExpressionNode) succNode;
-        return ternaryExpressionNode.getThenOperand().equals(node)
-            || ternaryExpressionNode.getElseOperand().equals(node);
+    if (successorBlock != null) {
+      List<Node> succNodes = successorBlock.getNodes();
+      if (succNodes.size() > 0) {
+        Node succNode = succNodes.get(0);
+        if (succNode instanceof TypeCastNode) {
+          return ((TypeCastNode) succNode).getOperand().equals(node);
+        } else if (succNode instanceof TernaryExpressionNode) {
+          TernaryExpressionNode ternaryExpressionNode = (TernaryExpressionNode) succNode;
+          return ternaryExpressionNode.getThenOperand().equals(node)
+              || ternaryExpressionNode.getElseOperand().equals(node);
+        }
       }
     }
     return false;
