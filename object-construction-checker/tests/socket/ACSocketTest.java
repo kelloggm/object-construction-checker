@@ -2,9 +2,7 @@ import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.*;
 import java.io.IOException;
 import java.util.*;
@@ -479,6 +477,32 @@ public class ACSocketTest
 
     @NotOwning Socket getSocket(Socket s) {
         return s;
+    }
+
+    public static void readPropertiesFile(File from) throws IOException {
+        RandomAccessFile file = new RandomAccessFile(from, "rws");
+        FileInputStream in = null;
+        try {
+            in = new FileInputStream(file.getFD());
+            file.seek(0);
+        } finally {
+            if (in != null) {
+                in.close();
+            }
+            file.close();
+        }
+    }
+
+    public void testFormatter() {
+        StringBuilder compliantBlocksSB = new StringBuilder();
+        compliantBlocksSB
+                .append("\nBlocks satisfying the specified storage policy:")
+                .append("\nStorage Policy"
+                        + "                  # of blocks       % of blocks\n");
+        StringBuilder nonCompliantBlocksSB = new StringBuilder();
+        Formatter compliantFormatter = new Formatter(compliantBlocksSB);
+        Formatter nonCompliantFormatter = new Formatter(nonCompliantBlocksSB);
+        compliantFormatter.format("%-25s %10d  %20s%n");
     }
 }
 

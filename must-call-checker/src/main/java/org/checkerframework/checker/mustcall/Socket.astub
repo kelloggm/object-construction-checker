@@ -69,8 +69,6 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
     Set<SocketOption<?>> supportedOptions();
 }
 
-
-
 class ServerSocket implements Closeable {
     ServerSocket() throws IOException;
     ServerSocket(int arg0) throws IOException;

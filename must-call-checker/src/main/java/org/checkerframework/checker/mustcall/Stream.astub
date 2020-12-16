@@ -79,25 +79,6 @@ class BufferedOutputStream extends FilterOutputStream {
 
 class DataInputStream extends FilterInputStream implements DataInput {
     @MustCallChoice DataInputStream(@MustCallChoice InputStream arg0);
-    int read(byte[] arg0) throws IOException;
-    int read(byte[] arg0, int arg1, int arg2) throws IOException;
-    void readFully(byte[] arg0) throws IOException;
-    void readFully(byte[] arg0, int arg1, int arg2) throws IOException;
-    int skipBytes(int arg0) throws IOException;
-    boolean readBoolean() throws IOException;
-    byte readByte() throws IOException;
-    int readUnsignedByte() throws IOException;
-    short readShort() throws IOException;
-    int readUnsignedShort() throws IOException;
-    char readChar() throws IOException;
-    int readInt() throws IOException;
-    long readLong() throws IOException;
-    float readFloat() throws IOException;
-    double readDouble() throws IOException;
-    @java.lang.Deprecated
-String readLine() throws IOException;
-    String readUTF() throws IOException;
-    static String readUTF(DataInput arg0) throws IOException;
 }
 
 class FilterInputStream extends InputStream {
@@ -130,6 +111,34 @@ class BufferedInputStream extends FilterInputStream {
     void reset() throws IOException;
     boolean markSupported();
     void close() throws IOException;
+}
+
+class FileOutputStream extends OutputStream {
+    FileOutputStream(String arg0) throws FileNotFoundException;
+    FileOutputStream(String arg0, boolean arg1) throws FileNotFoundException;
+    FileOutputStream(File arg0) throws FileNotFoundException;
+    FileOutputStream(File arg0, boolean arg1) throws FileNotFoundException;
+    FileOutputStream(FileDescriptor arg0);
+    void write(int arg0) throws IOException;
+    void write(byte[] arg0) throws IOException;
+    void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    void close() throws IOException;
+    FileDescriptor getFD() throws IOException;
+    @MustCallChoice FileChannel getChannel(@MustCallChoice FileOutputStream this);
+}
+
+class FileInputStream extends InputStream {
+    FileInputStream(String arg0) throws FileNotFoundException;
+    FileInputStream(File arg0) throws FileNotFoundException;
+    FileInputStream(FileDescriptor arg0);
+    int read() throws IOException;
+    int read(byte[] arg0) throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
+    long skip(long arg0) throws IOException;
+    int available() throws IOException;
+    void close() throws IOException;
+    FileDescriptor getFD() throws IOException;
+    @MustCallChoice FileChannel getChannel(@MustCallChoice FileInputStream this);
 }
 
 class InputStreamReader extends Reader {
@@ -199,6 +208,50 @@ class Writer {
     @NotOwning Writer append(char arg0) throws IOException;
 }
 
+class RandomAccessFile implements DataOutput, DataInput, Closeable {
+    RandomAccessFile(String arg0, String arg1) throws FileNotFoundException;
+    RandomAccessFile(File arg0, String arg1) throws FileNotFoundException;
+    @MustCallChoice FileDescriptor getFD(@MustCallChoice RandomAccessFile this) throws IOException;
+    @MustCallChoice FileChannel getChannel(@MustCallChoice RandomAccessFile this);
+    int read() throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
+    int read(byte[] arg0) throws IOException;
+    void readFully(byte[] arg0) throws IOException;
+    void readFully(byte[] arg0, int arg1, int arg2) throws IOException;
+    int skipBytes(int arg0) throws IOException;
+    void write(int arg0) throws IOException;
+    void write(byte[] arg0) throws IOException;
+    void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    long getFilePointer() throws IOException;
+    void seek(long arg0) throws IOException;
+    long length() throws IOException;
+    void setLength(long arg0) throws IOException;
+    void close() throws IOException;
+    boolean readBoolean() throws IOException;
+    byte readByte() throws IOException;
+    int readUnsignedByte() throws IOException;
+    short readShort() throws IOException;
+    int readUnsignedShort() throws IOException;
+    char readChar() throws IOException;
+    int readInt() throws IOException;
+    long readLong() throws IOException;
+    float readFloat() throws IOException;
+    double readDouble() throws IOException;
+    String readLine() throws IOException;
+    String readUTF() throws IOException;
+    void writeBoolean(boolean arg0) throws IOException;
+    void writeByte(int arg0) throws IOException;
+    void writeShort(int arg0) throws IOException;
+    void writeChar(int arg0) throws IOException;
+    void writeInt(int arg0) throws IOException;
+    void writeLong(long arg0) throws IOException;
+    void writeFloat(float arg0) throws IOException;
+    void writeDouble(double arg0) throws IOException;
+    void writeBytes(String arg0) throws IOException;
+    void writeChars(String arg0) throws IOException;
+    void writeUTF(String arg0) throws IOException;
+}
+
 package java.security;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
@@ -211,6 +264,17 @@ class DigestOutputStream extends FilterOutputStream {
     void setMessageDigest(MessageDigest arg0);
     void write(int arg0) throws IOException;
     void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    void on(boolean arg0);
+    String toString();
+}
+
+class DigestInputStream extends FilterInputStream {
+    protected MessageDigest digest;
+    @MustCallChoice DigestInputStream(@MustCallChoice InputStream arg0, MessageDigest arg1);
+    MessageDigest getMessageDigest();
+    void setMessageDigest(MessageDigest arg0);
+    int read() throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
     void on(boolean arg0);
     String toString();
 }
@@ -228,4 +292,33 @@ class Scanner {
     @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source);
     @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source, String charsetName);
     @MustCall({}) Scanner(String source);
+}
+
+//TODO add annotation
+class Formatter implements Closeable, Flushable {
+    Formatter();
+    @PolyMustCall Formatter(@PolyMustCall Appendable arg0);
+    Formatter(Locale arg0);
+    @PolyMustCall Formatter(@PolyMustCall Appendable arg0, Locale arg1);
+    Formatter(String arg0) throws FileNotFoundException;
+    Formatter(String arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    Formatter(String arg0, String arg1, Locale arg2) throws FileNotFoundException, UnsupportedEncodingException;
+    Formatter(String arg0, Charset arg1, Locale arg2) throws IOException;
+    Formatter(File arg0) throws FileNotFoundException;
+    Formatter(File arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    Formatter(File arg0, String arg1, Locale arg2) throws FileNotFoundException, UnsupportedEncodingException;
+    Formatter(File arg0, Charset arg1, Locale arg2) throws IOException;
+    Formatter(PrintStream arg0);
+    Formatter(OutputStream arg0);
+    Formatter(OutputStream arg0, String arg1) throws UnsupportedEncodingException;
+    Formatter(OutputStream arg0, String arg1, Locale arg2) throws UnsupportedEncodingException;
+    Formatter(OutputStream arg0, Charset arg1, Locale arg2);
+    Locale locale();
+    Appendable out();
+    String toString();
+    void flush();
+    void close();
+    IOException ioException();
+    @NotOwning Formatter format(String arg0, Object[] arg1);
+    @NotOwning Formatter format(Locale arg0, String arg1, Object[] arg2);
 }
