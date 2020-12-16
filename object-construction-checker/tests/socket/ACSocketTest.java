@@ -479,30 +479,5 @@ public class ACSocketTest
         return s;
     }
 
-    public static void readPropertiesFile(File from) throws IOException {
-        RandomAccessFile file = new RandomAccessFile(from, "rws");
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream(file.getFD());
-            file.seek(0);
-        } finally {
-            if (in != null) {
-                in.close();
-            }
-            file.close();
-        }
-    }
-
-    public void testFormatter() {
-        StringBuilder compliantBlocksSB = new StringBuilder();
-        compliantBlocksSB
-                .append("\nBlocks satisfying the specified storage policy:")
-                .append("\nStorage Policy"
-                        + "                  # of blocks       % of blocks\n");
-        StringBuilder nonCompliantBlocksSB = new StringBuilder();
-        Formatter compliantFormatter = new Formatter(compliantBlocksSB);
-        Formatter nonCompliantFormatter = new Formatter(nonCompliantBlocksSB);
-        compliantFormatter.format("%-25s %10d  %20s%n");
-    }
 }
 
