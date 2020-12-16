@@ -294,7 +294,6 @@ class Scanner {
     @MustCall({}) Scanner(String source);
 }
 
-//TODO add annotation
 class Formatter implements Closeable, Flushable {
     Formatter();
     @PolyMustCall Formatter(@PolyMustCall Appendable arg0);
