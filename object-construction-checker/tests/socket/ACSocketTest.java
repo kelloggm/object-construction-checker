@@ -2,9 +2,7 @@ import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.*;
 import java.io.IOException;
 import java.util.*;
@@ -480,5 +478,6 @@ public class ACSocketTest
     @NotOwning Socket getSocket(Socket s) {
         return s;
     }
+
 }
 

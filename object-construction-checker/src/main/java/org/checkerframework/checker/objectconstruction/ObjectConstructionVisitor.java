@@ -131,6 +131,9 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
               error =
                   " @EnsuresCalledMethods written on MustCall methods doesn't contain "
                       + MustCallInvokedChecker.formatMissingMustCallMethods(fieldMCAnno);
+            } else {
+              error = " There  is no @MustCall annotation written on the enclosing method"
+                      + MustCallInvokedChecker.formatMissingMustCallMethods(fieldMCAnno);
             }
           }
         }
