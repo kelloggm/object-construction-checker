@@ -36,6 +36,7 @@ import org.checkerframework.framework.type.SubtypeIsSubsetQualifierHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -97,7 +98,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       type.replaceAnnotation(BOTTOM);
     }
     if (isDeclaredInTryWithResources(TreeUtils.elementFromTree(tree))) {
-      type.replaceAnnotation(BOTTOM);
+      type.replaceAnnotation(withoutClose(type.getAnnotationInHierarchy(TOP)));
     }
   }
 
@@ -108,8 +109,27 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       type.replaceAnnotation(BOTTOM);
     }
     if (isDeclaredInTryWithResources(elt)) {
-      type.replaceAnnotation(BOTTOM);
+      type.replaceAnnotation(withoutClose(type.getAnnotationInHierarchy(TOP)));
     }
+  }
+
+  /**
+   * Creates a new @MustCall annotation that is identical to the input, but does not have "close".
+   * Returns the same annotation mirror if the input annotation didn't have "close" as one of its
+   * element.
+   */
+  private AnnotationMirror withoutClose(AnnotationMirror anno) {
+    // shortcut for easy paths
+    if (AnnotationUtils.areSame(anno, BOTTOM)) {
+      return BOTTOM;
+    } else if (!AnnotationUtils.areSameByClass(anno, MustCall.class)) {
+      return anno;
+    }
+    List<String> values = ValueCheckerUtils.getValueOfAnnotationWithStringArgument(anno);
+    if (!values.contains("close")) {
+      return anno;
+    }
+    return createMustCall(values.stream().filter(s -> !"close".equals(s)).toArray(String[]::new));
   }
 
   /**
