@@ -17,13 +17,13 @@ class FileChannel {
 
 class SocketChannel extends AbstractSelectableChannel implements ByteChannel, ScatteringByteChannel, GatheringByteChannel, NetworkChannel {
     protected SocketChannel(SelectorProvider arg0);
-    static SocketChannel open() throws IOException;
-    static SocketChannel open(SocketAddress arg0) throws IOException;
+    @MustCallChoice static SocketChannel open(@MustCallChoice SocketChannel this) throws IOException;
+    @MustCallChoice static SocketChannel open(@MustCallChoice SocketChannel this, SocketAddress arg0) throws IOException;
     int validOps();
     SocketChannel bind(SocketAddress arg0) throws IOException;
     <T> SocketChannel setOption(SocketOption<T> arg0, T arg1) throws IOException;
-    SocketChannel shutdownInput() throws IOException;
-    SocketChannel shutdownOutput() throws IOException;
+    @NotOwning SocketChannel shutdownInput() throws IOException;
+    @NotOwning SocketChannel shutdownOutput() throws IOException;
     @MustCallChoice Socket socket(@MustCallChoice SocketChannel this);
     boolean isConnected();
     boolean isConnectionPending();
@@ -41,13 +41,13 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
 
 class ServerSocketChannel extends AbstractSelectableChannel implements NetworkChannel {
     protected ServerSocketChannel(SelectorProvider arg0);
-    static ServerSocketChannel open() throws IOException;
+    @MustCallChoice static ServerSocketChannel open(@MustCallChoice ServerSocketChannel this) throws IOException;
     int validOps();
-    ServerSocketChannel bind(SocketAddress arg0) throws IOException;
-    ServerSocketChannel bind(SocketAddress arg0, int arg1) throws IOException;
+    @MustCallChoice ServerSocketChannel bind(@MustCallChoice ServerSocketChannel this, SocketAddress arg0) throws IOException;
+    @MustCallChoice ServerSocketChannel bind(@MustCallChoice ServerSocketChannel this, SocketAddress arg0, int arg1) throws IOException;
     <T> ServerSocketChannel setOption(SocketOption<T> arg0, T arg1) throws IOException;
     @MustCallChoice ServerSocket socket(@MustCallChoice ServerSocketChannel this);
-    SocketChannel accept() throws IOException;
+    @MustCallChoice SocketChannel accept(@MustCallChoice ServerSocketChannel this) throws IOException;
     SocketAddress getLocalAddress() throws IOException;
 }
 
