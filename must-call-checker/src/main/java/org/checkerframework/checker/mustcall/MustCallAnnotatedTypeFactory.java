@@ -117,8 +117,10 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * Creates a new @MustCall annotation that is identical to the input, but does not have "close".
    * Returns the same annotation mirror if the input annotation didn't have "close" as one of its
    * element.
+   *
+   * <p>Package private to permit usage from the visitor in the common assignment check.
    */
-  private AnnotationMirror withoutClose(AnnotationMirror anno) {
+  /* package-private */ AnnotationMirror withoutClose(AnnotationMirror anno) {
     // shortcut for easy paths
     if (AnnotationUtils.areSame(anno, BOTTOM)) {
       return BOTTOM;

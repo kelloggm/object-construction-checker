@@ -6,6 +6,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.Tree;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
@@ -76,7 +77,8 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
   }
 
   /**
-   * Skip assignment checks for try-with-resources variables, because they're always @MustCall({}).
+   * Mark (using the extraArgs) any assigments where the LHS is a resource variable, so that close
+   * doesn't need to be considered.
    */
   @Override
   protected void commonAssignmentCheck(
@@ -85,9 +87,37 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
     if (TreeUtils.elementFromTree(varTree).getKind() == ElementKind.RESOURCE_VARIABLE) {
-      return;
+      // Use the extraArgs array to signal to later stages of the CAC that this is in a
+      // resource variable context.
+      Object[] newExtraArgs = Arrays.copyOf(extraArgs, extraArgs.length + 1);
+      newExtraArgs[newExtraArgs.length - 1] = ElementKind.RESOURCE_VARIABLE;
+      super.commonAssignmentCheck(varTree, valueExp, errorKey, newExtraArgs);
+    } else {
+      super.commonAssignmentCheck(varTree, valueExp, errorKey, extraArgs);
     }
-    super.commonAssignmentCheck(varTree, valueExp, errorKey, extraArgs);
+  }
+
+  /**
+   * If the LHS has been marked as a resource variable, then the standard CAC is skipped and a check
+   * that does not include "close" is substituted.
+   */
+  @Override
+  protected void commonAssignmentCheck(
+      AnnotatedTypeMirror varType,
+      AnnotatedTypeMirror valueType,
+      Tree valueTree,
+      @CompilerMessageKey String errorKey,
+      Object... extraArgs) {
+    if (Arrays.asList(extraArgs).contains(ElementKind.RESOURCE_VARIABLE)) {
+      AnnotationMirror varAnno = varType.getAnnotationInHierarchy(atypeFactory.TOP);
+      AnnotationMirror valAnno = valueType.getAnnotationInHierarchy(atypeFactory.TOP);
+      if (atypeFactory
+          .getQualifierHierarchy()
+          .isSubtype(atypeFactory.withoutClose(valAnno), atypeFactory.withoutClose(varAnno))) {
+        return;
+      }
+    }
+    super.commonAssignmentCheck(varType, valueType, valueTree, errorKey, extraArgs);
   }
 
   /**

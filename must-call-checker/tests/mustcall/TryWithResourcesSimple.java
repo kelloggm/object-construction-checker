@@ -4,9 +4,25 @@ import java.net.*;
 import java.io.*;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 
-class TryWithResourcesSimple {
+public class TryWithResourcesSimple {
     static void test(String address, int port) {
         try (Socket socket = new Socket(address, port)) {
+            @MustCall({}) Object s = socket;
+        } catch (Exception e) {
+
+        }
+    }
+
+    @SuppressWarnings("mustcall:type.invalid.annotations.on.use")
+    public static @MustCall({"close", "myMethod"}) Socket getFancySocket() {
+        return null;
+    }
+
+    void test_fancy_sock(String address, int port) {
+        // This is illegal, because getFancySock()'s return type has another MC method beyond "close",
+        // which is the only MC method for Socket itself.
+        // :: error: assignment.type.incompatible
+        try (Socket socket = getFancySocket()) {
             @MustCall({}) Object s = socket;
         } catch (Exception e) {
 
