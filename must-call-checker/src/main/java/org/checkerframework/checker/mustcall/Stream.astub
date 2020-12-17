@@ -24,6 +24,10 @@ class DataOutputStream extends FilterOutputStream implements DataOutput {
     int size();
 }
 
+class RandomAccessFile {
+    @MustCallChoice FileChannel getChannel(@MustCallChoice RandomAccessFile this);
+}
+
 class OutputStream { }
 
 class InputStream { }
