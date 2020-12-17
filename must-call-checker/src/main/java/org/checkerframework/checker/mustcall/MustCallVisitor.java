@@ -1,13 +1,17 @@
 package org.checkerframework.checker.mustcall;
 
 import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ReturnTree;
+import com.sun.source.tree.Tree;
 import java.util.Collections;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -69,6 +73,21 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
     //      }
     //    }
     return true;
+  }
+
+  /**
+   * Skip assignment checks for try-with-resources variables, because they're always @MustCall({}).
+   */
+  @Override
+  protected void commonAssignmentCheck(
+      Tree varTree,
+      ExpressionTree valueExp,
+      @CompilerMessageKey String errorKey,
+      Object... extraArgs) {
+    if (TreeUtils.elementFromTree(varTree).getKind() == ElementKind.RESOURCE_VARIABLE) {
+      return;
+    }
+    super.commonAssignmentCheck(varTree, valueExp, errorKey, extraArgs);
   }
 
   /**

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
@@ -22,6 +23,7 @@ import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -94,6 +96,9 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     if (TypesUtils.isPrimitiveOrBoxed(type.getUnderlyingType())) {
       type.replaceAnnotation(BOTTOM);
     }
+    if (isDeclaredInTryWithResources(TreeUtils.elementFromTree(tree))) {
+      type.replaceAnnotation(BOTTOM);
+    }
   }
 
   @Override
@@ -102,6 +107,21 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     if (TypesUtils.isPrimitiveOrBoxed(type.getUnderlyingType())) {
       type.replaceAnnotation(BOTTOM);
     }
+    if (isDeclaredInTryWithResources(elt)) {
+      type.replaceAnnotation(BOTTOM);
+    }
+  }
+
+  /**
+   * Returns true iff the given element represents a variable that was declared in a
+   * try-with-resources statement.
+   *
+   * @param elt an element; may be null, in which case this method always returns false
+   * @return true iff the given element represents a variable that was declared in a
+   *     try-with-resources statement
+   */
+  private boolean isDeclaredInTryWithResources(@Nullable Element elt) {
+    return elt != null && elt.getKind() == ElementKind.RESOURCE_VARIABLE;
   }
 
   /** Treat non-owning method parameters as @MustCallUnknown when the method is called. */

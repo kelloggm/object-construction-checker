@@ -268,8 +268,7 @@ class MustCallInvokedChecker {
         || callTree.getKind() == Tree.Kind.NEW_CLASS) {
       LocalVariableNode mustCallChoiceParam = getLocalPassedAsMustCallChoiceParam(node);
       if (mustCallChoiceParam != null) {
-        return isVarInDefs(defs, mustCallChoiceParam)
-            || isTryWithResourcesVariable(mustCallChoiceParam);
+        return isVarInDefs(defs, mustCallChoiceParam);
       }
     }
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
@@ -486,8 +485,7 @@ class MustCallInvokedChecker {
           || (rhs instanceof MethodInvocationNode
               && !hasNotOwningReturnType((MethodInvocationNode) rhs))) {
         LocalVariableNode mustCallChoiceParamLocal = getLocalPassedAsMustCallChoiceParam(rhs);
-        if (mustCallChoiceParamLocal != null
-            && !isTryWithResourcesVariable(mustCallChoiceParamLocal)) {
+        if (mustCallChoiceParamLocal != null) {
           if (isVarInDefs(newDefs, mustCallChoiceParamLocal)) {
             ImmutableSet<LocalVarWithTree> immutableSet =
                 getSetContainingAssignmentTreeOfVar(newDefs, mustCallChoiceParamLocal);
