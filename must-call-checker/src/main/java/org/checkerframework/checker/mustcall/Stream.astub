@@ -84,25 +84,6 @@ class BufferedOutputStream extends FilterOutputStream {
 
 class DataInputStream extends FilterInputStream implements DataInput {
     @MustCallChoice DataInputStream(@MustCallChoice InputStream arg0);
-    int read(byte[] arg0) throws IOException;
-    int read(byte[] arg0, int arg1, int arg2) throws IOException;
-    void readFully(byte[] arg0) throws IOException;
-    void readFully(byte[] arg0, int arg1, int arg2) throws IOException;
-    int skipBytes(int arg0) throws IOException;
-    boolean readBoolean() throws IOException;
-    byte readByte() throws IOException;
-    int readUnsignedByte() throws IOException;
-    short readShort() throws IOException;
-    int readUnsignedShort() throws IOException;
-    char readChar() throws IOException;
-    int readInt() throws IOException;
-    long readLong() throws IOException;
-    float readFloat() throws IOException;
-    double readDouble() throws IOException;
-    @java.lang.Deprecated
-String readLine() throws IOException;
-    String readUTF() throws IOException;
-    static String readUTF(DataInput arg0) throws IOException;
 }
 
 class FilterInputStream extends InputStream {
@@ -246,6 +227,8 @@ class DigestOutputStream extends FilterOutputStream {
     String toString();
 }
 
+class DigestInputStream extends FilterInputStream {
+    @MustCallChoice DigestInputStream(@MustCallChoice InputStream arg0, MessageDigest arg1);
 package java.util;
 
 class Scanner {
@@ -259,4 +242,11 @@ class Scanner {
     @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source);
     @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source, String charsetName);
     @MustCall({}) Scanner(String source);
+}
+
+class Formatter implements Closeable, Flushable {
+    @PolyMustCall Formatter(@PolyMustCall Appendable arg0);
+    @PolyMustCall Formatter(@PolyMustCall Appendable arg0, Locale arg1);
+    @NotOwning Formatter format(String arg0, Object[] arg1);
+    @NotOwning Formatter format(Locale arg0, String arg1, Object[] arg2);
 }
