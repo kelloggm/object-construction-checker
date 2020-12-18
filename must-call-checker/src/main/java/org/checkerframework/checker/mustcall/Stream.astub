@@ -229,6 +229,8 @@ class DigestOutputStream extends FilterOutputStream {
 
 class DigestInputStream extends FilterInputStream {
     @MustCallChoice DigestInputStream(@MustCallChoice InputStream arg0, MessageDigest arg1);
+}
+
 package java.util;
 
 class Scanner {
