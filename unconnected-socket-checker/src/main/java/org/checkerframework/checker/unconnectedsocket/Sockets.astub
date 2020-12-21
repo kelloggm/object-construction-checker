@@ -41,3 +41,12 @@ class SocketChannel {
     @CannotConnect
     abstract <T> SocketChannel setOption(SocketOption<T> name, T value);
 }
+
+class ServerSocketChannel {
+    static @Unconnected ServerSocketChannel open();
+
+    @PolyConnected ServerSocket socket(@PolyConnected ServerSocketChannel this);
+
+    @CannotConnect
+    abstract <T> ServerSocketChannel setOption(SocketOption<T> name, T value);
+}

@@ -37,4 +37,10 @@ class SafeCallsOnUnconnectedSockets {
         sock.setOption(StandardSocketOptions.SO_LINGER, 5);
         @Unconnected Socket sock2 = sock.socket();
     }
+
+    void test_server_socket_channel() throws IOException {
+        ServerSocketChannel sock = ServerSocketChannel.open();
+        sock.setOption(StandardSocketOptions.SO_LINGER, 5);
+        @Unconnected ServerSocket sock2 = sock.socket();
+    }
 }
