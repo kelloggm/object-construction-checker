@@ -481,7 +481,7 @@ public class ACSocketTest
         return s;
     }
 
-    private ServerSocket testMCC() throws IOException{
+    private ServerSocket testMCCParamInReturn() throws IOException{
         ServerSocketChannel chan = ServerSocketChannel.open();
         return chan.socket();
     }
