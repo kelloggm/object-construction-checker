@@ -355,6 +355,9 @@ class MustCallInvokedChecker {
       ReturnNode node, ControlFlowGraph cfg, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     if (isTransferOwnershipAtReturn(cfg)) {
       Node result = node.getResult();
+      if (result instanceof MethodInvocationNode || result instanceof ObjectCreationNode) {
+        result = getLocalPassedAsMustCallChoiceParam(result);
+      }
       if (result instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) result)) {
         newDefs.remove(getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) result));
       }
