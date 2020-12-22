@@ -480,5 +480,11 @@ public class ACSocketTest
     @NotOwning Socket getSocket(Socket s) {
         return s;
     }
+
+    private ServerSocket testMCCParamInReturn() throws IOException{
+        ServerSocketChannel chan = ServerSocketChannel.open();
+        return chan.socket();
+    }
+
 }
 
