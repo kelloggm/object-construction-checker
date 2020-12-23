@@ -1,5 +1,7 @@
 // Based on a Zookeeper false positive that requires unconnected socket support.
 
+// @skip-test while the Unconnected Socket Checker is disabled
+
 import java.net.Socket;
 import java.io.IOException;
 import org.checkerframework.checker.unconnectedsocket.qual.Unconnected;
