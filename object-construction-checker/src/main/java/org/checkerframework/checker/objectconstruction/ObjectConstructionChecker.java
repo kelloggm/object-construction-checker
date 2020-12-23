@@ -33,7 +33,7 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
 
   public static final String CHECK_MUST_CALL = "checkMustCall";
 
-  public static final String DISABLE_UNCONNECTED_SOCKET = "disableUnConnectedSock";
+  public static final String ENABLE_UNCONNECTED_SOCKET = "enableUnconnectedSocketChecker";
 
   public static final String COUNT_MUST_CALL = "countMustCall";
 
@@ -52,7 +52,7 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
 
     if (this.processingEnv.getOptions().containsKey(CHECK_MUST_CALL)) {
       checkers.add(MustCallChecker.class);
-      if (!this.processingEnv.getOptions().containsKey(DISABLE_UNCONNECTED_SOCKET)) {
+      if (this.processingEnv.getOptions().containsKey(ENABLE_UNCONNECTED_SOCKET)) {
         checkers.add(UnconnectedSocketChecker.class);
       }
     }

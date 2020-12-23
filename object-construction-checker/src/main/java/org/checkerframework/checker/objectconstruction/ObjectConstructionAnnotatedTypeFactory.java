@@ -113,7 +113,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
    *     definitely-unconnected socket
    */
   public boolean isUnconnectedSocket(Tree tree) {
-    if (checker.hasOption(ObjectConstructionChecker.DISABLE_UNCONNECTED_SOCKET)) {
+    if (!checker.hasOption(ObjectConstructionChecker.ENABLE_UNCONNECTED_SOCKET)) {
       return false;
     }
     UnconnectedSocketAnnotatedTypeFactory usatf =
