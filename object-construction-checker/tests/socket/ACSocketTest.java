@@ -399,15 +399,20 @@ public class ACSocketTest
 //        }
 //    }
 
-
+    /**
+     * The errors in this method are caused by the lack of support for unconnected sockets.
+     */
     void createNewServerSocket(InetSocketAddress address, boolean b, boolean c) throws IOException {
         ServerSocket socket;
 
         if (b) {
+            // :: error: required.method.not.called
             socket = new ServerSocket();
         } else if (c) {
+            // :: error: required.method.not.called
             socket = new ServerSocket();
         } else {
+            // :: error: required.method.not.called
             socket = new ServerSocket();
         }
 
