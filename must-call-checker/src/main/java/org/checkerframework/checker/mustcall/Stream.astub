@@ -57,6 +57,11 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     @NotOwning PrintStream append(char arg0);
 }
 
+class PushbackInputStream {
+    @MustCallChoice PushbackInputStream(@MustCallChoice InputStream in);
+    @MustCallChoice PushbackInputStream(@MustCallChoice InputStream in, int size);
+}
+
 class BufferedReader extends Reader {
     @MustCallChoice BufferedReader(@MustCallChoice Reader arg0, int arg1);
     @MustCallChoice BufferedReader(@MustCallChoice Reader arg0);
