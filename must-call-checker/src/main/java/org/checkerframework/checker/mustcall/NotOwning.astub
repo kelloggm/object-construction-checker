@@ -56,3 +56,8 @@ package java.nio.channels.spi;
 class AbstractSelectableChannel {
     @MustCallChoice SelectableChannel configureBlocking(@MustCallChoice AbstractSelectableChannel this, boolean b);
 }
+
+class AbstractInterruptibleChannel {
+    @EnsuresCalledMethodsIf(expression="this", result=false, methods={"close"})
+    boolean isOpen(AbstractInterruptibleChannel this);
+}
