@@ -252,3 +252,13 @@ class Formatter implements Closeable, Flushable {
     @NotOwning Formatter format(String arg0, Object[] arg1);
     @NotOwning Formatter format(Locale arg0, String arg1, Object[] arg2);
 }
+
+package java.util.zip;
+
+class CheckedInputStream extends FilterInputStream {
+    @MustCallChoice CheckedInputStream(@MustCallChoice InputStream arg0, Checksum arg1);
+    int read() throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
+    long skip(long arg0) throws IOException;
+    Checksum getChecksum();
+}

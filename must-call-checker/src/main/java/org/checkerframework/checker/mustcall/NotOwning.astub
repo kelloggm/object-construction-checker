@@ -17,8 +17,8 @@ class FileChannel {
 
 class SocketChannel extends AbstractSelectableChannel implements ByteChannel, ScatteringByteChannel, GatheringByteChannel, NetworkChannel {
     protected SocketChannel(SelectorProvider arg0);
-    @MustCallChoice static SocketChannel open(@MustCallChoice SocketChannel this) throws IOException;
-    @MustCallChoice static SocketChannel open(@MustCallChoice SocketChannel this, SocketAddress arg0) throws IOException;
+    static SocketChannel open() throws IOException;
+    static SocketChannel open(SocketAddress arg0) throws IOException;
     int validOps();
     SocketChannel bind(SocketAddress arg0) throws IOException;
     <T> SocketChannel setOption(SocketOption<T> arg0, T arg1) throws IOException;
@@ -41,7 +41,7 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
 
 class ServerSocketChannel extends AbstractSelectableChannel implements NetworkChannel {
     protected ServerSocketChannel(SelectorProvider arg0);
-    @MustCallChoice static ServerSocketChannel open(@MustCallChoice ServerSocketChannel this) throws IOException;
+    static ServerSocketChannel open() throws IOException;
     int validOps();
     @MustCallChoice ServerSocketChannel bind(@MustCallChoice ServerSocketChannel this, SocketAddress arg0) throws IOException;
     @MustCallChoice ServerSocketChannel bind(@MustCallChoice ServerSocketChannel this, SocketAddress arg0, int arg1) throws IOException;
@@ -55,4 +55,11 @@ package java.nio.channels.spi;
 
 class AbstractSelectableChannel {
     @MustCallChoice SelectableChannel configureBlocking(@MustCallChoice AbstractSelectableChannel this, boolean b);
+}
+
+package javax.servlet;
+
+interface ServletResponse {
+    @NotOwning ServletOutputStream getOutputStream() throws IOException;
+    @NotOwning PrintWriter getWriter() throws IOException;
 }

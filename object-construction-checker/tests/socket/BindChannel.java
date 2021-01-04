@@ -7,6 +7,7 @@ import java.net.*;
 class BindChannel {
     static void test(InetSocketAddress addr, boolean b) {
         try {
+            // :: error: required.method.not.called
             ServerSocketChannel httpChannel = ServerSocketChannel.open();
             httpChannel.socket().bind(addr);
         } catch (IOException io) {

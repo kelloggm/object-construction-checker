@@ -6,6 +6,7 @@ import java.io.IOException;
 class ZookeeperReport6 {
     SocketChannel createSock() throws IOException {
         SocketChannel sock;
+        // :: error: required.method.not.called
         sock = SocketChannel.open();
         sock.configureBlocking(false);
         sock.socket().setSoLinger(false, -1);
