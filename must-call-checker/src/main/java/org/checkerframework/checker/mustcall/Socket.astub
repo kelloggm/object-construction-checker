@@ -3,6 +3,7 @@ package java.net;
 
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 
@@ -55,7 +56,10 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
     String toString();
     boolean isConnected();
     boolean isBound();
+
+    @EnsuresCalledMethodsIf(expression="this", result=true, methods={"close"})
     boolean isClosed();
+
     boolean isInputShutdown();
     boolean isOutputShutdown();
     static void setSocketImplFactory(SocketImplFactory arg0) throws IOException;
@@ -64,8 +68,6 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
     <T> T getOption(SocketOption<T> arg0) throws IOException;
     Set<SocketOption<?>> supportedOptions();
 }
-
-
 
 class ServerSocket implements Closeable {
     ServerSocket() throws IOException;
@@ -82,7 +84,10 @@ class ServerSocket implements Closeable {
     void close() throws IOException;
     @MustCallChoice ServerSocketChannel getChannel(@MustCallChoice ServerSocket this);
     boolean isBound();
+
+    @EnsuresCalledMethodsIf(expression="this", result=true, methods={"close"})
     boolean isClosed();
+
     void setSoTimeout(int arg0) throws SocketException;
     int getSoTimeout() throws IOException;
     void setReuseAddress(boolean arg0) throws SocketException;

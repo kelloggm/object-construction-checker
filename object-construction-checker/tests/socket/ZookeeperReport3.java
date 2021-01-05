@@ -2,6 +2,8 @@
 // This example is functionally equivalent to example #4, so I included it in this file
 // ("createNewServerSocket").
 
+// @skip-test while the Unconnected Socket Checker is disabled
+
 import java.net.*;
 import java.io.*;
 import java.util.Optional;

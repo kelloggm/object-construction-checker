@@ -24,6 +24,11 @@ class DataOutputStream extends FilterOutputStream implements DataOutput {
     int size();
 }
 
+class RandomAccessFile {
+    @MustCallChoice FileChannel getChannel(@MustCallChoice RandomAccessFile this);
+    @MustCallChoice FileDescriptor getFD(@MustCallChoice RandomAccessFile this) throws IOException;
+}
+
 class OutputStream { }
 
 class InputStream { }
@@ -50,6 +55,11 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
     @NotOwning PrintStream append(CharSequence arg0);
     @NotOwning PrintStream append(CharSequence arg0, int arg1, int arg2);
     @NotOwning PrintStream append(char arg0);
+}
+
+class PushbackInputStream {
+    @MustCallChoice PushbackInputStream(@MustCallChoice InputStream in);
+    @MustCallChoice PushbackInputStream(@MustCallChoice InputStream in, int size);
 }
 
 class BufferedReader extends Reader {
@@ -79,25 +89,6 @@ class BufferedOutputStream extends FilterOutputStream {
 
 class DataInputStream extends FilterInputStream implements DataInput {
     @MustCallChoice DataInputStream(@MustCallChoice InputStream arg0);
-    int read(byte[] arg0) throws IOException;
-    int read(byte[] arg0, int arg1, int arg2) throws IOException;
-    void readFully(byte[] arg0) throws IOException;
-    void readFully(byte[] arg0, int arg1, int arg2) throws IOException;
-    int skipBytes(int arg0) throws IOException;
-    boolean readBoolean() throws IOException;
-    byte readByte() throws IOException;
-    int readUnsignedByte() throws IOException;
-    short readShort() throws IOException;
-    int readUnsignedShort() throws IOException;
-    char readChar() throws IOException;
-    int readInt() throws IOException;
-    long readLong() throws IOException;
-    float readFloat() throws IOException;
-    double readDouble() throws IOException;
-    @java.lang.Deprecated
-String readLine() throws IOException;
-    String readUTF() throws IOException;
-    static String readUTF(DataInput arg0) throws IOException;
 }
 
 class FilterInputStream extends InputStream {
@@ -130,6 +121,32 @@ class BufferedInputStream extends FilterInputStream {
     void reset() throws IOException;
     boolean markSupported();
     void close() throws IOException;
+}
+
+class FileOutputStream extends OutputStream {
+    // This constructor actually opens a new file (note that java.io.File doesn't need to be closed)
+    // and creates a new obligation.
+    FileOutputStream(String arg0) throws FileNotFoundException;
+    FileOutputStream(String arg0, boolean arg1) throws FileNotFoundException;
+    FileOutputStream(File arg0) throws FileNotFoundException;
+    FileOutputStream(File arg0, boolean arg1) throws FileNotFoundException;
+
+    // These do not - they create aliases to an existing, open file.
+    @MustCallChoice FileOutputStream(@MustCallChoice FileDescriptor arg0);
+    @MustCallChoice FileDescriptor getFD(@MustCallChoice FileOutputStream this) throws IOException;
+    @MustCallChoice FileChannel getChannel(@MustCallChoice FileOutputStream this);
+}
+
+class FileInputStream extends InputStream {
+    // This constructor actually opens a new file (note that java.io.File doesn't need to be closed)
+    // and creates a new obligation.
+    FileInputStream(String arg0) throws FileNotFoundException;
+    FileInputStream(File arg0) throws FileNotFoundException;
+
+    // These do not - they create aliases to an existing, open file.
+    @MustCallChoice FileInputStream(@MustCallChoice FileDescriptor arg0);
+    @MustCallChoice FileDescriptor getFD(@MustCallChoice FileInputStream this) throws IOException;
+    @MustCallChoice FileChannel getChannel(@MustCallChoice FileInputStream this);
 }
 
 class InputStreamReader extends Reader {
@@ -215,6 +232,10 @@ class DigestOutputStream extends FilterOutputStream {
     String toString();
 }
 
+class DigestInputStream extends FilterInputStream {
+    @MustCallChoice DigestInputStream(@MustCallChoice InputStream arg0, MessageDigest arg1);
+}
+
 package java.util;
 
 class Scanner {
@@ -228,4 +249,17 @@ class Scanner {
     @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source);
     @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source, String charsetName);
     @MustCall({}) Scanner(String source);
+}
+
+class Formatter implements Closeable, Flushable {
+    @PolyMustCall Formatter(@PolyMustCall Appendable arg0);
+    @PolyMustCall Formatter(@PolyMustCall Appendable arg0, Locale arg1);
+    @NotOwning Formatter format(String arg0, Object[] arg1);
+    @NotOwning Formatter format(Locale arg0, String arg1, Object[] arg2);
+}
+
+package java.util.zip;
+
+class CheckedInputStream extends FilterInputStream {
+    @MustCallChoice CheckedInputStream(@MustCallChoice InputStream arg0, Checksum arg1);
 }
