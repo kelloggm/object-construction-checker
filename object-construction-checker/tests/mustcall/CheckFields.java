@@ -23,7 +23,6 @@ class CheckFields {
         // :: error: required.method.not.called
         private final @Owning Foo finalOwningFooWrong;
         private final Foo finalNotOwningFoo;
-        // :: error: required.method.not.called
         private @Owning Foo owningFoo;
         private @Owning @MustCall({}) Foo owningEmptyMustCallFoo;
         private Foo notOwningFoo;
@@ -38,16 +37,17 @@ class CheckFields {
         // the next three tests in case we adopt a more flexible scheme in the future
         void assingToOwningFieldWrong() {
             Foo f = new Foo();
+            // :: error: required.method.not.called
             this.owningFoo = f;
         }
 
         void assignToOwningFieldWrong2(){
+            // :: error: required.method.not.called
             this.owningFoo = new Foo();
         }
 
         void assingToOwningField() {
-            // this is a safe re-assignment.  we cannot yet prove it safe,
-            // but hope to eventually
+            // this is a safe re-assignment.
             if (this.owningFoo == null) {
                 Foo f = new Foo();
                 this.owningFoo = f;
@@ -83,6 +83,7 @@ class CheckFields {
 
     void testAccessField() {
         FooField fooField = new FooField();
+        // :: error: required.method.not.called
         fooField.owningFoo = new Foo();
         fooField.b();
     }
@@ -90,6 +91,7 @@ class CheckFields {
     void testAccessFieldWrong() {
         // :: error: required.method.not.called
         FooField fooField = new FooField();
+        // :: error: required.method.not.called
         fooField.owningFoo = new Foo();
         // :: error: required.method.not.called
         fooField.notOwningFoo = new Foo();

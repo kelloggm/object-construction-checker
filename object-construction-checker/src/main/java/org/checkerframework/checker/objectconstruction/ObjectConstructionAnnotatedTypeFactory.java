@@ -67,9 +67,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     super.postAnalyze(cfg);
   }
 
-  /**
-   * Returns the String value of @MustCall annotation declared on the class type of {@code tree}.
-   */
+  /** Returns the String value of @MustCall annotation of the type of {@code tree}. */
   List<String> getMustCallValue(Tree tree) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
@@ -81,6 +79,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
 
   /**
    * Returns the String value of @MustCall annotation declared on the class type of {@code element}.
+   *
+   * <p>If possible, prefer {@link #getMustCallValue(Tree)}, which will account for flow-sensitive
+   * refinement.
    */
   List<String> getMustCallValue(Element element) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =

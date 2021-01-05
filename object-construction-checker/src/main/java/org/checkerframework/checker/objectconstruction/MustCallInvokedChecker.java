@@ -22,12 +22,16 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
+import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
+import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.com.google.common.collect.FluentIterable;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
+import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -40,6 +44,7 @@ import org.checkerframework.dataflow.cfg.node.AssignmentContext.LambdaReturnCont
 import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodParameterContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodReturnContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
+import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
@@ -47,12 +52,14 @@ import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.node.TernaryExpressionNode;
 import org.checkerframework.dataflow.cfg.node.TypeCastNode;
+import org.checkerframework.dataflow.expression.FlowExpressions;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -449,13 +456,19 @@ class MustCallInvokedChecker {
     Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
 
     // Ownership transfer to @Owning field
-    if (lhsElement.getKind().equals(ElementKind.FIELD) && typeFactory.hasMustCall(lhs.getTree())) {
-      if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
-        if (typeFactory.getDeclAnnotation(lhsElement, Owning.class) != null) {
-          Set<LocalVarWithTree> setContainingLatestAssignmentPair =
-              getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
-          newDefs.remove(setContainingLatestAssignmentPair);
-        }
+    if (lhsElement.getKind().equals(ElementKind.FIELD)) {
+      boolean isOwningField = typeFactory.getDeclAnnotation(lhsElement, Owning.class) != null;
+      // Check that there is no obligation on the lhs, if the field is non-final and owning.
+      if (isOwningField && !ElementUtils.isFinal(lhsElement)) {
+        checkReassignmentToField(node);
+      }
+      // Remove obligations from local variables, now that the owning field is responsible.
+      if (isOwningField
+          && rhs instanceof LocalVariableNode
+          && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
+        Set<LocalVarWithTree> setContainingLatestAssignmentPair =
+            getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
+        newDefs.remove(setContainingLatestAssignmentPair);
       }
     } else if (lhs instanceof LocalVariableNode
         && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
@@ -520,6 +533,48 @@ class MustCallInvokedChecker {
         newDefs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
         newDefs.remove(setContainingRhs);
       }
+    }
+  }
+
+  /**
+   * Checks that the given re-assignment to a non-final, owning field is valid. Issues an error if
+   * not. A re-assignment is valid if the called methods type of the lhs before the assignment
+   * satisfies the must-call obligations.
+   *
+   * @param node an assignment to a non-final, owning field
+   */
+  private void checkReassignmentToField(AssignmentNode node) {
+    Node lhs = node.getTarget();
+
+    MustCallAnnotatedTypeFactory mcTypeFactory =
+        typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+    AnnotationMirror mcAnno =
+        mcTypeFactory.getAnnotationFromReceiver(
+            FlowExpressions.internalReprOf(mcTypeFactory, lhs), node.getTree(), MustCall.class);
+    List<String> mcValues = ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mcAnno);
+
+    if (mcValues.isEmpty()) {
+      return;
+    }
+
+    CFStore cmStoreBefore = typeFactory.getStoreBefore(node);
+    CFValue cmValue = cmStoreBefore == null ? null : cmStoreBefore.getValue((FieldAccessNode) lhs);
+    AnnotationMirror cmAnno =
+        cmValue == null
+            ? typeFactory.top
+            : cmValue.getAnnotations().stream()
+                .filter(anno -> AnnotationUtils.areSameByClass(anno, CalledMethods.class))
+                .findAny()
+                .orElse(typeFactory.top);
+
+    if (!calledMethodsSatisfyMustCall(mcValues, cmAnno)) {
+      Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
+      checker.reportError(
+          node.getTree(),
+          "required.method.not.called",
+          formatMissingMustCallMethods(mcValues),
+          lhsElement.asType().toString(),
+          " Non-final owning field might be overwritten");
     }
   }
 

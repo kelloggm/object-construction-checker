@@ -71,17 +71,11 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
 
     if (varElement.getKind().isField()
         && atypeFactory.getDeclAnnotation(varElement, Owning.class) != null) {
-      List<String> fieldMCAnno = atypeFactory.getMustCallValue(varElement);
       if (ElementUtils.isFinal(varElement)) {
+        // Final, owning fields are checked once at the declaration. This class handles that check.
+        // Non-final owning fields are checked every time they are assigned to, by the
+        // MustCallInvokedChecker.
         checkFinalOwningField(varElement);
-      } else if (!fieldMCAnno.isEmpty()) {
-        List<String> varMCValue = atypeFactory.getMustCallValue(varElement);
-        checker.reportError(
-            node,
-            "required.method.not.called",
-            MustCallInvokedChecker.formatMissingMustCallMethods(varMCValue),
-            varElement.asType().toString(),
-            " Non-final owning field might be overwritten");
       }
     }
 
