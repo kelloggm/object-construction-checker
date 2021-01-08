@@ -1,4 +1,4 @@
-// A test that must-call close errors are not issued when overwriting a field
+// Another test that must-call close errors are not issued when overwriting a field
 // if the field is definitely null.
 
 import java.io.*;
@@ -55,7 +55,8 @@ class NonFinalFieldOnlyOverwrittenIfNull2 {
         }
     }
 
-    public static void test_unsound() {
+    public static void test_leak() {
+        // :: error: required.method.not.called
         NonFinalFieldOnlyOverwrittenIfNull2 n = new NonFinalFieldOnlyOverwrittenIfNull2();
         n.set("foo.txt");
         n.close();
