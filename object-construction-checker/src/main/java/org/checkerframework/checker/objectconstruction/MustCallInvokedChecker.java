@@ -52,7 +52,7 @@ import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.node.TernaryExpressionNode;
 import org.checkerframework.dataflow.cfg.node.TypeCastNode;
-import org.checkerframework.dataflow.expression.FlowExpressions;
+import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
@@ -549,8 +549,8 @@ class MustCallInvokedChecker {
     MustCallAnnotatedTypeFactory mcTypeFactory =
         typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
     AnnotationMirror mcAnno =
-        mcTypeFactory.getAnnotationFromReceiver(
-            FlowExpressions.internalReprOf(mcTypeFactory, lhs), node.getTree(), MustCall.class);
+        mcTypeFactory.getAnnotationFromJavaExpression(
+            JavaExpression.fromNode(mcTypeFactory, lhs), node.getTree(), MustCall.class);
     List<String> mcValues = ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mcAnno);
 
     if (mcValues.isEmpty()) {

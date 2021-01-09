@@ -24,8 +24,7 @@ import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.node.ArrayCreationNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
-import org.checkerframework.dataflow.expression.FlowExpressions;
-import org.checkerframework.dataflow.expression.Receiver;
+import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
@@ -131,7 +130,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         if (newType == null) {
           continue;
         }
-        Receiver receiverReceiver = FlowExpressions.internalReprOf(atypefactory, arg);
+        JavaExpression receiverReceiver = JavaExpression.fromNode(atypefactory, arg);
         thenStore.insertValue(receiverReceiver, newType);
         elseStore.insertValue(receiverReceiver, newType);
       }
@@ -147,8 +146,8 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     List<String> valuesAsList = Arrays.asList(values);
     // If dataflow has already recorded information about the target, fetch it and integrate
     // it into the list of values in the new annotation.
-    Receiver target = FlowExpressions.internalReprOf(atypefactory, node);
-    if (CFAbstractStore.canInsertReceiver(target)) {
+    JavaExpression target = JavaExpression.fromNode(atypefactory, node);
+    if (CFAbstractStore.canInsertJavaExpression(target)) {
       CFValue flowValue = result.getRegularStore().getValue(target);
       if (flowValue != null) {
         Set<AnnotationMirror> flowAnnos = flowValue.getAnnotations();

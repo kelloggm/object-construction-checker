@@ -8,7 +8,6 @@ import java.util.Properties;
 import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.mustcall.MustCallChecker;
-import org.checkerframework.checker.unconnectedsocket.UnconnectedSocketChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.qual.StubFiles;
@@ -33,8 +32,6 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
 
   public static final String CHECK_MUST_CALL = "checkMustCall";
 
-  public static final String ENABLE_UNCONNECTED_SOCKET = "enableUnconnectedSocketChecker";
-
   public static final String COUNT_MUST_CALL = "countMustCall";
 
   /**
@@ -52,9 +49,6 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
 
     if (this.processingEnv.getOptions().containsKey(CHECK_MUST_CALL)) {
       checkers.add(MustCallChecker.class);
-      if (this.processingEnv.getOptions().containsKey(ENABLE_UNCONNECTED_SOCKET)) {
-        checkers.add(UnconnectedSocketChecker.class);
-      }
     }
 
     return checkers;
