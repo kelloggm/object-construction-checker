@@ -55,7 +55,7 @@ class NonFinalFieldOnlyOverwrittenIfNull2 {
         }
     }
 
-    public static void test_leak() {
+    public static void test_leak() throws Exception {
         // :: error: required.method.not.called
         NonFinalFieldOnlyOverwrittenIfNull2 n = new NonFinalFieldOnlyOverwrittenIfNull2();
         n.set("foo.txt");

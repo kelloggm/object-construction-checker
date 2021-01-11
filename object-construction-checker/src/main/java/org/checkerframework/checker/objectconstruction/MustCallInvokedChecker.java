@@ -831,6 +831,10 @@ class MustCallInvokedChecker {
   private void checkMustCall(
       ImmutableSet<LocalVarWithTree> localVarWithTreeSet, CFStore store, String outOfScopeReason) {
 
+
+    // TODO: this line is the problem - it's looking up the type *at the assignment* - which of course doesn't
+    // take into account any flow-sensitive refinement that happens after that point. We need to look up the
+    // type at the at the last usage of the variable, not at its last assignment.
     List<String> mustCallValue =
         typeFactory.getMustCallValue(localVarWithTreeSet.iterator().next().tree);
     // optimization: if there are no must-call methods, we do not need to perform the check

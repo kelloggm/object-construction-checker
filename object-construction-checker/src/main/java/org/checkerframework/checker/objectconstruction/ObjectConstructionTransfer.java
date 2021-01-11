@@ -12,8 +12,12 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+
+import com.sun.source.util.TreePath;
 import org.checkerframework.checker.calledmethods.CalledMethodsTransfer;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.mustcall.MustCallTransfer;
+import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.common.value.ValueCheckerUtils;
@@ -30,8 +34,12 @@ import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.util.JavaExpressionParseUtil;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * The transfer function for the object construction type system. Its primary job is to refine the
@@ -66,6 +74,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     exceptionalStores = makeExceptionalStores(node, input);
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(node, input);
     handleEnsuresCalledMethodVarArgs(node, result);
+    handleResetMustCall(node, result);
     TransferResult<CFValue, CFStore> finalResult =
         new ConditionalTransferResult<>(
             result.getResultValue(),
@@ -74,6 +83,43 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
             exceptionalStores);
     exceptionalStores = null;
     return finalResult;
+  }
+
+  void handleResetMustCall(MethodInvocationNode n, TransferResult<CFValue, CFStore> result) {
+    AnnotationMirror resetMustCall = atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), ResetMustCall.class);
+    if (resetMustCall != null) {
+      String targetStrWithoutAdaptation = AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
+      TreePath currentPath = this.atypeFactory.getPath(n.getTree());
+      JavaExpressionContext context =
+              JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(n, atypeFactory.getContext());
+      String targetStr = MustCallTransfer.standardizeAndViewpointAdapt(targetStrWithoutAdaptation, currentPath, context);
+      JavaExpression targetExpr;
+      try {
+        targetExpr = atypeFactory.parseJavaExpressionString(targetStr, currentPath);
+      } catch (JavaExpressionParseException e) {
+        /*throw new UserError("encountered an unparseable expression while evaluating an @ResetMustCall annotation: "
+                + targetStrWithoutAdaptation + " was resolved to " + targetStr +
+                ", which could not be parsed in the current context while evaluating " + n);*/
+        atypeFactory.getChecker().reportError(n.getTree(), "mustcall.not.parseable",
+                n.getTarget().getMethod().getSimpleName(), targetStr);
+        return;
+      }
+
+      AnnotationMirror defaultType = atypefactory.top;
+
+      if (result.containsTwoStores()) {
+        CFStore thenStore = result.getThenStore();
+        thenStore.clearValue(targetExpr);
+        thenStore.insertValue(targetExpr, defaultType);
+        CFStore elseStore = result.getElseStore();
+        elseStore.clearValue(targetExpr);
+        elseStore.insertValue(targetExpr, defaultType);
+      } else {
+        CFStore store = result.getRegularStore();
+        store.clearValue(targetExpr);
+        store.insertValue(targetExpr, defaultType);
+      }
+    }
   }
 
   private AnnotationMirror getUpdatedCalledMethodsType(

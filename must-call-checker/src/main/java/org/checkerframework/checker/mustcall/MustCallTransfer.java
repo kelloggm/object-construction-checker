@@ -82,7 +82,7 @@ public class MustCallTransfer extends CFTransfer {
    * Wraps JavaExpressionParseUtil#parse. If a parse exception is encountered, this returns
    * its argument.
    */
-  private static String standardizeAndViewpointAdapt(
+  public static String standardizeAndViewpointAdapt(
           String s, TreePath currentPath, JavaExpressionContext context) {
     try {
       return JavaExpressionParseUtil.parse(s, context, currentPath, false).toString();

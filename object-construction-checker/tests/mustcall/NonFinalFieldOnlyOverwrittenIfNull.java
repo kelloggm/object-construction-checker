@@ -54,10 +54,10 @@ class NonFinalFieldOnlyOverwrittenIfNull {
         }
     }
 
-    public static void test_leak() {
+    public static void test_leak() throws Exception {
         // :: error: required.method.not.called
         NonFinalFieldOnlyOverwrittenIfNull n = new NonFinalFieldOnlyOverwrittenIfNull();
         n.close();
-        n.set_after_close("bar.txt");
+        n.set_after_close("bar.txt", true);
     }
 }

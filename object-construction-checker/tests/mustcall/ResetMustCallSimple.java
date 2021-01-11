@@ -1,6 +1,7 @@
 // A simple test that @ResetMustCall works as intended wrt the Object Construction Checker.
 
 import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 
 @MustCall("a")
@@ -67,7 +68,7 @@ class ResetMustCallSimple {
     }
 
     static void test7(boolean b) {
-        // :: required.method.not.called
+        // :: error: required.method.not.called
         ResetMustCallSimple rmcs = new ResetMustCallSimple();
         rmcs.a();
         if (b) {
