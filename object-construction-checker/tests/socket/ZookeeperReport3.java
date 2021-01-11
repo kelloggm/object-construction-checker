@@ -5,7 +5,8 @@
 import java.net.*;
 import java.io.*;
 import java.util.Optional;
-import org.checkerframework.checker.unconnectedsocket.qual.Unconnected;
+
+import org.checkerframework.checker.mustcall.qual.*;
 
 class ZookeeperReport3 {
 
@@ -61,8 +62,7 @@ class ZookeeperReport3 {
 
     class UnifiedServerSocket extends ServerSocket {
         // A human has to verify that this constructor actually does produce an unconnected socket.
-        @SuppressWarnings("unconnectedsocket:inconsistent.constructor.type")
-        public @Unconnected UnifiedServerSocket(boolean b) throws IOException {
+        public @MustCall({}) UnifiedServerSocket(boolean b) throws IOException {
             super();
         }
     }

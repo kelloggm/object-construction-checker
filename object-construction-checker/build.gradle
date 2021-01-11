@@ -43,6 +43,7 @@ dependencies {
 
     // CF testing infrastructure
     testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
+    testCompile "org.plumelib:plume-util:1.4.1"
 
     // For CVE tests
     testCompile "com.amazonaws:aws-java-sdk-ec2"

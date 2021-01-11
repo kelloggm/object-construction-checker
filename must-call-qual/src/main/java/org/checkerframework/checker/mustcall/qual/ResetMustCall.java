@@ -3,6 +3,9 @@ package org.checkerframework.checker.mustcall.qual;
 import org.checkerframework.framework.qual.JavaExpression;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
@@ -22,6 +25,8 @@ import java.lang.annotation.Target;
  * This annotation is trusted, not checked (though it can only add obligations, so is still conservative).
  */
 @Target({ElementType.METHOD})
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
 public @interface ResetMustCall {
 
   /** @return the object to which must-call obligations are added when the annotated method is invoked */
