@@ -524,6 +524,9 @@ class MustCallInvokedChecker {
             newDefs.add(newSetContainingMustCallChoiceParamLocal);
           }
         } else {
+          if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
+            throw new RuntimeException();
+          }
           LocalVarWithTree lhsLocalVarWithTreeNew =
               new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
           newDefs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
