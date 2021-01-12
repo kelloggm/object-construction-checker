@@ -4,6 +4,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
+import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -24,7 +25,9 @@ import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.checker.mustcall.MustCallTransfer;
 import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
@@ -57,6 +60,9 @@ import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
+import org.checkerframework.framework.util.JavaExpressionParseUtil;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
@@ -92,6 +98,8 @@ class MustCallInvokedChecker {
     this.analysis = analysis;
   }
 
+  private ControlFlowGraph cfg;
+
   /**
    * This function traverses the given method CFG and reports an error if "f" isn't called on any
    * local variable node whose class type has @MustCall(f) annotation before the variable goes out
@@ -104,6 +112,7 @@ class MustCallInvokedChecker {
    */
   /* package-private */
   void checkMustCallInvoked(ControlFlowGraph cfg) {
+    this.cfg = cfg;
     // add any owning parameters to initial set of variables to track
     BlockWithLocals firstBlockLocals =
         new BlockWithLocals(cfg.getEntryBlock(), computeOwningParameters(cfg));
@@ -172,6 +181,7 @@ class MustCallInvokedChecker {
 
   private void handleInvocation(Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
     doOwnershipTransferToParameters(newDefs, node);
+    addResetMustCallTargetToNewDefs(newDefs, node);
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
     if (!nestedInCastOrTernary(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
@@ -184,12 +194,48 @@ class MustCallInvokedChecker {
   }
 
   /**
+   * When a local variable is the target of a reset must call method, it must be added to newDefs.
+   */
+  private void addResetMustCallTargetToNewDefs(Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
+    if (!(node instanceof MethodInvocationNode)) {
+      return;
+    }
+    MethodInvocationNode miNode = (MethodInvocationNode) node;
+    Element elt = TreeUtils.elementFromUse(miNode.getTree());
+    AnnotationMirror resetMC = typeFactory.getDeclAnnotation(elt, ResetMustCall.class);
+    if (resetMC == null) {
+      return;
+    }
+    String target = AnnotationUtils.getElementValue(resetMC, "value", String.class, true);
+    TreePath currentPath = miNode.getTreePath();
+    JavaExpressionContext context =
+            JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(miNode, typeFactory.getContext());
+    String targetStr = MustCallTransfer.standardizeAndViewpointAdapt(target, currentPath, context);
+    JavaExpression targetExpr = null;
+    try {
+      targetExpr = typeFactory.parseJavaExpressionString(targetStr, currentPath);
+    } catch (JavaExpressionParseException e) {
+      /* This case is handled by MustCallTransfer. */
+    }
+    if (targetExpr instanceof LocalVariable) {
+      // TODO: this tree is wrong wrt error-reporting: we need to be able to pass just the name of the variable
+      // that we're interested in, which is in "targetStr".
+      LocalVarWithTree lvt = new LocalVarWithTree((LocalVariable) targetExpr, miNode.getTree());
+      newDefs.add(ImmutableSet.of(lvt));
+      incrementNumMustCall();
+    }
+  }
+
+  /**
    * Given a node representing a method or constructor call, checks that if the call has a non-empty
    * {@code @MustCall} type, then its result is pseudo-assigned to some location that can take
    * ownership of the result
    */
   private void checkPseudoAssignToOwning(Node node) {
     Tree tree = node.getTree();
+    // This call gets the declared must-call type of the return value, which isn't affected by dataflow.
+    // Therefore, it's safe to just call the version of getMustCallValue that indirects to getAnnotatedType,
+    // and not the version that uses the mustcall store directly.
     List<String> mustCallVal = typeFactory.getMustCallValue(tree);
     if (mustCallVal.isEmpty()) {
       return;
@@ -264,6 +310,9 @@ class MustCallInvokedChecker {
   private boolean shouldSkipInvokePseudoAssignCheck(
       Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
     Tree callTree = node.getTree();
+    // This call gets the declared must-call type of the return value, which isn't affected by dataflow.
+    // Therefore, it's safe to just call the version of getMustCallValue that indirects to getAnnotatedType,
+    // and not the version that uses the mustcall store directly.
     List<String> mustCallVal = typeFactory.getMustCallValue(callTree);
     if (mustCallVal.isEmpty()) {
       return true;
@@ -480,9 +529,10 @@ class MustCallInvokedChecker {
         LocalVarWithTree latestAssignmentPair =
             getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
         if (setContainingLatestAssignmentPair.size() == 1) {
+          MustCallAnnotatedTypeFactory mcAtf = typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
           checkMustCall(
               setContainingLatestAssignmentPair,
-              typeFactory.getStoreBefore(node),
+              typeFactory.getStoreBefore(node), mcAtf.getStoreBefore(node),
               "variable overwritten by assignment " + node.getTree());
           newDefs.remove(setContainingLatestAssignmentPair);
         } else {
@@ -719,6 +769,7 @@ class MustCallInvokedChecker {
             setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null);
         if (succ instanceof SpecialBlockImpl || noSuccInfo) {
+          MustCallAnnotatedTypeFactory mcAtf = typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
           if (nodes.size() == 0) { // If the cur block is special or conditional block
             // Use the store from the block actually being analyzed, rather than succRegularStore,
             // if succRegularStore contains no information about the variables of interest.
@@ -728,14 +779,20 @@ class MustCallInvokedChecker {
             // not have any information about it, by construction, and
             // any information in the previous store remains true. If any locals do appear
             // in succRegularStore, we will always use that store.
-            CFStore storeToUse =
+            CFStore cmStoreToUse =
                 noSuccInfo ? analysis.getInput(block).getRegularStore() : succRegularStore;
-            checkMustCall(setAssign, storeToUse, reasonForSucc);
+            CFStore mcStoreToUse = mcAtf.getStoreFromBlockOrSuccessor(noSuccInfo, block, succ);
+            // try printing the CFG from the subchecker and this checker - check to make sure they match + also
+            // look at the MC store
+
+            // check if isRunning is true or false for both the superchecker and the subchecker
+            checkMustCall(setAssign, cmStoreToUse, mcStoreToUse, reasonForSucc);
           } else { // If the cur block is Exception/Regular block then it checks MustCall
             // annotation in the store right after the last node
             Node last = nodes.get(nodes.size() - 1);
-            CFStore storeAfter = typeFactory.getStoreAfter(last);
-            checkMustCall(setAssign, storeAfter, reasonForSucc);
+            CFStore cmStoreAfter = typeFactory.getStoreAfter(last);
+            CFStore mcStoreAfter = mcAtf.getStoreAfter(last);
+            checkMustCall(setAssign, cmStoreAfter, mcStoreAfter, reasonForSucc);
           }
 
           toRemove.add(setAssign);
@@ -829,14 +886,15 @@ class MustCallInvokedChecker {
    * the check fails.
    */
   private void checkMustCall(
-      ImmutableSet<LocalVarWithTree> localVarWithTreeSet, CFStore store, String outOfScopeReason) {
+      ImmutableSet<LocalVarWithTree> localVarWithTreeSet, CFStore cmStore, CFStore mcStore, String outOfScopeReason) {
 
 
     // TODO: this line is the problem - it's looking up the type *at the assignment* - which of course doesn't
     // take into account any flow-sensitive refinement that happens after that point. We need to look up the
     // type at the at the last usage of the variable, not at its last assignment.
     List<String> mustCallValue =
-        typeFactory.getMustCallValue(localVarWithTreeSet.iterator().next().tree);
+        typeFactory.getMustCallValue(localVarWithTreeSet, mcStore);
+
     // optimization: if there are no must-call methods, we do not need to perform the check
     if (mustCallValue.isEmpty()) {
       return;
@@ -851,7 +909,7 @@ class MustCallInvokedChecker {
 
       // sometimes the store is null!  this looks like a bug in checker dataflow.
       // TODO track down and report the root-cause bug
-      CFValue lhsCFValue = store != null ? store.getValue(localVarWithTree.localVar) : null;
+      CFValue lhsCFValue = cmStore != null ? cmStore.getValue(localVarWithTree.localVar) : null;
       AnnotationMirror cmAnno;
 
       if (lhsCFValue != null) { // When store contains the lhs
@@ -973,7 +1031,7 @@ class MustCallInvokedChecker {
    * formal parameter. We keep the tree for error-reporting purposes (so we can report an error per
    * assignment to a local, pinpointing the expression whose MustCall may not be satisfied).
    */
-  private static class LocalVarWithTree {
+  static class LocalVarWithTree {
     public final LocalVariable localVar;
     public final Tree tree;
 

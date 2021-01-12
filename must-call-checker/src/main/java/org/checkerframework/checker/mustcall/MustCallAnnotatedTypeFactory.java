@@ -28,6 +28,13 @@ import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
+import org.checkerframework.dataflow.analysis.Analysis;
+import org.checkerframework.dataflow.analysis.AnalysisResult;
+import org.checkerframework.dataflow.analysis.SubcheckerAnalysisResult;
+import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.cfg.block.Block;
+import org.checkerframework.dataflow.cfg.node.Node;
+import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
@@ -49,10 +56,10 @@ import org.checkerframework.javacutil.TypesUtils;
 public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /** The top annotation. */
-  final AnnotationMirror TOP;
+  public final AnnotationMirror TOP;
 
   /** The bottom annotation, which is the default in unannotated code. */
-  final AnnotationMirror BOTTOM;
+  public final AnnotationMirror BOTTOM;
 
   /** The polymorphic qualifier */
   final AnnotationMirror POLY;
@@ -245,6 +252,40 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   public QualifierHierarchy createQualifierHierarchy() {
     return new SubtypeIsSubsetQualifierHierarchy(
         this.getSupportedTypeQualifiers(), this.getProcessingEnv());
+  }
+
+  public CFStore getStoreFromBlockOrSuccessor(boolean noSuccInfo, Block block, Block succ) {
+    // TODO: this is wrong, because these blocks are from the OCC not the MCC
+    return noSuccInfo ? analysis.getInput(block).getRegularStore() : analysis.getInput(succ).getRegularStore();
+  }
+
+  /**
+   * Returns the store immediately before a given {@link Node}.
+   *
+   * @param node
+   * @return the store immediately before a given {@link Node}
+   */
+  @Override
+  public CFStore getStoreBefore(Node node) {
+    if (!analysis.isRunning()) {
+      return new SubcheckerAnalysisResult<>(flowResult).getStoreBefore(node);
+    }
+    return super.getStoreBefore(node);
+  }
+
+  /**
+   * Returns the store immediately before a given {@link Node}.
+   *
+   * @param node
+   * @return the store immediately before a given {@link Node}
+   */
+  @Override
+  public CFStore getStoreAfter(Node node) {
+    if (!analysis.isRunning()) {
+      return new SubcheckerAnalysisResult<>(flowResult).getStoreAfter(node);
+    }
+
+    return super.getStoreAfter(node);
   }
 
   private class MustCallTreeAnnotator extends TreeAnnotator {

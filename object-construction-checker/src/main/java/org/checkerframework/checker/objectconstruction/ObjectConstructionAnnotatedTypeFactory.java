@@ -16,11 +16,19 @@ import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.objectconstruction.MustCallInvokedChecker.LocalVarWithTree;
+import org.checkerframework.com.google.common.collect.ImmutableSet;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.expression.LocalVariable;
+import org.checkerframework.framework.flow.CFStore;
+import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * The annotated type factory for the object construction checker. Primarily responsible for the
@@ -64,6 +72,36 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     super.postAnalyze(cfg);
   }
 
+  /**
+   * Tries to look up the value of the local variable to which the tree was assigned
+   * in the Must Call store passed. If it is not found, it returns the default type for
+   * the class (i.e. it fails safe with respect to the must-call type.
+   */
+  public List<String> getMustCallValue(ImmutableSet<LocalVarWithTree> varSet, @Nullable CFStore mcStore) {
+    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
+            getTypeFactoryOfSubchecker(MustCallChecker.class);
+    AnnotationMirror mcLub = mustCallAnnotatedTypeFactory.BOTTOM;
+    for (LocalVarWithTree lvt : varSet) {
+      AnnotationMirror mcAnno = null;
+      LocalVariable local = lvt.localVar;
+      CFValue value = /*mcStore == null ? null :*/ mcStore.getValue(local);
+      if (value != null) {
+        mcAnno = value.getAnnotations().stream()
+                .filter(anno -> AnnotationUtils.areSameByClass(anno, MustCall.class))
+                .findAny().get();
+      }
+      // If it wasn't in the store, fall back to the default must-call type for the class.
+      if (mcAnno == null) {
+        mcAnno = mustCallAnnotatedTypeFactory.getAnnotatedType(
+                TypesUtils.getTypeElement(local.getType()))
+                .getAnnotationInHierarchy(mustCallAnnotatedTypeFactory.TOP);
+        }
+      mcLub = mustCallAnnotatedTypeFactory.getQualifierHierarchy().leastUpperBound(mcLub, mcAnno);
+    }
+
+    return getMustCallValues(mcLub);
+  }
+
   /** Returns the String value of @MustCall annotation of the type of {@code tree}. */
   List<String> getMustCallValue(Tree tree) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
@@ -98,6 +136,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     return mustCallValues;
   }
 
+  /**
+   * Returns true if the type of the tree includes a must-call annotation. Note that this
+   * method may not consider dataflow, and is only safe to use on declarations, such as
+   * method invocation trees or parameter trees. Use {@link #getMustCallValue(ImmutableSet, CFStore)}
+   * (and check for emptiness) if you are trying to determine whether a local variable has must-call
+   * obligations.
+   */
   boolean hasMustCall(Tree t) {
     return !getMustCallValue(t).isEmpty();
   }
