@@ -464,30 +464,30 @@ class MustCallInvokedChecker {
       // Reassignment to the lhs
       if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
         ImmutableSet<LocalVarWithTree> setContainingLatestAssignmentPair =
-                getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
+            getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
         LocalVariableNode localPassedAsMCCParam = getLocalPassedAsMustCallChoiceParam(rhs);
         LocalVarWithTree latestAssignmentPair =
-                getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
+            getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
         if (localPassedAsMCCParam == null
-                || setContainingLatestAssignmentPair.stream()
+            || setContainingLatestAssignmentPair.stream()
                 .map(localVarWithTree -> localVarWithTree.localVar.getElement())
                 .noneMatch(elem -> elem.equals(localPassedAsMCCParam.getElement()))) {
           if (setContainingLatestAssignmentPair.size() > 1) {
             // If the setContainingLatestAssignmentPair has more LocalVarWithTree, remove
             // latestAssignmentPair
             ImmutableSet<LocalVarWithTree> newSetContainingLatestAssignmentPair =
-                    FluentIterable.from(setContainingLatestAssignmentPair)
-                            .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
-                            .toSet();
+                FluentIterable.from(setContainingLatestAssignmentPair)
+                    .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
+                    .toSet();
             newDefs.remove(setContainingLatestAssignmentPair);
             newDefs.add(newSetContainingLatestAssignmentPair);
           } else {
             // If the setContainingLatestAssignmentPair size is one and the rhs is not MCC with the
             // lhs
             checkMustCall(
-                    setContainingLatestAssignmentPair,
-                    typeFactory.getStoreBefore(node),
-                    "variable overwritten by assignment " + node.getTree());
+                setContainingLatestAssignmentPair,
+                typeFactory.getStoreBefore(node),
+                "variable overwritten by assignment " + node.getTree());
             newDefs.remove(setContainingLatestAssignmentPair);
           }
         }
@@ -502,17 +502,17 @@ class MustCallInvokedChecker {
         if (mustCallChoiceParamLocal != null) {
           if (isVarInDefs(newDefs, mustCallChoiceParamLocal)) {
             LocalVarWithTree latestAssignmentPair =
-                    getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
+                getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
 
             ImmutableSet<LocalVarWithTree> setContainingLatestAssignmentPair =
                 getSetContainingAssignmentTreeOfVar(newDefs, mustCallChoiceParamLocal);
             ImmutableSet<LocalVarWithTree> newSetContainingLatestAssignmentPair =
-              FluentIterable.from(setContainingLatestAssignmentPair)
-                  .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
-                  .append(
-                      new LocalVarWithTree(
-                          new LocalVariable((LocalVariableNode) lhs), node.getTree()))
-                  .toSet();
+                FluentIterable.from(setContainingLatestAssignmentPair)
+                    .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
+                    .append(
+                        new LocalVarWithTree(
+                            new LocalVariable((LocalVariableNode) lhs), node.getTree()))
+                    .toSet();
 
             newDefs.remove(setContainingLatestAssignmentPair);
             newDefs.add(newSetContainingLatestAssignmentPair);
