@@ -472,6 +472,9 @@ class MustCallInvokedChecker {
             || setContainingLatestAssignmentPair.stream()
                 .map(localVarWithTree -> localVarWithTree.localVar.getElement())
                 .noneMatch(elem -> elem.equals(localPassedAsMCCParam.getElement()))) {
+          // If the rhs is not MCC with the lhs, we will remove the latest assignment pair of lhs
+          // from the newDefs. If the lhs is the only pointer to the previous resource then we will
+          // do MustCall checks for that resource
           if (setContainingLatestAssignmentPair.size() > 1) {
             // If the setContainingLatestAssignmentPair has more LocalVarWithTree, remove
             // latestAssignmentPair
@@ -503,19 +506,22 @@ class MustCallInvokedChecker {
           if (isVarInDefs(newDefs, mustCallChoiceParamLocal)) {
             LocalVarWithTree latestAssignmentPair =
                 getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-
-            ImmutableSet<LocalVarWithTree> setContainingLatestAssignmentPair =
+            // If both side of this assignment node point to the same resource (rhs is MCC with the
+            // lhs), then we will replace the previous assignment tree of lhs with current
+            // assignment tree, otherwise we will just add a new LocalVarWithTree to the set that
+            // contains mustCallChoiceParamLocal
+            ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
                 getSetContainingAssignmentTreeOfVar(newDefs, mustCallChoiceParamLocal);
-            ImmutableSet<LocalVarWithTree> newSetContainingLatestAssignmentPair =
-                FluentIterable.from(setContainingLatestAssignmentPair)
+            ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
+                FluentIterable.from(setContainingMustCallChoiceParamLocal)
                     .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
                     .append(
                         new LocalVarWithTree(
                             new LocalVariable((LocalVariableNode) lhs), node.getTree()))
                     .toSet();
 
-            newDefs.remove(setContainingLatestAssignmentPair);
-            newDefs.add(newSetContainingLatestAssignmentPair);
+            newDefs.remove(setContainingMustCallChoiceParamLocal);
+            newDefs.add(newSetContainingMustCallChoiceParamLocal);
           }
         } else {
           LocalVarWithTree lhsLocalVarWithTreeNew =
