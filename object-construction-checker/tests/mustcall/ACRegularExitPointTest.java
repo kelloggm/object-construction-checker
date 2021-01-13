@@ -269,9 +269,9 @@ class ACRegularExitPointTest {
 
 
     void ownershipTransfer(){
-        Foo f1 = new Foo();
         //TODO this is a false positive but we're not going to handle it for now
         // :: error: required.method.not.called
+        Foo f1 = new Foo();
         Foo f2 = f1;
         Foo f3 = f2.b();
         f3.a();

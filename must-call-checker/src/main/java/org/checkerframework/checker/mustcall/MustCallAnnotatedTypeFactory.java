@@ -28,6 +28,8 @@ import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
+import org.checkerframework.dataflow.cfg.block.Block;
+import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
@@ -49,10 +51,10 @@ import org.checkerframework.javacutil.TypesUtils;
 public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /** The top annotation. */
-  final AnnotationMirror TOP;
+  public final AnnotationMirror TOP;
 
   /** The bottom annotation, which is the default in unannotated code. */
-  final AnnotationMirror BOTTOM;
+  public final AnnotationMirror BOTTOM;
 
   /** The polymorphic qualifier */
   final AnnotationMirror POLY;
@@ -245,6 +247,10 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   public QualifierHierarchy createQualifierHierarchy() {
     return new SubtypeIsSubsetQualifierHierarchy(
         this.getSupportedTypeQualifiers(), this.getProcessingEnv());
+  }
+
+  public CFStore getStoreForBlock(boolean noSuccInfo, Block block, Block succ) {
+    return noSuccInfo ? flowResult.getStoreAfter(block) : flowResult.getStoreBefore(succ);
   }
 
   private class MustCallTreeAnnotator extends TreeAnnotator {
