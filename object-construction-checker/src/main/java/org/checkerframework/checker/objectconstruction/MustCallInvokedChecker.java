@@ -543,6 +543,9 @@ class MustCallInvokedChecker {
             getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
         LocalVarWithTree lhsLocalVarWithTreeNew =
             new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
+        // It is important that newDefs contains the set of these locals - that is, their
+        // aliasing relationship - because either one could have a reset method called on it,
+        // which would create a new obligation.
         newDefs.add(ImmutableSet.<LocalVarWithTree>builder().
                 addAll(setContainingRhs).add(lhsLocalVarWithTreeNew).build());
         newDefs.remove(setContainingRhs);
