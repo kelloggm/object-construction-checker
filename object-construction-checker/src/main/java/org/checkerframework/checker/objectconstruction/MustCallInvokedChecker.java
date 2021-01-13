@@ -512,8 +512,7 @@ class MustCallInvokedChecker {
             // contains mustCallChoiceParamLocal
             ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
                 getSetContainingAssignmentTreeOfVar(newDefs, mustCallChoiceParamLocal);
-            // If rhs is not MCC with the lhs, then nothing will get filtered by the filter call
-            // because we removed latestAssignmentPair from newDefs earlier
+            // If latestAssignmentPair is null, nothing will get filtered by the filter call
             ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
                 FluentIterable.from(setContainingMustCallChoiceParamLocal)
                     .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
