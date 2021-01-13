@@ -507,11 +507,13 @@ class MustCallInvokedChecker {
             LocalVarWithTree latestAssignmentPair =
                 getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
             // If both side of this assignment node point to the same resource (rhs is MCC with the
-            // lhs), then we will replace the previous assignment tree of lhs with current
+            // lhs), then we will replace the previous assignment tree of lhs with the current
             // assignment tree, otherwise we will just add a new LocalVarWithTree to the set that
             // contains mustCallChoiceParamLocal
             ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
                 getSetContainingAssignmentTreeOfVar(newDefs, mustCallChoiceParamLocal);
+            // If rhs is not MCC with the lhs, then nothing will get filtered by the filter call
+            // because we removed latestAssignmentPair from newDefs earlier
             ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
                 FluentIterable.from(setContainingMustCallChoiceParamLocal)
                     .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
@@ -525,7 +527,7 @@ class MustCallInvokedChecker {
           }
         } else {
           if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
-            throw new RuntimeException();
+            throw new RuntimeException("did not expect lhs to be in newDefs");
           }
           LocalVarWithTree lhsLocalVarWithTreeNew =
               new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());

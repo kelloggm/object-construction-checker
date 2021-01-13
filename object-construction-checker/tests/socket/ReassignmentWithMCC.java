@@ -1,6 +1,7 @@
 import java.io.*;
 import java.security.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 public class ReassignmentWithMCC
 {
@@ -16,8 +17,32 @@ public class ReassignmentWithMCC
         }
     }
 
+    void testReassignmentWithoutMCC(@Owning FileOutputStream fout1, @Owning FileOutputStream fout2, MessageDigest digester) throws IOException {
+        DigestOutputStream fos1 = new DigestOutputStream(fout1, digester);
+        DataOutputStream out = new DataOutputStream(fos1);
+        try {
+            DigestOutputStream fos2 = new DigestOutputStream(fout2, digester);
+            out = new DataOutputStream(new BufferedOutputStream(fos2));
+            fout1.getChannel();
+        } finally {
+            callClose(fout1);
+            callClose(fout2);
+        }
+    }
+
     void testReassignmentSetSizeOne(@Owning FilterOutputStream out) throws IOException {
         out = new DataOutputStream(out);
         out.close();
+    }
+
+    @EnsuresCalledMethods(value = "#1", methods = "close")
+    void callClose(Closeable c) {
+        try {
+            if(c!=null){
+                c.close();
+            }
+        } catch (IOException e) {
+
+        }
     }
 }
