@@ -71,6 +71,12 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
     messages.setProperty(
         "required.method.not.called",
         "@MustCall method(s) %s for variable/expression not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
+    messages.setProperty(
+            "missing.reset.mustcall",
+            "This method re-assigns the non-final, owning field %s.%s, but does not have a corresponding @ResetMustCall annotation.\n");
+    messages.setProperty(
+            "incompatible.reset.mustcall",
+            "This method re-assigns the non-final, owning field %s.%s, but its @ResetMustCall annotation targets %s.\n");
     return messages;
   }
 

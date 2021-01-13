@@ -78,7 +78,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     for (LocalVarWithTree lvt : localVarWithTreeSet) {
       AnnotationMirror mcAnno = null;
       LocalVariable local = lvt.localVar;
-      CFValue value = /*mcStore == null ? null :*/ mcStore.getValue(local);
+      CFValue value = mcStore == null ? null : mcStore.getValue(local);
       if (value != null) {
         mcAnno = value.getAnnotations().stream()
                 .filter(anno -> AnnotationUtils.areSameByClass(anno, MustCall.class))

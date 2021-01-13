@@ -35,17 +35,20 @@ class CheckFields {
 
         // for now we report an error at the field declaration, but we are keeping
         // the next three tests in case we adopt a more flexible scheme in the future
+        @ResetMustCall
         void assingToOwningFieldWrong() {
             Foo f = new Foo();
             // :: error: required.method.not.called
             this.owningFoo = f;
         }
 
+        @ResetMustCall
         void assignToOwningFieldWrong2(){
             // :: error: required.method.not.called
             this.owningFoo = new Foo();
         }
 
+        @ResetMustCall
         void assingToOwningField() {
             // this is a safe re-assignment.
             if (this.owningFoo == null) {
@@ -88,6 +91,14 @@ class CheckFields {
         fooField.b();
     }
 
+    void testAccessField2() {
+        FooField fooField = new FooField();
+        if (fooField.owningFoo == null) {
+            fooField.owningFoo = new Foo();
+        }
+        fooField.b();
+    }
+
     void testAccessFieldWrong() {
         // :: error: required.method.not.called
         FooField fooField = new FooField();
@@ -96,5 +107,19 @@ class CheckFields {
         // :: error: required.method.not.called
         fooField.notOwningFoo = new Foo();
 
+    }
+
+    @ResetMustCall("#1")
+    void testAccessField_param(FooField fooField) {
+        // :: error: required.method.not.called
+        fooField.owningFoo = new Foo();
+        fooField.b();
+    }
+
+    // :: error: missing.reset.mustcall
+    void testAccessField_param_no_rmc(FooField fooField) {
+        // :: error: required.method.not.called
+        fooField.owningFoo = new Foo();
+        fooField.b();
     }
 }
