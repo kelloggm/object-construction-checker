@@ -120,11 +120,13 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * Returns the same annotation mirror if the input annotation didn't have "close" as one of its
    * element.
    *
+   * <p>The argument is permitted to be null. If it is null, then bottom is returned.
+   *
    * <p>Package private to permit usage from the visitor in the common assignment check.
    */
-  /* package-private */ AnnotationMirror withoutClose(AnnotationMirror anno) {
+  /* package-private */ AnnotationMirror withoutClose(@Nullable AnnotationMirror anno) {
     // shortcut for easy paths
-    if (AnnotationUtils.areSame(anno, BOTTOM)) {
+    if (anno == null || AnnotationUtils.areSame(anno, BOTTOM)) {
       return BOTTOM;
     } else if (!AnnotationUtils.areSameByClass(anno, MustCall.class)) {
       return anno;
