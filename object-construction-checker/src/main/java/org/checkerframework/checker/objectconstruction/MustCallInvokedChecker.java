@@ -182,6 +182,12 @@ class MustCallInvokedChecker {
 
   private void handleInvocation(Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
     doOwnershipTransferToParameters(newDefs, node);
+    // Count calls to @ResetMustCall methods as creating new resources, for now.
+    if (node instanceof MethodInvocationNode
+            && typeFactory.getDeclAnnotation(
+                    TreeUtils.elementFromUse((MethodInvocationTree) node.getTree()), ResetMustCall.class) != null) {
+      incrementNumMustCall();
+    }
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
     // checking.  So we defer the check to the corresponding TypeCastNode
     if (!nestedInCastOrTernary(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
@@ -851,8 +857,9 @@ class MustCallInvokedChecker {
           } else { // If the cur block is Exception/Regular block then it checks MustCall
             // annotation in the store right after the last node
             Node last = nodes.get(nodes.size() - 1);
-            CFStore storeAfter = typeFactory.getStoreAfter(last);
-            checkMustCall(setAssign, storeAfter, mcAtf.getStoreAfter(last), reasonForSucc);
+            CFStore cmStoreAfter = typeFactory.getStoreAfter(last);
+            CFStore mcStoreAfter = mcAtf.getStoreAfter(last);
+            checkMustCall(setAssign, cmStoreAfter, mcStoreAfter, reasonForSucc);
           }
 
           toRemove.add(setAssign);

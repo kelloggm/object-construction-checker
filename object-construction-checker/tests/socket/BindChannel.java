@@ -9,7 +9,11 @@ class BindChannel {
         try {
             // This channel is bound - so even with unconnected socket support, we need to
             // treat either this channel or the .socket() expression as must-close.
-            // :: error: required.method.not.called
+            //
+            // The mustcall.not.parseable error should go away when we have support for expressions
+            // in the store, I think.
+            //
+            // :: error: required.method.not.called :: error: mustcall.not.parseable
             ServerSocketChannel httpChannel = ServerSocketChannel.open();
             httpChannel.socket().bind(addr);
         } catch (IOException io) {

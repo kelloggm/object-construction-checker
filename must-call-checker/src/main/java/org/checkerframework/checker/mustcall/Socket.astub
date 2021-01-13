@@ -8,8 +8,8 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 
 
 class Socket implements Closeable {
-    Socket();
-    Socket(Proxy arg0);
+    @MustCall({}) Socket();
+    @MustCall({}) Socket(Proxy arg0);
     protected Socket(SocketImpl arg0) throws SocketException;
     Socket(String arg0, int arg1) throws UnknownHostException, IOException;
     Socket(InetAddress arg0, int arg1) throws IOException;
@@ -19,8 +19,11 @@ class Socket implements Closeable {
 Socket(String arg0, int arg1, boolean arg2) throws IOException;
     @java.lang.Deprecated
 Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
+    @ResetMustCall
     void connect(SocketAddress arg0) throws IOException;
+    @ResetMustCall
     void connect(SocketAddress arg0, int arg1) throws IOException;
+    @ResetMustCall
     void bind(SocketAddress arg0) throws IOException;
     InetAddress getInetAddress();
     InetAddress getLocalAddress();
@@ -70,11 +73,13 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
 }
 
 class ServerSocket implements Closeable {
-    ServerSocket() throws IOException;
+    @MustCall({}) ServerSocket() throws IOException;
     ServerSocket(int arg0) throws IOException;
     ServerSocket(int arg0, int arg1) throws IOException;
     ServerSocket(int arg0, int arg1, InetAddress arg2) throws IOException;
+    @ResetMustCall
     void bind(SocketAddress arg0) throws IOException;
+    @ResetMustCall
     void bind(SocketAddress arg0, int arg1) throws IOException;
     InetAddress getInetAddress();
     int getLocalPort();
