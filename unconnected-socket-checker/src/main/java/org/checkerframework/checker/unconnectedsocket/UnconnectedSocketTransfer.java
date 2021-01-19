@@ -7,8 +7,9 @@ import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
-import org.checkerframework.dataflow.expression.FlowExpressions;
-import org.checkerframework.dataflow.expression.Receiver;
+//import org.checkerframework.dataflow.expression.FlowExpressions;
+//import org.checkerframework.dataflow.expression.Receiver;
+import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFTransfer;
@@ -60,7 +61,7 @@ public class UnconnectedSocketTransfer extends CFTransfer {
   }
 
   private void goToTop(Node node, CFStore store) {
-    Receiver rec = FlowExpressions.internalReprOf(factory, node);
+    JavaExpression rec = JavaExpression.fromNode(factory, node);
     // If the value isn't cleared, then types are only strengthened.
     // Going to top always weakens the type.
     store.clearValue(rec);

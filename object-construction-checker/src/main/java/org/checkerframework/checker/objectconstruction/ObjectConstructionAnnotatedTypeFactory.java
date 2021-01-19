@@ -1,5 +1,7 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -8,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+
 import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsBottom;
@@ -22,6 +25,9 @@ import org.checkerframework.checker.unconnectedsocket.qual.Unconnected;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -31,6 +37,7 @@ import org.checkerframework.javacutil.TreeUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotatedTypeFactory {
 
+  protected BiMap<LocalVariableNode, Tree> biMap = HashBiMap.create();
   /**
    * Default constructor matching super. Should be called automatically.
    *
