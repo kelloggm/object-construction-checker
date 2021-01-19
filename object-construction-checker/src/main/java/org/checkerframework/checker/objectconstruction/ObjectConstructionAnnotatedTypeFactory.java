@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
-
 import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsBottom;
@@ -26,8 +25,6 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
-import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
-import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -80,6 +77,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   List<String> getMustCallValue(Tree tree) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
+    if (mustCallAnnotatedTypeFactory == null) {
+      return Collections.emptyList();
+    }
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
 
@@ -94,6 +94,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
         getTypeFactoryOfSubchecker(MustCallChecker.class);
     AnnotatedTypeMirror mustCallAnnotatedType =
         mustCallAnnotatedTypeFactory.getAnnotatedType(element);
+    if (mustCallAnnotatedTypeFactory == null) {
+      return Collections.emptyList();
+    }
     AnnotationMirror mustCallAnnotation = mustCallAnnotatedType.getAnnotation(MustCall.class);
 
     return getMustCallValues(mustCallAnnotation);

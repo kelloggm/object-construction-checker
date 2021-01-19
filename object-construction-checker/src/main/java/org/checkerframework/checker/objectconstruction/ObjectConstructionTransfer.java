@@ -1,5 +1,8 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.IdentifierTree;
+import com.sun.source.tree.VariableTree;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -14,10 +17,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-
-import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.IdentifierTree;
-import com.sun.source.tree.VariableTree;
 import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.CalledMethodsTransfer;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
@@ -32,10 +31,10 @@ import org.checkerframework.dataflow.cfg.node.ArrayCreationNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
-//import org.checkerframework.dataflow.expression.FlowExpressions;
+// import org.checkerframework.dataflow.expression.FlowExpressions;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
-//import org.checkerframework.dataflow.expression.Receiver;
+// import org.checkerframework.dataflow.expression.Receiver;
 import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
@@ -90,12 +89,14 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
             exceptionalStores);
     exceptionalStores = null;
     Node receiver = node.getTarget().getReceiver();
-    accumulate(node, result, "");
+    if (atypefactory.hasMustCall(node.getTree())) {
+      accumulate(node, result, "");
+    }
     if (atypefactory.biMap.inverse().containsKey(receiver.getTree())) {
       String methodName = node.getTarget().getMethod().getSimpleName().toString();
       methodName =
-              ((CalledMethodsAnnotatedTypeFactory) atypeFactory)
-                      .adjustMethodNameUsingValueChecker(methodName, node.getTree());
+          ((CalledMethodsAnnotatedTypeFactory) atypeFactory)
+              .adjustMethodNameUsingValueChecker(methodName, node.getTree());
       accumulate(atypefactory.biMap.inverse().get(receiver.getTree()), result, methodName);
     }
     return finalResult;
@@ -163,7 +164,8 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   @Override
-  public TransferResult<CFValue, CFStore> visitObjectCreation(ObjectCreationNode node, TransferInput<CFValue, CFStore> input) {
+  public TransferResult<CFValue, CFStore> visitObjectCreation(
+      ObjectCreationNode node, TransferInput<CFValue, CFStore> input) {
     TransferResult<CFValue, CFStore> result = super.visitObjectCreation(node, input);
     accumulate(node, result, "");
     return result;
@@ -184,7 +186,12 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
           atypefactory.biMap.put(localVariableNode, node.getTree());
 
           JavaExpression localExp = JavaExpression.fromNode(atypeFactory, localVariableNode);
-          insertIntoStores(result, localExp, atypefactory.getAnnotatedType(node.getTree()).getAnnotationInHierarchy(atypeFactory.top));
+          insertIntoStores(
+              result,
+              localExp,
+              atypefactory
+                  .getAnnotatedType(node.getTree())
+                  .getAnnotationInHierarchy(atypeFactory.top));
         }
       }
     }
@@ -221,9 +228,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   private void insertIntoStores(
-          TransferResult<CFValue, CFStore> result,
-          JavaExpression target,
-          AnnotationMirror newAnno) {
+      TransferResult<CFValue, CFStore> result, JavaExpression target, AnnotationMirror newAnno) {
     if (result.containsTwoStores()) {
       CFStore thenStore = result.getThenStore();
       CFStore elseStore = result.getElseStore();
@@ -235,17 +240,16 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     }
   }
 
-  protected VariableTree createTemporaryVar(
-          Node method) {
+  protected VariableTree createTemporaryVar(Node method) {
     TypeMirror iteratorType = TreeUtils.typeOf(method.getTree());
     Element ee = TreeUtils.elementFromTree(method.getTree());
     // Declare and initialize a new, unique iterator variable
     VariableTree iteratorVariable =
-            treeBuilder.buildVariableDecl(
-                    iteratorType, // annotatedIteratorTypeTree,
-                    uniqueName("tmp"),
-                    ee.getEnclosingElement(),
-                    (ExpressionTree) method.getTree());
+        treeBuilder.buildVariableDecl(
+            iteratorType, // annotatedIteratorTypeTree,
+            uniqueName("tmp"),
+            ee.getEnclosingElement(),
+            (ExpressionTree) method.getTree());
     return iteratorVariable;
   }
 

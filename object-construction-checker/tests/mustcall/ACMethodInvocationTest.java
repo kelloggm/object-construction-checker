@@ -36,10 +36,7 @@ class ACMethodInvocationTest {
         makeFoo().a();
     }
 
-    //TODO
     void CallMethodsInSequence2() {
-        // won't pass yet due to dataflow issue
-        // :: error: required.method.not.called
         makeFoo().b().a();
     }
 

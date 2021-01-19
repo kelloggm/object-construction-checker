@@ -220,37 +220,48 @@ class MustCallInvokedChecker {
     }
     if (!assignedToOwning) {
       if (typeFactory.biMap.inverse().containsKey(node.getTree())) {
+
         LocalVariableNode temporaryLocal = typeFactory.biMap.inverse().get(node.getTree());
         LocalVarWithTree lhsLocalVarWithTreeNew =
-                new LocalVarWithTree(new LocalVariable(temporaryLocal), node.getTree());
-        if (node instanceof MethodInvocationNode && TreeUtils.isThisConstructorCall(((MethodInvocationNode) node).getTree())) {
-          Node receiver = ((MethodInvocationNode)node).getTarget().getReceiver();
-          if (isVarInDefs(defs, (LocalVariableNode) receiver)) {
-            ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
-                    getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) receiver);
-            ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
-                    FluentIterable.from(setContainingMustCallChoiceParamLocal)
-                            .append(lhsLocalVarWithTreeNew)
-                            .toSet();
-            defs.remove(setContainingMustCallChoiceParamLocal);
-            defs.add(newSetContainingMustCallChoiceParamLocal);
-          } else {
-            defs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
+            new LocalVarWithTree(new LocalVariable(temporaryLocal), node.getTree());
+        Node receiver = null;
+        if (node instanceof ObjectCreationNode || node instanceof MethodInvocationNode) {
+          receiver = getLocalPassedAsMustCallChoiceParam(node);
+        }
+
+        if (receiver == null
+            && node instanceof MethodInvocationNode
+            && (typeFactory.hasMustCallChoice(node.getTree())
+                || typeFactory.returnsThis((MethodInvocationTree) node.getTree()))) {
+          receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
+          if (receiver instanceof MethodInvocationNode) {
+            receiver = typeFactory.biMap.inverse().get(receiver.getTree());
           }
+        }
+
+        if (receiver != null && isVarInDefs(defs, (LocalVariableNode) receiver)) {
+          ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
+              getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) receiver);
+          ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
+              FluentIterable.from(setContainingMustCallChoiceParamLocal)
+                  .append(lhsLocalVarWithTreeNew)
+                  .toSet();
+          defs.remove(setContainingMustCallChoiceParamLocal);
+          defs.add(newSetContainingMustCallChoiceParamLocal);
         } else {
           defs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
         }
       } else {
         // check if @CalledMethods type of return satisfies the @MustCall obligation
         AnnotationMirror cmAnno =
-                typeFactory.getAnnotatedType(tree).getAnnotationInHierarchy(typeFactory.top);
+            typeFactory.getAnnotatedType(tree).getAnnotationInHierarchy(typeFactory.top);
         if (!calledMethodsSatisfyMustCall(mustCallVal, cmAnno)) {
           checker.reportError(
-                  tree,
-                  "required.method.not.called",
-                  MustCallInvokedChecker.formatMissingMustCallMethods(mustCallVal),
-                  TreeUtils.typeOf(tree).toString(),
-                  "never assigned to an @Owning location");
+              tree,
+              "required.method.not.called",
+              MustCallInvokedChecker.formatMissingMustCallMethods(mustCallVal),
+              TreeUtils.typeOf(tree).toString(),
+              "never assigned to an @Owning location");
         }
       }
     }
@@ -285,20 +296,9 @@ class MustCallInvokedChecker {
     if (mustCallVal.isEmpty()) {
       return true;
     }
-    // In this case, we are handling method invocation or object creation node that has
-    // MustCallChoice annotation and the local variable passed as the @MustCallChoice parameter is
-    // in the defs
-    if ((callTree.getKind() == Tree.Kind.METHOD_INVOCATION
-        || callTree.getKind() == Tree.Kind.NEW_CLASS) && typeFactory.hasMustCallChoice(node.getTree())) {
-      LocalVariableNode mustCallChoiceParam = getLocalPassedAsMustCallChoiceParam(node);
-      if (mustCallChoiceParam != null) {
-        return isVarInDefs(defs, mustCallChoiceParam);
-      }
-    }
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
-      return typeFactory.returnsThis(methodInvokeTree)
-          || TreeUtils.isSuperConstructorCall(methodInvokeTree)
+      return TreeUtils.isSuperConstructorCall(methodInvokeTree)
           || TreeUtils.isThisConstructorCall(methodInvokeTree)
           || typeFactory.getDeclAnnotation(
                   TreeUtils.elementFromUse(methodInvokeTree), NotOwning.class)
