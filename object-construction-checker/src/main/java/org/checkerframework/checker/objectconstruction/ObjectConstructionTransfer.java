@@ -239,7 +239,6 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
           }
         }
       }
-
       AnnotationMirror newAnno = atypefactory.createAccumulatorAnnotation(valuesAsList);
       exceptionalStores.values().stream().forEach(s -> s.insertValue(target, newAnno));
     }
