@@ -25,6 +25,7 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -34,7 +35,7 @@ import org.checkerframework.javacutil.TreeUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotatedTypeFactory {
 
-  protected BiMap<LocalVariableNode, Tree> biMap = HashBiMap.create();
+  protected BiMap<LocalVariableNode, Node> biMap = HashBiMap.create();
   /**
    * Default constructor matching super. Should be called automatically.
    *

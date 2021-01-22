@@ -88,17 +88,38 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
             result.getElseStore(),
             exceptionalStores);
     exceptionalStores = null;
+
     Node receiver = node.getTarget().getReceiver();
     if (atypefactory.hasMustCall(node.getTree())) {
-      accumulate(node, result, "");
+      if (atypefactory.hasMustCall(node.getTree())) {
+
+        LocalVariableNode localVariableNode;
+        if (!atypefactory.biMap.inverse().containsKey(node)) {
+          VariableTree temp = createTemporaryVar(node);
+          IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
+          localVariableNode = new LocalVariableNode(identifierTree);
+          localVariableNode.setInSource(true);
+          atypefactory.biMap.put(localVariableNode, node);
+        } else {
+          localVariableNode = atypefactory.biMap.inverse().get(node);
+        }
+        JavaExpression localExp = JavaExpression.fromNode(atypeFactory, localVariableNode);
+        insertIntoStores(
+            finalResult,
+            localExp,
+            atypefactory
+                .getAnnotatedType(node.getTree())
+                .getAnnotationInHierarchy(atypeFactory.top));
+      }
     }
-    if (atypefactory.biMap.inverse().containsKey(receiver.getTree())) {
+    if (atypefactory.biMap.inverse().containsKey(receiver)) {
       String methodName = node.getTarget().getMethod().getSimpleName().toString();
       methodName =
           ((CalledMethodsAnnotatedTypeFactory) atypeFactory)
               .adjustMethodNameUsingValueChecker(methodName, node.getTree());
-      accumulate(atypefactory.biMap.inverse().get(receiver.getTree()), result, methodName);
+      accumulate(atypefactory.biMap.inverse().get(receiver), result, methodName);
     }
+
     return finalResult;
   }
 
@@ -167,38 +188,34 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   public TransferResult<CFValue, CFStore> visitObjectCreation(
       ObjectCreationNode node, TransferInput<CFValue, CFStore> input) {
     TransferResult<CFValue, CFStore> result = super.visitObjectCreation(node, input);
-    accumulate(node, result, "");
+    if (atypefactory.hasMustCall(node.getTree())) {
+      VariableTree temp = createTemporaryVar(node);
+      IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
+      LocalVariableNode localVariableNode = new LocalVariableNode(identifierTree);
+      localVariableNode.setInSource(true);
+
+      if (!atypefactory.biMap.inverse().containsKey(node)) {
+
+        atypefactory.biMap.put(localVariableNode, node);
+        JavaExpression localExp = JavaExpression.fromNode(atypeFactory, localVariableNode);
+        insertIntoStores(
+            result,
+            localExp,
+            atypefactory
+                .getAnnotatedType(node.getTree())
+                .getAnnotationInHierarchy(atypeFactory.top));
+      }
+    }
     return result;
   }
 
   @Override
   public void accumulate(Node node, TransferResult<CFValue, CFStore> result, String... values) {
     super.accumulate(node, result, values);
-    if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
-      if (atypefactory.hasMustCall(node.getTree())) {
-        VariableTree temp = createTemporaryVar(node);
-        IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
-        LocalVariableNode localVariableNode = new LocalVariableNode(identifierTree);
-        localVariableNode.setInSource(false);
-
-        if (!atypefactory.biMap.inverse().containsKey(node.getTree())) {
-
-          atypefactory.biMap.put(localVariableNode, node.getTree());
-
-          JavaExpression localExp = JavaExpression.fromNode(atypeFactory, localVariableNode);
-          insertIntoStores(
-              result,
-              localExp,
-              atypefactory
-                  .getAnnotatedType(node.getTree())
-                  .getAnnotationInHierarchy(atypeFactory.top));
-        }
-      }
-    }
-
     if (exceptionalStores == null) {
       return;
     }
+
     List<String> valuesAsList = Arrays.asList(values);
     // If dataflow has already recorded information about the target, fetch it and integrate
     // it into the list of values in the new annotation.
@@ -222,9 +239,10 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
           }
         }
       }
+
+      AnnotationMirror newAnno = atypefactory.createAccumulatorAnnotation(valuesAsList);
+      exceptionalStores.values().stream().forEach(s -> s.insertValue(target, newAnno));
     }
-    AnnotationMirror newAnno = atypefactory.createAccumulatorAnnotation(valuesAsList);
-    exceptionalStores.values().stream().forEach(s -> s.insertValue(target, newAnno));
   }
 
   private void insertIntoStores(

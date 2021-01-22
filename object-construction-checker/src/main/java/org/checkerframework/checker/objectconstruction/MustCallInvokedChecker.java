@@ -219,9 +219,9 @@ class MustCallInvokedChecker {
       }
     }
     if (!assignedToOwning) {
-      if (typeFactory.biMap.inverse().containsKey(node.getTree())) {
+      if (typeFactory.biMap.inverse().containsKey(node)) {
 
-        LocalVariableNode temporaryLocal = typeFactory.biMap.inverse().get(node.getTree());
+        LocalVariableNode temporaryLocal = typeFactory.biMap.inverse().get(node);
         LocalVarWithTree lhsLocalVarWithTreeNew =
             new LocalVarWithTree(new LocalVariable(temporaryLocal), node.getTree());
         Node receiver = null;
@@ -235,7 +235,7 @@ class MustCallInvokedChecker {
                 || typeFactory.returnsThis((MethodInvocationTree) node.getTree()))) {
           receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
           if (receiver instanceof MethodInvocationNode) {
-            receiver = typeFactory.biMap.inverse().get(receiver.getTree());
+            receiver = typeFactory.biMap.inverse().get(receiver);
           }
         }
 
@@ -711,7 +711,7 @@ class MustCallInvokedChecker {
         boolean noSuccInfo =
             setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null);
-        if (succ instanceof SpecialBlockImpl || noSuccInfo) {
+        if (succ instanceof SpecialBlockImpl || (noSuccInfo)) {
           if (nodes.size() == 0) { // If the cur block is special or conditional block
             // Use the store from the block actually being analyzed, rather than succRegularStore,
             // if succRegularStore contains no information about the variables of interest.
