@@ -90,6 +90,27 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     exceptionalStores = null;
 
     Node receiver = node.getTarget().getReceiver();
+    addTemporaryVars(result, node);
+    if (atypefactory.biMap.inverse().containsKey(receiver)) {
+      String methodName = node.getTarget().getMethod().getSimpleName().toString();
+      methodName =
+          ((CalledMethodsAnnotatedTypeFactory) atypeFactory)
+              .adjustMethodNameUsingValueChecker(methodName, node.getTree());
+      accumulate(atypefactory.biMap.inverse().get(receiver), result, methodName);
+    }
+
+    return finalResult;
+  }
+
+  @Override
+  public TransferResult<CFValue, CFStore> visitObjectCreation(
+      ObjectCreationNode node, TransferInput<CFValue, CFStore> input) {
+    TransferResult<CFValue, CFStore> result = super.visitObjectCreation(node, input);
+    addTemporaryVars(result, node);
+    return result;
+  }
+
+  private void addTemporaryVars(TransferResult<CFValue, CFStore> result, Node node) {
     if (atypefactory.hasMustCall(node.getTree())) {
       if (atypefactory.hasMustCall(node.getTree())) {
 
@@ -103,24 +124,16 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         } else {
           localVariableNode = atypefactory.biMap.inverse().get(node);
         }
+
         JavaExpression localExp = JavaExpression.fromNode(atypeFactory, localVariableNode);
         insertIntoStores(
-            finalResult,
+            result,
             localExp,
             atypefactory
                 .getAnnotatedType(node.getTree())
                 .getAnnotationInHierarchy(atypeFactory.top));
       }
     }
-    if (atypefactory.biMap.inverse().containsKey(receiver)) {
-      String methodName = node.getTarget().getMethod().getSimpleName().toString();
-      methodName =
-          ((CalledMethodsAnnotatedTypeFactory) atypeFactory)
-              .adjustMethodNameUsingValueChecker(methodName, node.getTree());
-      accumulate(atypefactory.biMap.inverse().get(receiver), result, methodName);
-    }
-
-    return finalResult;
   }
 
   private AnnotationMirror getUpdatedCalledMethodsType(
@@ -177,36 +190,11 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         if (newType == null) {
           continue;
         }
-        JavaExpression receiverReceiver = JavaExpression.fromNode(atypeFactory, node);
+        JavaExpression receiverReceiver = JavaExpression.fromNode(atypeFactory, arg);
         thenStore.insertValue(receiverReceiver, newType);
         elseStore.insertValue(receiverReceiver, newType);
       }
     }
-  }
-
-  @Override
-  public TransferResult<CFValue, CFStore> visitObjectCreation(
-      ObjectCreationNode node, TransferInput<CFValue, CFStore> input) {
-    TransferResult<CFValue, CFStore> result = super.visitObjectCreation(node, input);
-    if (atypefactory.hasMustCall(node.getTree())) {
-      VariableTree temp = createTemporaryVar(node);
-      IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
-      LocalVariableNode localVariableNode = new LocalVariableNode(identifierTree);
-      localVariableNode.setInSource(true);
-
-      if (!atypefactory.biMap.inverse().containsKey(node)) {
-
-        atypefactory.biMap.put(localVariableNode, node);
-        JavaExpression localExp = JavaExpression.fromNode(atypeFactory, localVariableNode);
-        insertIntoStores(
-            result,
-            localExp,
-            atypefactory
-                .getAnnotatedType(node.getTree())
-                .getAnnotationInHierarchy(atypeFactory.top));
-      }
-    }
-    return result;
   }
 
   @Override
