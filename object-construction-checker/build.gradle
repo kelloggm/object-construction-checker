@@ -61,7 +61,7 @@ dependencies {
 
 dependencyManagement {
     imports {
-        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.939"
+        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.941"
     }
 }
 
