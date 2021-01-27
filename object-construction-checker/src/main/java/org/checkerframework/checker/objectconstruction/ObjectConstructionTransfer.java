@@ -31,10 +31,8 @@ import org.checkerframework.dataflow.cfg.node.ArrayCreationNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
-// import org.checkerframework.dataflow.expression.FlowExpressions;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
-// import org.checkerframework.dataflow.expression.Receiver;
 import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
@@ -55,7 +53,8 @@ import org.checkerframework.javacutil.trees.TreeBuilder;
 public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   private final ObjectConstructionAnnotatedTypeFactory atypefactory;
 
-  public final TreeBuilder treeBuilder;
+  /** TreeBuilder for building new AST nodes */
+  private final TreeBuilder treeBuilder;
 
   /**
    * {@link #makeExceptionalStores(MethodInvocationNode, TransferInput)} requires a TransferInput,
@@ -89,14 +88,18 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
             exceptionalStores);
     exceptionalStores = null;
 
+    updateStoreWithTempVar(result, node);
+
+    // If the receiver exists in the mapTempVarToNode, then its temporal variable's type will be
+    // updated.
     Node receiver = node.getTarget().getReceiver();
-    addTemporaryVars(result, node);
-    if (atypefactory.biMap.inverse().containsKey(receiver)) {
+    LocalVariableNode receiverTempVar = atypefactory.mapTempVarToNode.inverse().get(receiver);
+    if (receiverTempVar != null) {
       String methodName = node.getTarget().getMethod().getSimpleName().toString();
       methodName =
           ((CalledMethodsAnnotatedTypeFactory) atypeFactory)
               .adjustMethodNameUsingValueChecker(methodName, node.getTree());
-      accumulate(atypefactory.biMap.inverse().get(receiver), result, methodName);
+      accumulate(receiverTempVar, result, methodName);
     }
 
     return finalResult;
@@ -106,34 +109,38 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   public TransferResult<CFValue, CFStore> visitObjectCreation(
       ObjectCreationNode node, TransferInput<CFValue, CFStore> input) {
     TransferResult<CFValue, CFStore> result = super.visitObjectCreation(node, input);
-    addTemporaryVars(result, node);
+    updateStoreWithTempVar(result, node);
     return result;
   }
 
-  private void addTemporaryVars(TransferResult<CFValue, CFStore> result, Node node) {
+  /**
+   * This method either creates or looks up the temp var t for node, and then updates the store to
+   * give t the same type as node
+   *
+   * @param node the node to be assigned to a temporal variable
+   * @param result the transfer result containing the store to be modified
+   */
+  private void updateStoreWithTempVar(TransferResult<CFValue, CFStore> result, Node node) {
     if (atypefactory.hasMustCall(node.getTree())) {
-      if (atypefactory.hasMustCall(node.getTree())) {
+      JavaExpression localExp = JavaExpression.fromNode(atypeFactory, getOrCreateTempVar(node));
 
-        LocalVariableNode localVariableNode;
-        if (!atypefactory.biMap.inverse().containsKey(node)) {
-          VariableTree temp = createTemporaryVar(node);
-          IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
-          localVariableNode = new LocalVariableNode(identifierTree);
-          localVariableNode.setInSource(true);
-          atypefactory.biMap.put(localVariableNode, node);
-        } else {
-          localVariableNode = atypefactory.biMap.inverse().get(node);
-        }
-
-        JavaExpression localExp = JavaExpression.fromNode(atypeFactory, localVariableNode);
-        insertIntoStores(
-            result,
-            localExp,
-            atypefactory
-                .getAnnotatedType(node.getTree())
-                .getAnnotationInHierarchy(atypeFactory.top));
-      }
+      insertIntoStores(
+          result,
+          localExp,
+          atypefactory.getAnnotatedType(node.getTree()).getAnnotationInHierarchy(atypeFactory.top));
     }
+  }
+
+  private LocalVariableNode getOrCreateTempVar(Node node) {
+    LocalVariableNode localVariableNode = atypefactory.mapTempVarToNode.inverse().get(node);
+    if (localVariableNode == null) {
+      VariableTree temp = createTemporaryVar(node);
+      IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
+      localVariableNode = new LocalVariableNode(identifierTree);
+      localVariableNode.setInSource(true);
+      atypefactory.mapTempVarToNode.put(localVariableNode, node);
+    }
+    return localVariableNode;
   }
 
   private AnnotationMirror getUpdatedCalledMethodsType(

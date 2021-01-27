@@ -35,7 +35,11 @@ import org.checkerframework.javacutil.TreeUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotatedTypeFactory {
 
-  protected BiMap<LocalVariableNode, Node> biMap = HashBiMap.create();
+  /**
+   * Bidirectional map to preserve temporal variables created for nodes with non-empty @MustCall
+   * annotation and the corresponding nodes
+   */
+  protected BiMap<LocalVariableNode, Node> mapTempVarToNode = HashBiMap.create();
   /**
    * Default constructor matching super. Should be called automatically.
    *

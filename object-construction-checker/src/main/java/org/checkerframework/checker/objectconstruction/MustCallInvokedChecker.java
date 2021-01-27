@@ -219,9 +219,9 @@ class MustCallInvokedChecker {
       }
     }
     if (!assignedToOwning) {
-      if (typeFactory.biMap.inverse().containsKey(node)) {
+      if (typeFactory.mapTempVarToNode.inverse().containsKey(node)) {
 
-        LocalVariableNode temporaryLocal = typeFactory.biMap.inverse().get(node);
+        LocalVariableNode temporaryLocal = typeFactory.mapTempVarToNode.inverse().get(node);
         LocalVarWithTree lhsLocalVarWithTreeNew =
             new LocalVarWithTree(new LocalVariable(temporaryLocal), node.getTree());
         Node receiver = null;
@@ -235,7 +235,7 @@ class MustCallInvokedChecker {
                 || typeFactory.returnsThis((MethodInvocationTree) node.getTree()))) {
           receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
           if (receiver instanceof MethodInvocationNode) {
-            receiver = typeFactory.biMap.inverse().get(receiver);
+            receiver = typeFactory.mapTempVarToNode.inverse().get(receiver);
           }
         }
 
