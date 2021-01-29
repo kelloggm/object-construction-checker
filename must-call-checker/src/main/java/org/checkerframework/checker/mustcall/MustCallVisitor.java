@@ -18,6 +18,7 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -39,7 +40,7 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
   @Override
   public Void visitReturn(ReturnTree node, Void p) {
     // Only check return types if ownership is being transferred.
-    MethodTree enclosingMethod = TreeUtils.enclosingMethod(this.getCurrentPath());
+    MethodTree enclosingMethod = TreePathUtil.enclosingMethod(this.getCurrentPath());
     // enclosingMethod is null if this return site is inside a lambda. TODO: handle lambdas more
     // precisely?
     if (enclosingMethod != null) {

@@ -1,5 +1,6 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.sun.source.util.TreePath;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -12,8 +13,6 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-
-import com.sun.source.util.TreePath;
 import org.checkerframework.checker.calledmethods.CalledMethodsTransfer;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.mustcall.MustCallTransfer;
@@ -39,7 +38,6 @@ import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressio
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * The transfer function for the object construction type system. Its primary job is to refine the
@@ -86,22 +84,32 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   void handleResetMustCall(MethodInvocationNode n, TransferResult<CFValue, CFStore> result) {
-    AnnotationMirror resetMustCall = atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), ResetMustCall.class);
+    AnnotationMirror resetMustCall =
+        atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), ResetMustCall.class);
     if (resetMustCall != null) {
-      String targetStrWithoutAdaptation = AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
+      String targetStrWithoutAdaptation =
+          AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
       TreePath currentPath = this.atypeFactory.getPath(n.getTree());
       JavaExpressionContext context =
-              JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(n, atypeFactory.getContext());
-      String targetStr = MustCallTransfer.standardizeAndViewpointAdapt(targetStrWithoutAdaptation, currentPath, context);
+          JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(
+              n, atypeFactory.getChecker());
+      String targetStr =
+          MustCallTransfer.standardizeAndViewpointAdapt(
+              targetStrWithoutAdaptation, currentPath, context);
       JavaExpression targetExpr;
       try {
         targetExpr = atypeFactory.parseJavaExpressionString(targetStr, currentPath);
       } catch (JavaExpressionParseException e) {
         /*throw new UserError("encountered an unparseable expression while evaluating an @ResetMustCall annotation: "
-                + targetStrWithoutAdaptation + " was resolved to " + targetStr +
-                ", which could not be parsed in the current context while evaluating " + n);*/
-        atypeFactory.getChecker().reportError(n.getTree(), "mustcall.not.parseable",
-                n.getTarget().getMethod().getSimpleName(), targetStr);
+        + targetStrWithoutAdaptation + " was resolved to " + targetStr +
+        ", which could not be parsed in the current context while evaluating " + n);*/
+        atypeFactory
+            .getChecker()
+            .reportError(
+                n.getTree(),
+                "mustcall.not.parseable",
+                n.getTarget().getMethod().getSimpleName(),
+                targetStr);
         return;
       }
 

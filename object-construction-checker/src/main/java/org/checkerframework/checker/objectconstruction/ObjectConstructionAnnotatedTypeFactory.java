@@ -71,23 +71,27 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     super.postAnalyze(cfg);
   }
 
-  public List<String> getMustCallValue(ImmutableSet<LocalVarWithTree> localVarWithTreeSet, CFStore mcStore) {
+  public List<String> getMustCallValue(
+      ImmutableSet<LocalVarWithTree> localVarWithTreeSet, CFStore mcStore) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
-            getTypeFactoryOfSubchecker(MustCallChecker.class);
+        getTypeFactoryOfSubchecker(MustCallChecker.class);
     AnnotationMirror mcLub = mustCallAnnotatedTypeFactory.BOTTOM;
     for (LocalVarWithTree lvt : localVarWithTreeSet) {
       AnnotationMirror mcAnno = null;
       LocalVariable local = lvt.localVar;
       CFValue value = mcStore == null ? null : mcStore.getValue(local);
       if (value != null) {
-        mcAnno = value.getAnnotations().stream()
+        mcAnno =
+            value.getAnnotations().stream()
                 .filter(anno -> AnnotationUtils.areSameByClass(anno, MustCall.class))
-                .findAny().get();
+                .findAny()
+                .get();
       }
       // If it wasn't in the store, fall back to the default must-call type for the class.
       if (mcAnno == null) {
-        mcAnno = mustCallAnnotatedTypeFactory.getAnnotatedType(
-                TypesUtils.getTypeElement(local.getType()))
+        mcAnno =
+            mustCallAnnotatedTypeFactory
+                .getAnnotatedType(TypesUtils.getTypeElement(local.getType()))
                 .getAnnotationInHierarchy(mustCallAnnotatedTypeFactory.TOP);
       }
       mcLub = mustCallAnnotatedTypeFactory.getQualifierHierarchy().leastUpperBound(mcLub, mcAnno);
@@ -136,11 +140,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   }
 
   /**
-   * Returns true if the type of the tree includes a must-call annotation. Note that this
-   * method may not consider dataflow, and is only safe to use on declarations, such as
-   * method invocation trees or parameter trees. Use {@link #getMustCallValue(ImmutableSet, CFStore)}
-   * (and check for emptiness) if you are trying to determine whether a local variable has must-call
-   * obligations.
+   * Returns true if the type of the tree includes a must-call annotation. Note that this method may
+   * not consider dataflow, and is only safe to use on declarations, such as method invocation trees
+   * or parameter trees. Use {@link #getMustCallValue(ImmutableSet, CFStore)} (and check for
+   * emptiness) if you are trying to determine whether a local variable has must-call obligations.
    */
   boolean hasMustCall(Tree t) {
     return !getMustCallValue(t).isEmpty();

@@ -49,7 +49,6 @@ import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodParameterC
 import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodReturnContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
-import org.checkerframework.dataflow.cfg.node.ImplicitThisNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
@@ -60,17 +59,16 @@ import org.checkerframework.dataflow.cfg.node.ThisNode;
 import org.checkerframework.dataflow.cfg.node.TypeCastNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
-import org.checkerframework.dataflow.util.NodeUtils;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
-import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -184,8 +182,10 @@ class MustCallInvokedChecker {
     doOwnershipTransferToParameters(newDefs, node);
     // Count calls to @ResetMustCall methods as creating new resources, for now.
     if (node instanceof MethodInvocationNode
-            && typeFactory.getDeclAnnotation(
-                    TreeUtils.elementFromUse((MethodInvocationTree) node.getTree()), ResetMustCall.class) != null) {
+        && typeFactory.getDeclAnnotation(
+                TreeUtils.elementFromUse((MethodInvocationTree) node.getTree()),
+                ResetMustCall.class)
+            != null) {
       incrementNumMustCall();
     }
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
@@ -206,8 +206,10 @@ class MustCallInvokedChecker {
    */
   private void checkPseudoAssignToOwning(Node node) {
     Tree tree = node.getTree();
-    // This call gets the declared must-call type of the return value, which isn't affected by dataflow.
-    // Therefore, it's safe to just call the version of getMustCallValue that indirects to getAnnotatedType,
+    // This call gets the declared must-call type of the return value, which isn't affected by
+    // dataflow.
+    // Therefore, it's safe to just call the version of getMustCallValue that indirects to
+    // getAnnotatedType,
     // and not the version that uses the mustcall store directly.
     List<String> mustCallVal = typeFactory.getMustCallValue(tree);
     if (mustCallVal.isEmpty()) {
@@ -283,8 +285,10 @@ class MustCallInvokedChecker {
   private boolean shouldSkipInvokePseudoAssignCheck(
       Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
     Tree callTree = node.getTree();
-    // This call gets the declared must-call type of the return value, which isn't affected by dataflow.
-    // Therefore, it's safe to just call the version of getMustCallValue that indirects to getAnnotatedType,
+    // This call gets the declared must-call type of the return value, which isn't affected by
+    // dataflow.
+    // Therefore, it's safe to just call the version of getMustCallValue that indirects to
+    // getAnnotatedType,
     // and not the version that uses the mustcall store directly.
     List<String> mustCallVal = typeFactory.getMustCallValue(callTree);
     if (mustCallVal.isEmpty()) {
@@ -521,11 +525,13 @@ class MustCallInvokedChecker {
           } else {
             // If the setContainingLatestAssignmentPair size is one and the rhs is not MCC with the
             // lhs
-            MustCallAnnotatedTypeFactory mcAtf = typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+            MustCallAnnotatedTypeFactory mcAtf =
+                typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
 
             checkMustCall(
                 setContainingLatestAssignmentPair,
-                typeFactory.getStoreBefore(node), mcAtf.getStoreBefore(node),
+                typeFactory.getStoreBefore(node),
+                mcAtf.getStoreBefore(node),
                 "variable overwritten by assignment " + node.getTree());
             newDefs.remove(setContainingLatestAssignmentPair);
           }
@@ -582,8 +588,11 @@ class MustCallInvokedChecker {
         // It is important that newDefs contains the set of these locals - that is, their
         // aliasing relationship - because either one could have a reset method called on it,
         // which would create a new obligation.
-        newDefs.add(ImmutableSet.<LocalVarWithTree>builder().
-                addAll(setContainingRhs).add(lhsLocalVarWithTreeNew).build());
+        newDefs.add(
+            ImmutableSet.<LocalVarWithTree>builder()
+                .addAll(setContainingRhs)
+                .add(lhsLocalVarWithTreeNew)
+                .build());
         newDefs.remove(setContainingRhs);
       }
     }
@@ -597,12 +606,17 @@ class MustCallInvokedChecker {
    * @param node an assignment to a non-final, owning field
    * @param newDefs
    */
-  private void checkReassignmentToField(AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
+  private void checkReassignmentToField(
+      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
 
     Node lhsNode = node.getTarget();
 
-    if (! (lhsNode instanceof FieldAccessNode)) {
-      throw new BugInCF("tried to check reassignment to a field for a non-field node: " + node + " of type: " + node.getClass());
+    if (!(lhsNode instanceof FieldAccessNode)) {
+      throw new BugInCF(
+          "tried to check reassignment to a field for a non-field node: "
+              + node
+              + " of type: "
+              + node.getClass());
     }
 
     FieldAccessNode lhs = (FieldAccessNode) lhsNode;
@@ -611,7 +625,8 @@ class MustCallInvokedChecker {
     // Check that there is a corresponding resetMustCall annotation, unless this is an
     // assignment to a field of a newly-declared local variable that can't be in scope
     // for the containing method.
-    if (!(receiver instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) receiver))) {
+    if (!(receiver instanceof LocalVariableNode
+        && isVarInDefs(newDefs, (LocalVariableNode) receiver))) {
       checkEnclosingMethodIsResetMC(node);
     }
 
@@ -648,45 +663,57 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Checks that the method that encloses an assignment is marked with @ResetMustCall
-   * annotation whose target is the object whose field is being re-assigned.
+   * Checks that the method that encloses an assignment is marked with @ResetMustCall annotation
+   * whose target is the object whose field is being re-assigned.
    *
    * @param node an assignment node whose lhs is a non-final, owning field
    */
   private void checkEnclosingMethodIsResetMC(AssignmentNode node) {
     Node lhs = node.getTarget();
-    if (! (lhs instanceof FieldAccessNode)) {
+    if (!(lhs instanceof FieldAccessNode)) {
       return;
     }
 
     String receiverString = receiverAsString((FieldAccessNode) lhs);
 
     TreePath currentPath = typeFactory.getPath(node.getTree());
-    MethodTree containingMethod = TreeUtils.enclosingMethod(currentPath);
+    MethodTree containingMethod = TreePathUtil.enclosingMethod(currentPath);
     if (containingMethod == null) {
       // Assignments outside of methods must be in constructors or field initializers, which
       // are always safe.
       return;
     }
     ExecutableElement enclosingMethod = TreeUtils.elementFromDeclaration(containingMethod);
-    AnnotationMirror resetMustCall = typeFactory.getDeclAnnotation(enclosingMethod, ResetMustCall.class);
+    AnnotationMirror resetMustCall =
+        typeFactory.getDeclAnnotation(enclosingMethod, ResetMustCall.class);
     if (resetMustCall == null) {
-      checker.reportError(containingMethod, "missing.reset.mustcall", receiverString, ((FieldAccessNode) lhs).getFieldName());
+      checker.reportError(
+          containingMethod,
+          "missing.reset.mustcall",
+          receiverString,
+          ((FieldAccessNode) lhs).getFieldName());
       return;
     }
 
-    String targetStrWithoutAdaptation = AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
+    String targetStrWithoutAdaptation =
+        AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
     JavaExpressionContext context =
-            JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(containingMethod, currentPath, checker.getContext());
-    String targetStr = MustCallTransfer.standardizeAndViewpointAdapt(targetStrWithoutAdaptation, currentPath, context);
+        JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
+            containingMethod, currentPath, checker);
+    String targetStr =
+        MustCallTransfer.standardizeAndViewpointAdapt(
+            targetStrWithoutAdaptation, currentPath, context);
     if (!targetStr.equals(receiverString)) {
-      checker.reportError(containingMethod, "incompatible.reset.mustcall", receiverString, ((FieldAccessNode) lhs).getFieldName(), targetStr);
+      checker.reportError(
+          containingMethod,
+          "incompatible.reset.mustcall",
+          receiverString,
+          ((FieldAccessNode) lhs).getFieldName(),
+          targetStr);
     }
   }
 
-  /**
-   * Gets a standardized name for an object whose field is being re-assigned.
-   */
+  /** Gets a standardized name for an object whose field is being re-assigned. */
   private String receiverAsString(FieldAccessNode lhs) {
     Node receiver = lhs.getReceiver();
     if (receiver instanceof ThisNode) {
@@ -696,7 +723,8 @@ class MustCallInvokedChecker {
 
       return ((LocalVariableNode) receiver).getName();
     }
-    throw new BugInCF("unexpected receiver of field assignment: " + receiver + " of type " + receiver.getClass());
+    throw new BugInCF(
+        "unexpected receiver of field assignment: " + receiver + " of type " + receiver.getClass());
   }
 
   /**
@@ -840,7 +868,8 @@ class MustCallInvokedChecker {
             setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null);
         if (succ instanceof SpecialBlockImpl || noSuccInfo) {
-          MustCallAnnotatedTypeFactory mcAtf = typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+          MustCallAnnotatedTypeFactory mcAtf =
+              typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
           if (nodes.size() == 0) { // If the cur block is special or conditional block
             // Use the store from the block actually being analyzed, rather than succRegularStore,
             // if succRegularStore contains no information about the variables of interest.
@@ -953,10 +982,12 @@ class MustCallInvokedChecker {
    * the check fails.
    */
   private void checkMustCall(
-          ImmutableSet<LocalVarWithTree> localVarWithTreeSet, CFStore cmStore, CFStore mcStore, String outOfScopeReason) {
+      ImmutableSet<LocalVarWithTree> localVarWithTreeSet,
+      CFStore cmStore,
+      CFStore mcStore,
+      String outOfScopeReason) {
 
-    List<String> mustCallValue =
-        typeFactory.getMustCallValue(localVarWithTreeSet, mcStore);
+    List<String> mustCallValue = typeFactory.getMustCallValue(localVarWithTreeSet, mcStore);
     // optimization: if there are no must-call methods, we do not need to perform the check
     if (mustCallValue.isEmpty()) {
       return;
