@@ -13,8 +13,9 @@ class BindChannel {
             // The mustcall.not.parseable error should go away when we have support for expressions
             // in the store, I think.
             //
-            // :: error: required.method.not.called :: error: mustcall.not.parseable
+            // :: error: required.method.not.called
             ServerSocketChannel httpChannel = ServerSocketChannel.open();
+            // :: error: mustcall.not.parseable
             httpChannel.socket().bind(addr);
         } catch (IOException io) {
 

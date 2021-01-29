@@ -1058,13 +1058,17 @@ class MustCallInvokedChecker {
 
   /**
    * Is {@code exceptionClassName} an exception type we are ignoring, to avoid excessive false
-   * positives? For now we ignore {@code java.lang.Throwable} and {@code NullPointerException}
+   * positives? For now we ignore {@code java.lang.Throwable}, {@code NullPointerException},
+   * and the runtime exceptions that can occur at any point during the program due to something
+   * going wrong in the JVM, like OutOfMemoryErrors or ClassCircularityErrors.
    */
   private static boolean isIgnoredExceptionType(@FullyQualifiedName Name exceptionClassName) {
-    boolean isThrowableOrNPE =
-        exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
-            || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName());
-    return isThrowableOrNPE;
+    return exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
+            || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName())
+            || exceptionClassName.contentEquals(ClassCircularityError.class.getCanonicalName())
+            || exceptionClassName.contentEquals(ClassFormatError.class.getCanonicalName())
+            || exceptionClassName.contentEquals(NoClassDefFoundError.class.getCanonicalName())
+            || exceptionClassName.contentEquals(OutOfMemoryError.class.getCanonicalName());
   }
 
   /**
