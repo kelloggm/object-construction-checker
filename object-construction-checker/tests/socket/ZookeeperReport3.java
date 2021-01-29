@@ -1,30 +1,30 @@
 // Based on a Zookeeper false positive that requires unconnected socket support.
 // This example is functionally equivalent to example #4, so I included it in this file
-// ("createNewServerSocket").
+// ("createNewServerSocket"). This version of the test is incomplete: the real version
+// of this test also requires support for Optional. See ZookeeperTest3WithOptional.java.
 
 import java.net.*;
 import java.io.*;
-import java.util.Optional;
 
 import org.checkerframework.checker.mustcall.qual.*;
 
 class ZookeeperReport3 {
 
     // This is a simpler version of case 3.
-    Optional<ServerSocket> createServerSocket_easy(InetSocketAddress address, boolean portUnification, boolean sslQuorum) {
+    ServerSocket createServerSocket_easy(InetSocketAddress address, boolean portUnification, boolean sslQuorum) {
         ServerSocket serverSocket;
         try {
             serverSocket = new ServerSocket();
             serverSocket.setReuseAddress(true);
             serverSocket.bind(address);
-            return Optional.of(serverSocket);
+            return serverSocket;
         } catch (IOException e) {
             System.err.println("Couldn't bind to " + address.toString() + e);
         }
-        return Optional.empty();
+        return null;
     }
 
-    Optional<ServerSocket> createServerSocket(InetSocketAddress address, boolean portUnification, boolean sslQuorum) {
+    ServerSocket createServerSocket(InetSocketAddress address, boolean portUnification, boolean sslQuorum) {
         ServerSocket serverSocket;
         try {
             if (portUnification || sslQuorum) {
@@ -34,11 +34,11 @@ class ZookeeperReport3 {
             }
             serverSocket.setReuseAddress(true);
             serverSocket.bind(address);
-            return Optional.of(serverSocket);
+            return serverSocket;
         } catch (IOException e) {
             System.err.println("Couldn't bind to " + address.toString() + e);
         }
-        return Optional.empty();
+        return null;
     }
 
     private ServerSocket createNewServerSocket(SocketAddress address, boolean portUnification, boolean sslQuorum) throws IOException {

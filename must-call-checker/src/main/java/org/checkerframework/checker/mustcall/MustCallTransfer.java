@@ -36,6 +36,7 @@ public class MustCallTransfer extends CFTransfer {
   @Override
   public TransferResult<CFValue, CFStore> visitMethodInvocation(
       MethodInvocationNode n, TransferInput<CFValue, CFStore> in) {
+    TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(n, in);
     AnnotationMirror resetMustCall =
         atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), ResetMustCall.class);
     if (resetMustCall != null) {
@@ -51,9 +52,6 @@ public class MustCallTransfer extends CFTransfer {
       try {
         targetExpr = atypeFactory.parseJavaExpressionString(targetStr, currentPath);
       } catch (JavaExpressionParseException e) {
-        /*throw new UserError("encountered an unparseable expression while evaluating an @ResetMustCall annotation: "
-        + targetStrWithoutAdaptation + " was resolved to " + targetStr +
-        ", which could not be parsed in the current context while evaluating " + n);*/
         atypeFactory
             .getChecker()
             .reportError(
@@ -61,7 +59,7 @@ public class MustCallTransfer extends CFTransfer {
                 "mustcall.not.parseable",
                 n.getTarget().getMethod().getSimpleName(),
                 targetStr);
-        return super.visitMethodInvocation(n, in);
+        return result;
       }
 
       AnnotationMirror defaultType =
@@ -69,20 +67,20 @@ public class MustCallTransfer extends CFTransfer {
               .getAnnotatedType(TypesUtils.getTypeElement(targetExpr.getType()))
               .getAnnotationInHierarchy(atypeFactory.TOP);
 
-      if (in.containsTwoStores()) {
-        CFStore thenStore = in.getThenStore();
+      if (result.containsTwoStores()) {
+        CFStore thenStore = result.getThenStore();
         thenStore.clearValue(targetExpr);
         thenStore.insertValue(targetExpr, defaultType);
-        CFStore elseStore = in.getElseStore();
+        CFStore elseStore = result.getElseStore();
         elseStore.clearValue(targetExpr);
         elseStore.insertValue(targetExpr, defaultType);
       } else {
-        CFStore store = in.getRegularStore();
+        CFStore store = result.getRegularStore();
         store.clearValue(targetExpr);
         store.insertValue(targetExpr, defaultType);
       }
     }
-    return super.visitMethodInvocation(n, in);
+    return result;
   }
 
   /*

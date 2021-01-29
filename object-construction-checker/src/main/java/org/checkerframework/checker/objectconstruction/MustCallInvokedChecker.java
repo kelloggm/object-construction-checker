@@ -887,8 +887,16 @@ class MustCallInvokedChecker {
             // annotation in the store right after the last node
             Node last = nodes.get(nodes.size() - 1);
             CFStore cmStoreAfter = typeFactory.getStoreAfter(last);
-            CFStore mcStoreAfter = mcAtf.getStoreAfter(last);
-            checkMustCall(setAssign, cmStoreAfter, mcStoreAfter, reasonForSucc);
+            // If this is an exceptional block, check the MC store beforehand to avoid
+            // issuing an error about a call to a ResetMustCall method that might throw
+            // an exception. Otherwise, use the store after.
+            CFStore mcStore;
+            if (exceptionType != null) {
+              mcStore = mcAtf.getStoreBefore(last);
+            } else {
+              mcStore = mcAtf.getStoreAfter(last);
+            }
+            checkMustCall(setAssign, cmStoreAfter, mcStore, reasonForSucc);
           }
 
           toRemove.add(setAssign);
@@ -1058,17 +1066,17 @@ class MustCallInvokedChecker {
 
   /**
    * Is {@code exceptionClassName} an exception type we are ignoring, to avoid excessive false
-   * positives? For now we ignore {@code java.lang.Throwable}, {@code NullPointerException},
-   * and the runtime exceptions that can occur at any point during the program due to something
-   * going wrong in the JVM, like OutOfMemoryErrors or ClassCircularityErrors.
+   * positives? For now we ignore {@code java.lang.Throwable}, {@code NullPointerException}, and the
+   * runtime exceptions that can occur at any point during the program due to something going wrong
+   * in the JVM, like OutOfMemoryErrors or ClassCircularityErrors.
    */
   private static boolean isIgnoredExceptionType(@FullyQualifiedName Name exceptionClassName) {
     return exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
-            || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName())
-            || exceptionClassName.contentEquals(ClassCircularityError.class.getCanonicalName())
-            || exceptionClassName.contentEquals(ClassFormatError.class.getCanonicalName())
-            || exceptionClassName.contentEquals(NoClassDefFoundError.class.getCanonicalName())
-            || exceptionClassName.contentEquals(OutOfMemoryError.class.getCanonicalName());
+        || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName())
+        || exceptionClassName.contentEquals(ClassCircularityError.class.getCanonicalName())
+        || exceptionClassName.contentEquals(ClassFormatError.class.getCanonicalName())
+        || exceptionClassName.contentEquals(NoClassDefFoundError.class.getCanonicalName())
+        || exceptionClassName.contentEquals(OutOfMemoryError.class.getCanonicalName());
   }
 
   /**

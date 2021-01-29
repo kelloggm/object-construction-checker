@@ -17,7 +17,7 @@ class FileChannel {
 
 class SocketChannel extends AbstractSelectableChannel implements ByteChannel, ScatteringByteChannel, GatheringByteChannel, NetworkChannel {
     protected SocketChannel(SelectorProvider arg0);
-    static SocketChannel open() throws IOException;
+    static @MustCall({}) SocketChannel open() throws IOException;
     static SocketChannel open(SocketAddress arg0) throws IOException;
     int validOps();
     SocketChannel bind(SocketAddress arg0) throws IOException;
@@ -41,9 +41,11 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
 
 class ServerSocketChannel extends AbstractSelectableChannel implements NetworkChannel {
     protected ServerSocketChannel(SelectorProvider arg0);
-    static ServerSocketChannel open() throws IOException;
+    static @MustCall({}) ServerSocketChannel open() throws IOException;
     int validOps();
+    @ResetMustCall("this")
     @MustCallChoice ServerSocketChannel bind(@MustCallChoice ServerSocketChannel this, SocketAddress arg0) throws IOException;
+    @ResetMustCall("this")
     @MustCallChoice ServerSocketChannel bind(@MustCallChoice ServerSocketChannel this, SocketAddress arg0, int arg1) throws IOException;
     <T> ServerSocketChannel setOption(SocketOption<T> arg0, T arg1) throws IOException;
     @MustCallChoice ServerSocket socket(@MustCallChoice ServerSocketChannel this);
