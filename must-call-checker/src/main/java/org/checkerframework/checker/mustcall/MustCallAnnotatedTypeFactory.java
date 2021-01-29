@@ -251,6 +251,16 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         this.getSupportedTypeQualifiers(), this.getProcessingEnv());
   }
 
+  /**
+   * Fetches the store from the results of dataflow, for either block (if noSuccInfo is true) or
+   * succ (if noSuccInfo is false).
+   *
+   * @param noSuccInfo whether to use the store for the block itself or its successor, succ
+   * @param block a block
+   * @param succ block's successor
+   * @return the appropriate CFStore, populated with MustCall annotations, from the results of
+   *     running dataflow
+   */
   public CFStore getStoreForBlock(boolean noSuccInfo, Block block, Block succ) {
     return noSuccInfo ? flowResult.getStoreAfter(block) : flowResult.getStoreBefore(succ);
   }
