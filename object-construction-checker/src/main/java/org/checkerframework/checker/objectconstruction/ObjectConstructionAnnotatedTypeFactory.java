@@ -73,13 +73,13 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   }
 
   /**
-   * Use the must-call store to get the must-call value of the resource represented by
-   * the given local variables.
+   * Use the must-call store to get the must-call value of the resource represented by the given
+   * local variables.
    *
-   * @param localVarWithTreeSet a set of local variables with their assignment trees, all of
-   *                            which represent the same resource
+   * @param localVarWithTreeSet a set of local variables with their assignment trees, all of which
+   *     represent the same resource
    * @param mcStore a CFStore produced by the MustCall checker's dataflow analysis. If this is null,
-   *                then the default MustCall type of each variable's class will be used.
+   *     then the default MustCall type of each variable's class will be used.
    * @return the list of must-call method names
    */
   public List<String> getMustCallValue(
