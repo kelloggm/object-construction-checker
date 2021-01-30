@@ -164,18 +164,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     return !getMustCallValue(t).isEmpty();
   }
 
-  /**
-   * Returns true iff the unconnected sockets checker determined that this tree represents a socket
-   * that is definitely unconnected.
-   *
-   * @param tree a tree
-   * @return true iff the unconnected sockets checker proved that tree represents a
-   *     definitely-unconnected socket
-   */
-  public boolean isUnconnectedSocket(Tree tree) {
-    return false; // TODO get rid of this?
-  }
-
   boolean hasMustCallChoice(Tree tree) {
     Element elt = TreeUtils.elementFromTree(tree);
     return hasMustCallChoice(elt);

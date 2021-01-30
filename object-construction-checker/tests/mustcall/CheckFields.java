@@ -33,8 +33,6 @@ class CheckFields {
             this.finalNotOwningFoo = new Foo();
         }
 
-        // for now we report an error at the field declaration, but we are keeping
-        // the next three tests in case we adopt a more flexible scheme in the future
         @ResetMustCall
         void assingToOwningFieldWrong() {
             Foo f = new Foo();
