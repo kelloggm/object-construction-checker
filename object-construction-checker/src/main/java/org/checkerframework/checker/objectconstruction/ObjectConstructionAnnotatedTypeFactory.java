@@ -16,6 +16,7 @@ import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.MustCallInvokedChecker.LocalVarWithTree;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -71,10 +72,24 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     super.postAnalyze(cfg);
   }
 
+  /**
+   * Use the must-call store to get the must-call value of the resource represented by
+   * the given local variables.
+   *
+   * @param localVarWithTreeSet a set of local variables with their assignment trees, all of
+   *                            which represent the same resource
+   * @param mcStore a CFStore produced by the MustCall checker's dataflow analysis. If this is null,
+   *                then the default MustCall type of each variable's class will be used.
+   * @return the list of must-call method names
+   */
   public List<String> getMustCallValue(
-      ImmutableSet<LocalVarWithTree> localVarWithTreeSet, CFStore mcStore) {
+      ImmutableSet<LocalVarWithTree> localVarWithTreeSet, @Nullable CFStore mcStore) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
+
+    // Need to get the LUB of the MC values, because if a ResetMustCall method was
+    // called on just one of the locals then they all need to be treated as if
+    // they need to call the relevant methods.
     AnnotationMirror mcLub = mustCallAnnotatedTypeFactory.BOTTOM;
     for (LocalVarWithTree lvt : localVarWithTreeSet) {
       AnnotationMirror mcAnno = null;
