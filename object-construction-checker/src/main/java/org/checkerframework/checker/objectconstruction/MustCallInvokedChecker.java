@@ -1136,7 +1136,7 @@ class MustCallInvokedChecker {
    * formal parameter. We keep the tree for error-reporting purposes (so we can report an error per
    * assignment to a local, pinpointing the expression whose MustCall may not be satisfied).
    */
-  static class LocalVarWithTree {
+  /* package-private */static class LocalVarWithTree {
     public final LocalVariable localVar;
     public final Tree tree;
 
