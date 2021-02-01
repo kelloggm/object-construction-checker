@@ -59,6 +59,7 @@ import org.checkerframework.dataflow.cfg.node.ThisNode;
 import org.checkerframework.dataflow.cfg.node.TypeCastNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
+import org.checkerframework.dataflow.util.NodeUtils;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
@@ -672,6 +673,11 @@ class MustCallInvokedChecker {
 
     String receiverString = receiverAsString((FieldAccessNode) lhs);
 
+    // TODO: it would be better to defer getting the path until after we check
+    // for a ResetMustCall annotation, because getting the path can be expensive.
+    // It might be possible to exploit the CFG structure to find the containing
+    // method (rather than using the path, as below), because if a method is being
+    // analyzed then it should be the root of the CFG (I think).
     TreePath currentPath = typeFactory.getPath(node.getTree());
     MethodTree containingMethod = TreePathUtil.enclosingMethod(currentPath);
     if (containingMethod == null) {
