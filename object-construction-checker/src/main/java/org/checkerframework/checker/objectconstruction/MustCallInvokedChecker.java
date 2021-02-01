@@ -207,10 +207,8 @@ class MustCallInvokedChecker {
   private void checkPseudoAssignToOwning(Node node) {
     Tree tree = node.getTree();
     // This call gets the declared must-call type of the return value, which isn't affected by
-    // dataflow.
-    // Therefore, it's safe to just call the version of getMustCallValue that indirects to
-    // getAnnotatedType,
-    // and not the version that uses the mustcall store directly.
+    // dataflow. Therefore, it's safe to just call the version of getMustCallValue that
+    // indirects to getAnnotatedType, and not the version that uses the mustcall store directly.
     List<String> mustCallVal = typeFactory.getMustCallValue(tree);
     if (mustCallVal.isEmpty()) {
       return;
@@ -286,10 +284,8 @@ class MustCallInvokedChecker {
       Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
     Tree callTree = node.getTree();
     // This call gets the declared must-call type of the return value, which isn't affected by
-    // dataflow.
-    // Therefore, it's safe to just call the version of getMustCallValue that indirects to
-    // getAnnotatedType,
-    // and not the version that uses the mustcall store directly.
+    // dataflow. Therefore, it's safe to just call the version of getMustCallValue that
+    // indirects to getAnnotatedType, and not the version that uses the mustcall store directly.
     List<String> mustCallVal = typeFactory.getMustCallValue(callTree);
     if (mustCallVal.isEmpty()) {
       return true;
@@ -1003,10 +999,6 @@ class MustCallInvokedChecker {
 
     boolean mustCallSatisfied = false;
     for (LocalVarWithTree localVarWithTree : localVarWithTreeSet) {
-
-      if (typeFactory.isUnconnectedSocket(localVarWithTree.tree)) {
-        return;
-      }
 
       // sometimes the store is null!  this looks like a bug in checker dataflow.
       // TODO track down and report the root-cause bug
