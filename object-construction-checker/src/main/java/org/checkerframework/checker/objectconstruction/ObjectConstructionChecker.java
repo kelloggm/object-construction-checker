@@ -77,6 +77,9 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
     messages.setProperty(
         "incompatible.reset.mustcall",
         "This method re-assigns the non-final, owning field %s.%s, but its @ResetMustCall annotation targets %s.\n");
+    messages.setProperty(
+        "reset.not.owning",
+        "Calling this method resets the must-call obligations of the expression %s, which is non-owning. Either annotate its declaration with an @Owning annotation or write a corresponding @ResetMustCall annotation on the method that encloses this statement.\n");
     return messages;
   }
 

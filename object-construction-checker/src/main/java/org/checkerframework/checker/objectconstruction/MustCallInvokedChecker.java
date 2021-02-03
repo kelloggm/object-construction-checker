@@ -57,6 +57,7 @@ import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.node.TernaryExpressionNode;
 import org.checkerframework.dataflow.cfg.node.ThisNode;
 import org.checkerframework.dataflow.cfg.node.TypeCastNode;
+import org.checkerframework.dataflow.expression.FieldAccess;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFAnalysis;
@@ -64,6 +65,7 @@ import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
@@ -186,6 +188,7 @@ class MustCallInvokedChecker {
                 TreeUtils.elementFromUse((MethodInvocationTree) node.getTree()),
                 ResetMustCall.class)
             != null) {
+      checkResetMustCallInvocation(newDefs, (MethodInvocationNode) node);
       incrementNumMustCall();
     }
     // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
@@ -197,6 +200,94 @@ class MustCallInvokedChecker {
       incrementNumMustCall();
       checkPseudoAssignToOwning(node);
     }
+  }
+
+  /**
+   * Checks that an invocation of a ResetMustCall method is valid. Such an invocation is valid if
+   * one of the following conditions is true: 1) the target is an owning pointer 2) the target is
+   * tracked in newdefs 3) the method in which the invocation occurs also has an @ResetMustCall
+   * annotation, with the same target
+   *
+   * <p>If none of the above are true, this method issues a reset.not.owning error.
+   *
+   * @param newDefs the local variables that have been defined in the current compilation unit (and
+   *     are therefore going to be checked later)
+   * @param node a method invocation node, invoking a method with a ResetMustCall annotation
+   */
+  private void checkResetMustCallInvocation(
+      Set<ImmutableSet<LocalVarWithTree>> newDefs, MethodInvocationNode node) {
+    AnnotationMirror resetMustCall =
+        typeFactory.getDeclAnnotation(
+            TreeUtils.elementFromUse(node.getTree()), ResetMustCall.class);
+    String targetStrWithoutAdaptation =
+        AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
+    TreePath currentPath = typeFactory.getPath(node.getTree());
+    JavaExpressionContext context =
+        JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(node, checker);
+    String targetStr =
+        MustCallTransfer.standardizeAndViewpointAdapt(
+            targetStrWithoutAdaptation, currentPath, context);
+    JavaExpression target;
+    try {
+      target = typeFactory.parseJavaExpressionString(targetStr, currentPath);
+    } catch (JavaExpressionParseException e) {
+      typeFactory
+          .getChecker()
+          .reportError(
+              node.getTree(),
+              "mustcall.not.parseable",
+              node.getTarget().getMethod().getSimpleName(),
+              targetStr);
+      return;
+    }
+
+    if (target instanceof LocalVariable) {
+
+      Element elt = ((LocalVariable) target).getElement();
+      if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
+        // if the target is an Owning param, this satisfies case 1
+        return;
+      }
+
+      for (ImmutableSet<LocalVarWithTree> defAliasSet : newDefs) {
+        for (LocalVarWithTree localVarWithTree : defAliasSet) {
+          if (target.equals(localVarWithTree.localVar)) {
+            // satisfies case 2 above
+            return;
+          }
+        }
+      }
+    }
+    if (target instanceof FieldAccess) {
+      Element elt = ((FieldAccess) target).getField();
+      if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
+        // if the target is an Owning field, this satisfies case 1
+        return;
+      }
+    }
+
+    MethodTree containingMethod = TreePathUtil.enclosingMethod(currentPath);
+    if (containingMethod != null) {
+      ExecutableElement enclosingMethod = TreeUtils.elementFromDeclaration(containingMethod);
+      AnnotationMirror enclosingResetMustCall =
+          typeFactory.getDeclAnnotation(enclosingMethod, ResetMustCall.class);
+      if (enclosingResetMustCall != null) {
+        String enclosingTargetStrWithoutAdaptation =
+            AnnotationUtils.getElementValue(enclosingResetMustCall, "value", String.class, true);
+        JavaExpressionContext enclosingContext =
+            JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
+                containingMethod, currentPath, checker);
+        String enclosingTargetStr =
+            MustCallTransfer.standardizeAndViewpointAdapt(
+                enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
+        if (enclosingTargetStr.equals(targetStr)) {
+          // The enclosing method also has a corresponding ResetMustCall annotation, so this
+          // satisfies case 3.
+          return;
+        }
+      }
+    }
+    checker.reportError(node.getTree(), "reset.not.owning", targetStr);
   }
 
   /**
