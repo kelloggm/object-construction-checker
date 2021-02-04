@@ -266,17 +266,17 @@ class MustCallInvokedChecker {
       }
     }
 
-    MethodTree containingMethod = TreePathUtil.enclosingMethod(currentPath);
-    if (containingMethod != null) {
-      ExecutableElement enclosingMethod = TreeUtils.elementFromDeclaration(containingMethod);
+    MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
+    if (enclosingMethod != null) {
+      ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
       AnnotationMirror enclosingResetMustCall =
-          typeFactory.getDeclAnnotation(enclosingMethod, ResetMustCall.class);
+          typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.class);
       if (enclosingResetMustCall != null) {
         String enclosingTargetStrWithoutAdaptation =
             AnnotationUtils.getElementValue(enclosingResetMustCall, "value", String.class, true);
         JavaExpressionContext enclosingContext =
             JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
-                containingMethod, currentPath, checker);
+                enclosingMethod, currentPath, checker);
         String enclosingTargetStr =
             MustCallTransfer.standardizeAndViewpointAdapt(
                 enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
@@ -769,18 +769,18 @@ class MustCallInvokedChecker {
     // method (rather than using the path, as below), because if a method is being
     // analyzed then it should be the root of the CFG (I think).
     TreePath currentPath = typeFactory.getPath(node.getTree());
-    MethodTree containingMethod = TreePathUtil.enclosingMethod(currentPath);
-    if (containingMethod == null) {
+    MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
+    if (enclosingMethod == null) {
       // Assignments outside of methods must be in constructors or field initializers, which
       // are always safe.
       return;
     }
-    ExecutableElement enclosingMethod = TreeUtils.elementFromDeclaration(containingMethod);
+    ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
     AnnotationMirror resetMustCall =
-        typeFactory.getDeclAnnotation(enclosingMethod, ResetMustCall.class);
+        typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.class);
     if (resetMustCall == null) {
       checker.reportError(
-          containingMethod,
+          enclosingMethod,
           "missing.reset.mustcall",
           receiverString,
           ((FieldAccessNode) lhs).getFieldName());
@@ -791,13 +791,13 @@ class MustCallInvokedChecker {
         AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
     JavaExpressionContext context =
         JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
-            containingMethod, currentPath, checker);
+            enclosingMethod, currentPath, checker);
     String targetStr =
         MustCallTransfer.standardizeAndViewpointAdapt(
             targetStrWithoutAdaptation, currentPath, context);
     if (!targetStr.equals(receiverString)) {
       checker.reportError(
-          containingMethod,
+          enclosingMethod,
           "incompatible.reset.mustcall",
           receiverString,
           ((FieldAccessNode) lhs).getFieldName(),
