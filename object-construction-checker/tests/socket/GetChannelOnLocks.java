@@ -1,3 +1,6 @@
+// Based on a false positive in hdfs
+// A test that shows we are handling the sequence of method invocations correctly
+
 import java.io.IOException;
 import java.nio.channels.FileLock;
 

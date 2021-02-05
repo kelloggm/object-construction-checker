@@ -25,6 +25,7 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -99,9 +100,6 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
         getTypeFactoryOfSubchecker(MustCallChecker.class);
     AnnotatedTypeMirror mustCallAnnotatedType =
         mustCallAnnotatedTypeFactory.getAnnotatedType(element);
-    if (mustCallAnnotatedTypeFactory == null) {
-      return Collections.emptyList();
-    }
     AnnotationMirror mustCallAnnotation = mustCallAnnotatedType.getAnnotation(MustCall.class);
 
     return getMustCallValues(mustCallAnnotation);
@@ -119,6 +117,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     return !getMustCallValue(t).isEmpty();
   }
 
+  protected LocalVariableNode getTempVarForTree(Node node) {
+    return tempVarToNode.inverse().get(node.getTree());
+  }
   /**
    * Returns true iff the unconnected sockets checker determined that this tree represents a socket
    * that is definitely unconnected.

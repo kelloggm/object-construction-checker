@@ -317,10 +317,6 @@ class ACRegularExitPointTest {
         foo.a();
     }
 
-    void testTernaryAssignedtest(boolean b) {
-        Foo deepNesting = (b ? (!b ? makeFoo() : (Foo) makeFoo()) : ((Foo) new Foo()));
-        deepNesting.a();
-    }
     /**
      * cases where ternary expressions are assigned to a variable
      */
@@ -336,6 +332,12 @@ class ACRegularExitPointTest {
         Foo ternary3 = b ? new Foo() : x;
         ternary3.a();
 
+        // This is a false positive
+        // :: error: required.method.not.called
+        Foo y = new Foo();
+        Foo ternary4 = b ? y : y;
+        ternary4.a();
+
         takeOwnership(b ? new Foo() : makeFoo());
 
         // :: error: required.method.not.called
@@ -350,6 +352,8 @@ class ACRegularExitPointTest {
             i--;
         }
         ternaryInLoop.a();
+
+        (b ? new Foo() : makeFoo()).a();
     }
 
     /**

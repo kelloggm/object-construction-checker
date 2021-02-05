@@ -128,19 +128,21 @@ class MustCallInvokedChecker {
   }
 
   private void handleTernary(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
-    LocalVariableNode ternaryLocal = typeFactory.tempVarToNode.inverse().get(node.getTree());
+    LocalVariableNode ternaryLocal = typeFactory.getTempVarForTree(node);
 
+    // First check then operand
     Node operand = removeCasts(((TernaryExpressionNode) node).getThenOperand());
-    LocalVariableNode operandLocal = typeFactory.tempVarToNode.inverse().get(operand.getTree());
+    LocalVariableNode operandLocal = typeFactory.getTempVarForTree(operand);
+    // If operandLocal is null (it happens when then operand is a field or a local variable node),
+    // or not tracked by defs (it means we are in else branch), we check else branch
     if (operandLocal == null || !isVarInDefs(defs, operandLocal)) {
       operand = removeCasts(((TernaryExpressionNode) node).getElseOperand());
-      operandLocal = typeFactory.tempVarToNode.inverse().get(operand.getTree());
+      operandLocal = typeFactory.getTempVarForTree(operand);
     }
     if (operandLocal != null && isVarInDefs(defs, operandLocal)) {
       LocalVarWithTree latestAssignmentPair = getAssignmentTreeOfVar(defs, operandLocal);
       ImmutableSet<LocalVarWithTree> setContainingOperandLocal =
           getSetContainingAssignmentTreeOfVar(defs, operandLocal);
-      // If latestAssignmentPair is null, nothing will get filtered by the filter call
       ImmutableSet<LocalVarWithTree> newSetContainingOperandLocal =
           FluentIterable.from(setContainingOperandLocal)
               .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
@@ -155,62 +157,68 @@ class MustCallInvokedChecker {
   private void handleInvocation(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     doOwnershipTransferToParameters(defs, node);
 
-    if (shouldSkipInvokePseudoAssignCheck(node)) {
+    if (shouldSkipInvokeCheck(node)) {
       return;
     }
     updateDefsWithTempVar(defs, node);
   }
 
+  /**
+   * Searches for the set of same resources in defs and add the new LocalVarWithTree to it if one
+   * exists. Otherwise creates a new set.
+   */
   private void updateDefsWithTempVar(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     Tree tree = node.getTree();
-    if (typeFactory.tempVarToNode.inverse().containsKey(node.getTree())) {
+    LocalVariableNode temporaryLocal = typeFactory.getTempVarForTree(node);
+    if (temporaryLocal != null) {
 
-      LocalVariableNode temporaryLocal = typeFactory.tempVarToNode.inverse().get(node.getTree());
       LocalVarWithTree lhsLocalVarWithTreeNew =
           new LocalVarWithTree(new LocalVariable(temporaryLocal), tree);
 
-      Node receiver = null;
+      Node sameResource = null;
+      // Set sameResource to the MCC parameter if any exists, otherwise it remains null
       if (node instanceof ObjectCreationNode || node instanceof MethodInvocationNode) {
-        receiver = getVarOrTempVarPassedAsMustCallChoiceParam(node);
+        sameResource = getVarOrTempVarPassedAsMustCallChoiceParam(node);
       }
 
-      if (receiver == null
+      // If sameResource is still null and node returns @This, set sameResource to the receiver
+      if (sameResource == null
           && node instanceof MethodInvocationNode
           && (typeFactory.returnsThis((MethodInvocationTree) tree))) {
-        receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
-        if (receiver instanceof MethodInvocationNode) {
-          receiver = typeFactory.tempVarToNode.inverse().get(receiver.getTree());
+        sameResource = ((MethodInvocationNode) node).getTarget().getReceiver();
+        if (sameResource instanceof MethodInvocationNode) {
+          sameResource = typeFactory.getTempVarForTree(sameResource);
         }
       }
 
-      if (receiver != null) {
-        receiver = removeCasts(receiver);
+      if (sameResource != null) {
+        sameResource = removeCasts(sameResource);
       }
 
-      if (receiver instanceof LocalVariableNode
-          && isVarInDefs(defs, (LocalVariableNode) receiver)) {
+      // If sameResource is local variable tracked by defs, add lhsLocalVarWithTreeNew to the set
+      // containing sameResource. Otherwise, add it to a new set
+      if (sameResource instanceof LocalVariableNode
+          && isVarInDefs(defs, (LocalVariableNode) sameResource)) {
         ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
-            getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) receiver);
+            getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) sameResource);
         ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
             FluentIterable.from(setContainingMustCallChoiceParamLocal)
                 .append(lhsLocalVarWithTreeNew)
                 .toSet();
         defs.remove(setContainingMustCallChoiceParamLocal);
         defs.add(newSetContainingMustCallChoiceParamLocal);
-      } else if (!(receiver instanceof LocalVariableNode)) {
+      } else if (!(sameResource instanceof LocalVariableNode)) {
         defs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
       }
     }
   }
 
   /**
-   * Checks for cases where we do not need to ensure that a method invocation gets pseudo-assigned
-   * to a variable / field that takes ownership. We can skip the check when the invoked method's
-   * return type is {@link org.checkerframework.common.returnsreceiver.qual.This}, the invocation is
-   * a super constructor call, the method's return type is annotated {@link NotOwning}, or the
-   * receiver parameter is in the {@code defs} and has @MustCallChoice annotation.
+   * Checks for cases where we do not need to track a method. We can skip the check when the method
+   * invocation is a call to "this" or a super constructor call, or the method's return type is
+   * annotated {@link NotOwning}.
    */
-  private boolean shouldSkipInvokePseudoAssignCheck(Node node) {
+  private boolean shouldSkipInvokeCheck(Node node) {
     Tree callTree = node.getTree();
     List<String> mustCallVal = typeFactory.getMustCallValue(callTree);
     if (mustCallVal.isEmpty()) {
@@ -277,8 +285,8 @@ class MustCallInvokedChecker {
       LocalVariableNode local = null;
       if (n instanceof LocalVariableNode) {
         local = (LocalVariableNode) n;
-      } else if (typeFactory.tempVarToNode.inverse().containsKey(n.getTree())) {
-        local = typeFactory.tempVarToNode.inverse().get(n.getTree());
+      } else if (typeFactory.getTempVarForTree(n) != null) {
+        local = typeFactory.getTempVarForTree(n);
       }
 
       if (local != null && isVarInDefs(newDefs, local)) {
@@ -300,7 +308,7 @@ class MustCallInvokedChecker {
       ReturnNode node, ControlFlowGraph cfg, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     if (isTransferOwnershipAtReturn(cfg)) {
       Node result = node.getResult();
-      Node temp = typeFactory.tempVarToNode.inverse().get(result.getTree());
+      Node temp = typeFactory.getTempVarForTree(result);
       if (temp != null) {
         result = temp;
       }
@@ -331,6 +339,9 @@ class MustCallInvokedChecker {
 
   private void handleAssignment(AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     Node rhs = removeCasts(node.getExpression());
+    if (rhs instanceof MethodInvocationNode || rhs instanceof ObjectCreationNode) {
+      rhs = typeFactory.getTempVarForTree(rhs);
+    }
     handleAssignFromRHS(node, newDefs, rhs);
   }
 
@@ -342,14 +353,10 @@ class MustCallInvokedChecker {
   }
 
   private void handleAssignFromRHS(
-      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs, Node rhstemp) {
+      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs, Node rhs) {
     Node lhs = node.getTarget();
     Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
-    if (typeFactory.tempVarToNode.inverse().containsKey(rhstemp.getTree())) {
-      rhstemp = typeFactory.tempVarToNode.inverse().get(rhstemp.getTree());
-    }
 
-    final Node rhs = rhstemp;
     // Ownership transfer to @Owning field
     if (lhsElement.getKind().equals(ElementKind.FIELD) && typeFactory.hasMustCall(lhs.getTree())) {
       if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
@@ -465,7 +472,7 @@ class MustCallInvokedChecker {
         if (typeFactory.hasMustCallChoice(formals.get(i))) {
           n = arguments.get(i);
           if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
-            n = typeFactory.tempVarToNode.inverse().get(n.getTree());
+            n = typeFactory.getTempVarForTree(n);
             break;
           }
         }
@@ -475,7 +482,7 @@ class MustCallInvokedChecker {
       if (n == null && node instanceof MethodInvocationNode) {
         n = ((MethodInvocationNode) node).getTarget().getReceiver();
         if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
-          n = typeFactory.tempVarToNode.inverse().get(n.getTree());
+          n = typeFactory.getTempVarForTree(n);
         }
       }
     }
@@ -590,8 +597,7 @@ class MustCallInvokedChecker {
           // exceptional successors
           if (succAndExcType.second != null) {
             Node exceptionalNode = removeCasts(((ExceptionBlock) block).getNode());
-            LocalVariableNode localVariable =
-                typeFactory.tempVarToNode.inverse().get(exceptionalNode.getTree());
+            LocalVariableNode localVariable = typeFactory.getTempVarForTree(exceptionalNode);
             if (localVariable != null
                 && setAssign.stream()
                     .allMatch(
@@ -637,10 +643,6 @@ class MustCallInvokedChecker {
       defsCopy.removeAll(toRemove);
       propagate(new BlockWithLocals(succ, defsCopy), visited, worklist);
     }
-  }
-
-  private boolean isTempVar(LocalVariable localVariable) {
-    return localVariable.getElement().getSimpleName().toString().contains("temp-var");
   }
 
   /**

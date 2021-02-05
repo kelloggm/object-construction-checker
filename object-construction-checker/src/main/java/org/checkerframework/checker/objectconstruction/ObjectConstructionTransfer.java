@@ -105,8 +105,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     // If there is a temporary variable for the receiver, update its type.
     Node receiver = node.getTarget().getReceiver();
 
-    LocalVariableNode receiverTempVar =
-        atypefactory.tempVarToNode.inverse().get(receiver.getTree());
+    LocalVariableNode receiverTempVar = atypefactory.getTempVarForTree(receiver);
     if (receiverTempVar != null) {
       String methodName = node.getTarget().getMethod().getSimpleName().toString();
       methodName =
@@ -145,7 +144,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   private LocalVariableNode getOrCreateTempVar(Node node) {
-    LocalVariableNode localVariableNode = atypefactory.tempVarToNode.inverse().get(node.getTree());
+    LocalVariableNode localVariableNode = atypefactory.getTempVarForTree(node);
     if (localVariableNode == null) {
       VariableTree temp = createTemporaryVar(node);
       IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
