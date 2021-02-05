@@ -33,6 +33,7 @@ import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
+import org.checkerframework.dataflow.cfg.block.ExceptionBlockImpl;
 import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlockImpl;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
@@ -589,8 +590,13 @@ class MustCallInvokedChecker {
           // Remove the temporary variable defined for a node that throws an exception from the
           // exceptional successors
           if (succAndExcType.second != null) {
-            LocalVariable localVariable = setAssign.iterator().next().localVar;
-            if (isTempVar(localVariable)) {
+            Node exceptionalNode = removeCasts(((ExceptionBlockImpl) block).getNode());
+            LocalVariableNode localVariable =
+                typeFactory.mapTempVarToNode.inverse().get(exceptionalNode.getTree());
+            if (localVariable != null
+                && setAssign.stream()
+                    .allMatch(
+                        local -> local.localVar.getElement().equals(localVariable.getElement()))) {
               toRemove.add(setAssign);
               break;
             }
