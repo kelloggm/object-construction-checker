@@ -107,7 +107,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     Node receiver = node.getTarget().getReceiver();
 
     LocalVariableNode receiverTempVar =
-        atypefactory.mapTempVarToNode.inverse().get(receiver.getTree());
+        atypefactory.tempVarToNode.inverse().get(receiver.getTree());
     if (receiverTempVar != null) {
       String methodName = node.getTarget().getMethod().getSimpleName().toString();
       methodName =
@@ -147,13 +147,13 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
 
   private LocalVariableNode getOrCreateTempVar(Node node) {
     LocalVariableNode localVariableNode =
-        atypefactory.mapTempVarToNode.inverse().get(node.getTree());
+        atypefactory.tempVarToNode.inverse().get(node.getTree());
     if (localVariableNode == null) {
       VariableTree temp = createTemporaryVar(node);
       IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
       localVariableNode = new LocalVariableNode(identifierTree);
       localVariableNode.setInSource(true);
-      atypefactory.mapTempVarToNode.put(localVariableNode, node.getTree());
+      atypefactory.tempVarToNode.put(localVariableNode, node.getTree());
     }
     return localVariableNode;
   }

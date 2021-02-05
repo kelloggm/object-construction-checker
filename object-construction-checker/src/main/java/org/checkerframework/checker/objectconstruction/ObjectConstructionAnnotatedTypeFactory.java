@@ -73,7 +73,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
       mustCallInvokedChecker.checkMustCallInvoked(cfg);
     }
     super.postAnalyze(cfg);
-    mapTempVarToNode.clear();
+    tempVarToNode.clear();
   }
 
   /**

@@ -129,13 +129,13 @@ class MustCallInvokedChecker {
   }
 
   private void handleTernary(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
-    LocalVariableNode ternaryLocal = typeFactory.mapTempVarToNode.inverse().get(node.getTree());
+    LocalVariableNode ternaryLocal = typeFactory.tempVarToNode.inverse().get(node.getTree());
 
     Node operand = removeCasts(((TernaryExpressionNode) node).getThenOperand());
-    LocalVariableNode operandLocal = typeFactory.mapTempVarToNode.inverse().get(operand.getTree());
+    LocalVariableNode operandLocal = typeFactory.tempVarToNode.inverse().get(operand.getTree());
     if (operandLocal == null || !isVarInDefs(defs, operandLocal)) {
       operand = removeCasts(((TernaryExpressionNode) node).getElseOperand());
-      operandLocal = typeFactory.mapTempVarToNode.inverse().get(operand.getTree());
+      operandLocal = typeFactory.tempVarToNode.inverse().get(operand.getTree());
     }
     if (operandLocal != null && isVarInDefs(defs, operandLocal)) {
       LocalVarWithTree latestAssignmentPair = getAssignmentTreeOfVar(defs, operandLocal);
@@ -164,9 +164,9 @@ class MustCallInvokedChecker {
 
   private void updateDefsWithTempVar(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     Tree tree = node.getTree();
-    if (typeFactory.mapTempVarToNode.inverse().containsKey(node.getTree())) {
+    if (typeFactory.tempVarToNode.inverse().containsKey(node.getTree())) {
 
-      LocalVariableNode temporaryLocal = typeFactory.mapTempVarToNode.inverse().get(node.getTree());
+      LocalVariableNode temporaryLocal = typeFactory.tempVarToNode.inverse().get(node.getTree());
       LocalVarWithTree lhsLocalVarWithTreeNew =
           new LocalVarWithTree(new LocalVariable(temporaryLocal), tree);
 
@@ -180,7 +180,7 @@ class MustCallInvokedChecker {
           && (typeFactory.returnsThis((MethodInvocationTree) tree))) {
         receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
         if (receiver instanceof MethodInvocationNode) {
-          receiver = typeFactory.mapTempVarToNode.inverse().get(receiver.getTree());
+          receiver = typeFactory.tempVarToNode.inverse().get(receiver.getTree());
         }
       }
 
@@ -278,8 +278,8 @@ class MustCallInvokedChecker {
       LocalVariableNode local = null;
       if (n instanceof LocalVariableNode) {
         local = (LocalVariableNode) n;
-      } else if (typeFactory.mapTempVarToNode.inverse().containsKey(n.getTree())) {
-        local = typeFactory.mapTempVarToNode.inverse().get(n.getTree());
+      } else if (typeFactory.tempVarToNode.inverse().containsKey(n.getTree())) {
+        local = typeFactory.tempVarToNode.inverse().get(n.getTree());
       }
 
       if (local != null && isVarInDefs(newDefs, local)) {
@@ -301,7 +301,7 @@ class MustCallInvokedChecker {
       ReturnNode node, ControlFlowGraph cfg, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     if (isTransferOwnershipAtReturn(cfg)) {
       Node result = node.getResult();
-      Node temp = typeFactory.mapTempVarToNode.inverse().get(result.getTree());
+      Node temp = typeFactory.tempVarToNode.inverse().get(result.getTree());
       if (temp != null) {
         result = temp;
       }
@@ -346,8 +346,8 @@ class MustCallInvokedChecker {
       AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs, Node rhstemp) {
     Node lhs = node.getTarget();
     Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
-    if (typeFactory.mapTempVarToNode.inverse().containsKey(rhstemp.getTree())) {
-      rhstemp = typeFactory.mapTempVarToNode.inverse().get(rhstemp.getTree());
+    if (typeFactory.tempVarToNode.inverse().containsKey(rhstemp.getTree())) {
+      rhstemp = typeFactory.tempVarToNode.inverse().get(rhstemp.getTree());
     }
 
     final Node rhs = rhstemp;
@@ -398,7 +398,7 @@ class MustCallInvokedChecker {
       }
 
       // If the rhs is a temporary variable, we replace it with the lhs
-      if (typeFactory.mapTempVarToNode.containsKey(rhs)) {
+      if (typeFactory.tempVarToNode.containsKey(rhs)) {
         if (isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
           LocalVarWithTree latestAssignmentPair =
               getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
@@ -466,7 +466,7 @@ class MustCallInvokedChecker {
         if (typeFactory.hasMustCallChoice(formals.get(i))) {
           n = arguments.get(i);
           if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
-            n = typeFactory.mapTempVarToNode.inverse().get(n.getTree());
+            n = typeFactory.tempVarToNode.inverse().get(n.getTree());
             break;
           }
         }
@@ -476,7 +476,7 @@ class MustCallInvokedChecker {
       if (n == null && node instanceof MethodInvocationNode) {
         n = ((MethodInvocationNode) node).getTarget().getReceiver();
         if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
-          n = typeFactory.mapTempVarToNode.inverse().get(n.getTree());
+          n = typeFactory.tempVarToNode.inverse().get(n.getTree());
         }
       }
     }
@@ -592,7 +592,7 @@ class MustCallInvokedChecker {
           if (succAndExcType.second != null) {
             Node exceptionalNode = removeCasts(((ExceptionBlockImpl) block).getNode());
             LocalVariableNode localVariable =
-                typeFactory.mapTempVarToNode.inverse().get(exceptionalNode.getTree());
+                typeFactory.tempVarToNode.inverse().get(exceptionalNode.getTree());
             if (localVariable != null
                 && setAssign.stream()
                     .allMatch(
