@@ -102,8 +102,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
 
     updateStoreWithTempVar(result, node);
 
-    // If the receiver exists in the mapTempVarToNode, then its temporal variable's type will be
-    // updated.
+    // If there is a temporary variable for the receiver, update its type.
     Node receiver = node.getTarget().getReceiver();
 
     LocalVariableNode receiverTempVar =
@@ -146,8 +145,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   private LocalVariableNode getOrCreateTempVar(Node node) {
-    LocalVariableNode localVariableNode =
-        atypefactory.tempVarToNode.inverse().get(node.getTree());
+    LocalVariableNode localVariableNode = atypefactory.tempVarToNode.inverse().get(node.getTree());
     if (localVariableNode == null) {
       VariableTree temp = createTemporaryVar(node);
       IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
@@ -269,7 +267,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
 
   protected VariableTree createTemporaryVar(Node method) {
     ExpressionTree tree = (ExpressionTree) method.getTree();
-    TypeMirror iteratorType = TreeUtils.typeOf(tree);
+    TypeMirror treeType = TreeUtils.typeOf(tree);
     Element enclosingElement;
     TreePath path = atypefactory.getPath(tree);
     if (path == null) {
@@ -279,13 +277,13 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
       enclosingElement = TreeUtils.elementFromTree(methodTree);
     }
     // Declare and initialize a new, unique iterator variable
-    VariableTree iteratorVariable =
+    VariableTree tmpVarTree =
         treeBuilder.buildVariableDecl(
-            iteratorType, // annotatedIteratorTypeTree,
+            treeType, // annotatedIteratorTypeTree,
             uniqueName("temp-var"),
             enclosingElement,
             tree);
-    return iteratorVariable;
+    return tmpVarTree;
   }
 
   protected long uid = 0;
