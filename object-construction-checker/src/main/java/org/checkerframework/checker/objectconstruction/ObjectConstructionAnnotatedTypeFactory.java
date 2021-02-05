@@ -38,7 +38,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
    * Bidirectional map to preserve temporal variables created for nodes with non-empty @MustCall
    * annotation and the corresponding nodes
    */
-  protected BiMap<LocalVariableNode, Tree> mapTempVarToNode = HashBiMap.create();
+  protected BiMap<LocalVariableNode, Tree> tempVarToNode = HashBiMap.create();
   /**
    * Default constructor matching super. Should be called automatically.
    *
