@@ -214,6 +214,20 @@ public class ACSocketTest
 
     }
 
+//    @EnsuresCalledMethodsIf(expression = "#1", methods = {"close"}, result = true)
+//    void closeSocket(Socket sock) {
+////        if (sock == null) {
+////            return;
+////        }
+//
+//        try {
+//            sock.close();
+//        } catch (IOException ie) {
+//
+//        }
+//    }
+
+
     public static void ruok(String host, int port) {
         Socket s = null;
         try {
