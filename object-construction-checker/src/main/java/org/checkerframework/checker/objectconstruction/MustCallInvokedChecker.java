@@ -339,7 +339,7 @@ class MustCallInvokedChecker {
 
   private void handleAssignment(AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     Node rhs = removeCasts(node.getExpression());
-    if (rhs instanceof MethodInvocationNode || rhs instanceof ObjectCreationNode) {
+    if (typeFactory.getTempVarForTree(rhs) != null) {
       rhs = typeFactory.getTempVarForTree(rhs);
     }
     handleAssignFromRHS(node, newDefs, rhs);
