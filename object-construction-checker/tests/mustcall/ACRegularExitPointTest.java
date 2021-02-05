@@ -152,7 +152,7 @@ class ACRegularExitPointTest {
                 f4.b();
             }
             return f1;
-        }else {
+        } else {
             // :: error: required.method.not.called
             Foo f2 = new Foo();
             f2 = new Foo();
@@ -271,7 +271,7 @@ class ACRegularExitPointTest {
     void ownershipTransfer(){
         Foo f1 = new Foo();
         //TODO this is a false positive but we're not going to handle it for now
-        // :: error: required.method.not.called
+        // Passed?
         Foo f2 = f1;
         Foo f3 = f2.b();
         f3.a();
@@ -317,6 +317,10 @@ class ACRegularExitPointTest {
         foo.a();
     }
 
+    void testTernaryAssignedtest(boolean b) {
+        Foo deepNesting = (b ? (!b ? makeFoo() : (Foo) makeFoo()) : ((Foo) new Foo()));
+        deepNesting.a();
+    }
     /**
      * cases where ternary expressions are assigned to a variable
      */

@@ -147,11 +147,11 @@ public class ACSocketTest
     void ownershipTransfer(String address, int port) {
         Socket s1 = null;
         try {
+            // :: error: required.method.not.called
             s1 = new Socket(address, port);
         } catch (IOException e) {
 
         }
-        // :: error: required.method.not.called
         Socket s2 = s1;
         if(true){
             closeSocket(s2);
@@ -274,7 +274,6 @@ public class ACSocketTest
             setSockOpts(sock);
             sock.connect(endpoint, timeout);
             if (sock instanceof SSLSocket) {
-                // :: error: required.method.not.called
                 SSLSocket sslSock = (SSLSocket) sock;
                 sslSock.startHandshake();
 

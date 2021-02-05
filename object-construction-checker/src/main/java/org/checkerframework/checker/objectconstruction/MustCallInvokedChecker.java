@@ -35,11 +35,6 @@ import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlockImpl;
-import org.checkerframework.dataflow.cfg.node.AssignmentContext;
-import org.checkerframework.dataflow.cfg.node.AssignmentContext.AssignmentLhsContext;
-import org.checkerframework.dataflow.cfg.node.AssignmentContext.LambdaReturnContext;
-import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodParameterContext;
-import org.checkerframework.dataflow.cfg.node.AssignmentContext.MethodReturnContext;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
@@ -123,8 +118,8 @@ class MustCallInvokedChecker {
           handleReturn((ReturnNode) node, cfg, newDefs);
         } else if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
           handleInvocation(newDefs, node);
-        } else if (node instanceof TypeCastNode || node instanceof TernaryExpressionNode) {
-          handleTypeCastOrTernary(node, newDefs);
+        } else if (node instanceof TernaryExpressionNode) {
+          handleTernary(node, newDefs);
         }
       }
 
@@ -132,154 +127,80 @@ class MustCallInvokedChecker {
     }
   }
 
-  private void handleTypeCastOrTernary(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
-    if (!(node instanceof TypeCastNode || node instanceof TernaryExpressionNode)) {
-      throw new BugInCF("unexpected node type " + node.getClass());
+  private void handleTernary(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
+    LocalVariableNode ternaryLocal = typeFactory.mapTempVarToNode.inverse().get(node.getTree());
+
+    Node operand = removeCasts(((TernaryExpressionNode) node).getThenOperand());
+    LocalVariableNode operandLocal = typeFactory.mapTempVarToNode.inverse().get(operand.getTree());
+    if (operandLocal == null || !isVarInDefs(defs, operandLocal)) {
+      operand = removeCasts(((TernaryExpressionNode) node).getElseOperand());
+      operandLocal = typeFactory.mapTempVarToNode.inverse().get(operand.getTree());
     }
-    if (!nestedInCastOrTernary(node) && hasNestedPseudoAssignInvoke(node, defs)) {
-      checkPseudoAssignToOwning(node, defs);
+    if (operandLocal != null && isVarInDefs(defs, operandLocal)) {
+      LocalVarWithTree latestAssignmentPair = getAssignmentTreeOfVar(defs, operandLocal);
+      ImmutableSet<LocalVarWithTree> setContainingOperandLocal =
+          getSetContainingAssignmentTreeOfVar(defs, operandLocal);
+      // If latestAssignmentPair is null, nothing will get filtered by the filter call
+      ImmutableSet<LocalVarWithTree> newSetContainingOperandLocal =
+          FluentIterable.from(setContainingOperandLocal)
+              .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
+              .append(new LocalVarWithTree(new LocalVariable(ternaryLocal), node.getTree()))
+              .toSet();
+
+      defs.remove(setContainingOperandLocal);
+      defs.add(newSetContainingOperandLocal);
     }
   }
 
-  /**
-   * Checks if a node or one of its sub-nodes is an invocation that must be pseudo-assigned to an
-   * owning location. Recurses to sub-nodes if {@code node} is a {@link TypeCastNode} or a {@link
-   * TernaryExpressionNode}
-   *
-   * @param node the node
-   * @param defs currently-tracked definitions
-   * @return {@code true} if a node or one of its sub-nodes is an invocation that must be
-   *     pseudo-assigned to an owning location, {@code false} otherwise
-   */
-  private boolean hasNestedPseudoAssignInvoke(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
-    if (node instanceof TypeCastNode) {
-      return hasNestedPseudoAssignInvoke(((TypeCastNode) node).getOperand(), defs);
-    } else if (node instanceof TernaryExpressionNode) {
-      return hasNestedPseudoAssignInvoke(((TernaryExpressionNode) node).getThenOperand(), defs)
-          || hasNestedPseudoAssignInvoke(((TernaryExpressionNode) node).getElseOperand(), defs);
-    } else if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
-      return !shouldSkipInvokePseudoAssignCheck(node, defs);
-    } else {
-      return false;
-    }
-  }
+  private void handleInvocation(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
+    doOwnershipTransferToParameters(defs, node);
 
-  private void handleInvocation(Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
-    doOwnershipTransferToParameters(newDefs, node);
-    // If the method call is nested in a type cast, we won't have a proper AssignmentContext for
-    // checking.  So we defer the check to the corresponding TypeCastNode
-    if (!nestedInCastOrTernary(node) && !shouldSkipInvokePseudoAssignCheck(node, newDefs)) {
-      // If the node is not skipped by the shouldSkipInvokePseudoAssignCheck() it means we have a
-      // method invocation or object creation node that creates a new resource, so we increment
-      // the numMustCall
-      incrementNumMustCall();
-      checkPseudoAssignToOwning(node, newDefs);
-    }
-  }
-
-  /**
-   * Given a node representing a method or constructor call, checks that if the call has a non-empty
-   * {@code @MustCall} type, then its result is pseudo-assigned to some location that can take
-   * ownership of the result
-   */
-  private void checkPseudoAssignToOwning(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
-    Tree tree = node.getTree();
-    List<String> mustCallVal = typeFactory.getMustCallValue(tree);
-    if (mustCallVal.isEmpty()) {
+    if (shouldSkipInvokePseudoAssignCheck(node)) {
       return;
     }
-    // Default to assuming that non-source nodes will always be assigned to
-    // an owning location, but that source nodes will not. This allows the checker
-    // to correctly handle foreach loops.
-    boolean assignedToOwning = !node.getInSource();
-    AssignmentContext assignmentContext = node.getAssignmentContext();
-    if (assignmentContext != null) {
-      Element elementForType = assignmentContext.getElementForType();
-      if (assignmentContext instanceof AssignmentLhsContext) {
-        // lhs should be a local variable
-        assignedToOwning = isOwningAssignmentLhs(elementForType);
-      } else if (assignmentContext instanceof MethodParameterContext) {
-        // must be an @Owning or @MustCallChoice parameter
-        assignedToOwning =
-            typeFactory.getDeclAnnotation(elementForType, Owning.class) != null
-                || typeFactory.hasMustCallChoice(elementForType);
-      } else if (assignmentContext instanceof MethodReturnContext) {
-        // must be an @Owning return
-        assignedToOwning =
-            TRANSFER_OWNERSHIP_AT_RETURN
-                ? typeFactory.getDeclAnnotation(
-                        TreeUtils.elementFromTree(assignmentContext.getContextTree()),
-                        NotOwning.class)
-                    == null
-                : typeFactory.getDeclAnnotation(elementForType, Owning.class) != null;
-      } else if (assignmentContext instanceof LambdaReturnContext) {
-        // TODO handle this case.  For now we will report an error
-      } else {
-        throw new BugInCF("unexpected AssignmentContext type " + assignmentContext.getClass());
-      }
-    }
-    if (!assignedToOwning) {
-      if (typeFactory.mapTempVarToNode.inverse().containsKey(node)) {
-
-        LocalVariableNode temporaryLocal = typeFactory.mapTempVarToNode.inverse().get(node);
-        LocalVarWithTree lhsLocalVarWithTreeNew =
-            new LocalVarWithTree(new LocalVariable(temporaryLocal), node.getTree());
-        Node receiver = null;
-        if (node instanceof ObjectCreationNode || node instanceof MethodInvocationNode) {
-          receiver = getLocalPassedAsMustCallChoiceParam(node);
-        }
-
-        if (receiver == null
-            && node instanceof MethodInvocationNode
-            && (typeFactory.hasMustCallChoice(node.getTree())
-                || typeFactory.returnsThis((MethodInvocationTree) node.getTree()))) {
-          receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
-          if (receiver instanceof MethodInvocationNode) {
-            receiver = typeFactory.mapTempVarToNode.inverse().get(receiver);
-          }
-        }
-
-        if (receiver != null && isVarInDefs(defs, (LocalVariableNode) receiver)) {
-          ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
-              getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) receiver);
-          ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
-              FluentIterable.from(setContainingMustCallChoiceParamLocal)
-                  .append(lhsLocalVarWithTreeNew)
-                  .toSet();
-          defs.remove(setContainingMustCallChoiceParamLocal);
-          defs.add(newSetContainingMustCallChoiceParamLocal);
-        } else {
-          defs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
-        }
-      } else {
-        // check if @CalledMethods type of return satisfies the @MustCall obligation
-        AnnotationMirror cmAnno =
-            typeFactory.getAnnotatedType(tree).getAnnotationInHierarchy(typeFactory.top);
-        if (!calledMethodsSatisfyMustCall(mustCallVal, cmAnno)) {
-          checker.reportError(
-              tree,
-              "required.method.not.called",
-              MustCallInvokedChecker.formatMissingMustCallMethods(mustCallVal),
-              TreeUtils.typeOf(tree).toString(),
-              "never assigned to an @Owning location");
-        }
-      }
-    }
+    updateDefsWithTempVar(defs, node);
   }
 
-  /**
-   * Does an element represents an assignment left-hand side that can take ownership?
-   *
-   * @param elem the element
-   * @return {@code true} iff {@code elem} represents a local variable, a try-with-resources
-   *     variable, or an {@code @Owning} field
-   */
-  private boolean isOwningAssignmentLhs(Element elem) {
-    return elem != null
-        && (elem.getKind().equals(ElementKind.LOCAL_VARIABLE)
-            || elem.getKind().equals(ElementKind.RESOURCE_VARIABLE)
-            || (elem.getKind().equals(ElementKind.FIELD)
-                && typeFactory.getDeclAnnotation(elem, Owning.class) != null));
+  private void updateDefsWithTempVar(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
+    Tree tree = node.getTree();
+    if (typeFactory.mapTempVarToNode.inverse().containsKey(node.getTree())) {
+
+      LocalVariableNode temporaryLocal = typeFactory.mapTempVarToNode.inverse().get(node.getTree());
+      LocalVarWithTree lhsLocalVarWithTreeNew =
+          new LocalVarWithTree(new LocalVariable(temporaryLocal), tree);
+
+      Node receiver = null;
+      if (node instanceof ObjectCreationNode || node instanceof MethodInvocationNode) {
+        receiver = getVarOrTempVarPassedAsMustCallChoiceParam(node);
+      }
+
+      if (receiver == null
+          && node instanceof MethodInvocationNode
+          && (typeFactory.returnsThis((MethodInvocationTree) tree))) {
+        receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
+        if (receiver instanceof MethodInvocationNode) {
+          receiver = typeFactory.mapTempVarToNode.inverse().get(receiver.getTree());
+        }
+      }
+
+      if (receiver != null) {
+        receiver = removeCasts(receiver);
+      }
+
+      if (receiver instanceof LocalVariableNode
+          && isVarInDefs(defs, (LocalVariableNode) receiver)) {
+        ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
+            getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) receiver);
+        ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
+            FluentIterable.from(setContainingMustCallChoiceParamLocal)
+                .append(lhsLocalVarWithTreeNew)
+                .toSet();
+        defs.remove(setContainingMustCallChoiceParamLocal);
+        defs.add(newSetContainingMustCallChoiceParamLocal);
+      } else if (!(receiver instanceof LocalVariableNode)) {
+        defs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
+      }
+    }
   }
 
   /**
@@ -289,8 +210,7 @@ class MustCallInvokedChecker {
    * a super constructor call, the method's return type is annotated {@link NotOwning}, or the
    * receiver parameter is in the {@code defs} and has @MustCallChoice annotation.
    */
-  private boolean shouldSkipInvokePseudoAssignCheck(
-      Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
+  private boolean shouldSkipInvokePseudoAssignCheck(Node node) {
     Tree callTree = node.getTree();
     List<String> mustCallVal = typeFactory.getMustCallValue(callTree);
     if (mustCallVal.isEmpty()) {
@@ -300,9 +220,7 @@ class MustCallInvokedChecker {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
       return TreeUtils.isSuperConstructorCall(methodInvokeTree)
           || TreeUtils.isThisConstructorCall(methodInvokeTree)
-          || typeFactory.getDeclAnnotation(
-                  TreeUtils.elementFromUse(methodInvokeTree), NotOwning.class)
-              != null;
+          || hasNotOwningReturnType((MethodInvocationNode) node);
     }
     return false;
   }
@@ -356,19 +274,23 @@ class MustCallInvokedChecker {
     }
     for (int i = 0; i < arguments.size(); i++) {
       Node n = arguments.get(i);
+      LocalVariableNode local = null;
       if (n instanceof LocalVariableNode) {
-        LocalVariableNode local = (LocalVariableNode) n;
-        if (isVarInDefs(newDefs, local)) {
+        local = (LocalVariableNode) n;
+      } else if (typeFactory.mapTempVarToNode.inverse().containsKey(n.getTree())) {
+        local = typeFactory.mapTempVarToNode.inverse().get(n.getTree());
+      }
 
-          // check if formal has an @Owning annotation
-          VariableElement formal = formals.get(i);
-          Set<AnnotationMirror> annotationMirrors = typeFactory.getDeclAnnotations(formal);
+      if (local != null && isVarInDefs(newDefs, local)) {
 
-          if (annotationMirrors.stream()
-              .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
-            // transfer ownership!
-            newDefs.remove(getSetContainingAssignmentTreeOfVar(newDefs, local));
-          }
+        // check if formal has an @Owning annotation
+        VariableElement formal = formals.get(i);
+        Set<AnnotationMirror> annotationMirrors = typeFactory.getDeclAnnotations(formal);
+
+        if (annotationMirrors.stream()
+            .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
+          // transfer ownership!
+          newDefs.remove(getSetContainingAssignmentTreeOfVar(newDefs, local));
         }
       }
     }
@@ -378,8 +300,9 @@ class MustCallInvokedChecker {
       ReturnNode node, ControlFlowGraph cfg, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     if (isTransferOwnershipAtReturn(cfg)) {
       Node result = node.getResult();
-      if (result instanceof MethodInvocationNode || result instanceof ObjectCreationNode) {
-        result = getLocalPassedAsMustCallChoiceParam(result);
+      Node temp = typeFactory.mapTempVarToNode.inverse().get(result.getTree());
+      if (temp != null) {
+        result = temp;
       }
       if (result instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) result)) {
         newDefs.remove(getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) result));
@@ -408,55 +331,7 @@ class MustCallInvokedChecker {
 
   private void handleAssignment(AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
     Node rhs = removeCasts(node.getExpression());
-
-    if (rhs instanceof TernaryExpressionNode) {
-      recurseThroughTernaryExpr(node, newDefs, (TernaryExpressionNode) rhs);
-    } else {
-      handleAssignFromRHS(node, newDefs, rhs);
-    }
-  }
-
-  /**
-   * Recursively find all method calls nested under a ternary expression on the right-hand side of
-   * an assignment, and handle each as if it were directly assigned to the left-hand side variable.
-   *
-   * @param node original assignment
-   * @param newDefs currently-tracked definitions
-   * @param rhsTernary
-   */
-  private void recurseThroughTernaryExpr(
-      AssignmentNode node,
-      Set<ImmutableSet<LocalVarWithTree>> newDefs,
-      TernaryExpressionNode rhsTernary) {
-    // If handling the then operand of the ternary expression results in adding the assignment to
-    // newDefs, we do not want to also handle the else operand.  Otherwise, for an assignment like
-    // x = b ? new Foo() : new Foo();, the algorithm would add the assignment for the then case, but
-    // then report a false positive error for the else case, since based on the updated state of
-    // newDefs it looks like a tracked variable x is being overwritten.  To avoid these false
-    // positives, we track the size of newDefs before and after handling the then operand, and only
-    // recurse to the else operand if the size does not change.
-    int totalDefs = countDefs(newDefs);
-    handleTernaryOperandForAssignment(node, newDefs, removeCasts(rhsTernary.getThenOperand()));
-    if (countDefs(newDefs) == totalDefs) {
-      handleTernaryOperandForAssignment(node, newDefs, removeCasts(rhsTernary.getElseOperand()));
-    }
-  }
-
-  /**
-   * counts the total number of {@link LocalVarWithTree}s contained in all sets contained in {@code
-   * defs}
-   */
-  private int countDefs(Set<ImmutableSet<LocalVarWithTree>> defs) {
-    return defs.stream().collect(Collectors.summingInt(ImmutableSet::size));
-  }
-
-  private void handleTernaryOperandForAssignment(
-      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs, Node operand) {
-    if (operand instanceof TernaryExpressionNode) {
-      recurseThroughTernaryExpr(node, newDefs, (TernaryExpressionNode) operand);
-    } else if (operand instanceof MethodInvocationNode || operand instanceof ObjectCreationNode) {
-      handleAssignFromRHS(node, newDefs, operand);
-    }
+    handleAssignFromRHS(node, newDefs, rhs);
   }
 
   private Node removeCasts(Node node) {
@@ -467,17 +342,21 @@ class MustCallInvokedChecker {
   }
 
   private void handleAssignFromRHS(
-      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs, Node rhs) {
+      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs, Node rhstemp) {
     Node lhs = node.getTarget();
     Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
+    if (typeFactory.mapTempVarToNode.inverse().containsKey(rhstemp.getTree())) {
+      rhstemp = typeFactory.mapTempVarToNode.inverse().get(rhstemp.getTree());
+    }
 
+    final Node rhs = rhstemp;
     // Ownership transfer to @Owning field
     if (lhsElement.getKind().equals(ElementKind.FIELD) && typeFactory.hasMustCall(lhs.getTree())) {
       if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
         if (typeFactory.getDeclAnnotation(lhsElement, Owning.class) != null) {
-          Set<LocalVarWithTree> setContainingLatestAssignmentPair =
+          Set<LocalVarWithTree> setContainingRhs =
               getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
-          newDefs.remove(setContainingLatestAssignmentPair);
+          newDefs.remove(setContainingRhs);
         }
       }
     } else if (lhs instanceof LocalVariableNode
@@ -485,89 +364,78 @@ class MustCallInvokedChecker {
 
       // Reassignment to the lhs
       if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
-        ImmutableSet<LocalVarWithTree> setContainingLatestAssignmentPair =
+        ImmutableSet<LocalVarWithTree> setContainingLhs =
             getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-        LocalVariableNode localPassedAsMCCParam = getLocalPassedAsMustCallChoiceParam(rhs);
         LocalVarWithTree latestAssignmentPair =
             getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-        if (localPassedAsMCCParam == null
-            || setContainingLatestAssignmentPair.stream()
+        if (rhs instanceof LocalVariableNode
+            && setContainingLhs.stream()
                 .map(localVarWithTree -> localVarWithTree.localVar.getElement())
-                .noneMatch(elem -> elem.equals(localPassedAsMCCParam.getElement()))) {
+                .noneMatch(elem -> elem.equals(((LocalVariableNode) rhs).getElement()))) {
           // If the rhs is not MCC with the lhs, we will remove the latest assignment pair of lhs
           // from the newDefs. If the lhs is the only pointer to the previous resource then we will
           // do MustCall checks for that resource
-          if (setContainingLatestAssignmentPair.size() > 1) {
+          if (setContainingLhs.size() > 1) {
             // If the setContainingLatestAssignmentPair has more LocalVarWithTree, remove
             // latestAssignmentPair
-            ImmutableSet<LocalVarWithTree> newSetContainingLatestAssignmentPair =
-                FluentIterable.from(setContainingLatestAssignmentPair)
+            ImmutableSet<LocalVarWithTree> newSetContainingLhs =
+                FluentIterable.from(setContainingLhs)
                     .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
                     .toSet();
-            newDefs.remove(setContainingLatestAssignmentPair);
-            newDefs.add(newSetContainingLatestAssignmentPair);
+            newDefs.remove(setContainingLhs);
+            newDefs.add(newSetContainingLhs);
           } else {
             // If the setContainingLatestAssignmentPair size is one and the rhs is not MCC with the
             // lhs
             checkMustCall(
-                setContainingLatestAssignmentPair,
+                setContainingLhs,
                 typeFactory.getStoreBefore(node),
                 "variable overwritten by assignment " + node.getTree());
-            newDefs.remove(setContainingLatestAssignmentPair);
+            newDefs.remove(setContainingLhs);
           }
         }
       }
 
-      // If the rhs is an ObjectCreationNode, or a MethodInvocationNode, then it adds
-      // the AssignmentNode to the newDefs.
-      if ((rhs instanceof ObjectCreationNode)
-          || (rhs instanceof MethodInvocationNode
-              && !hasNotOwningReturnType((MethodInvocationNode) rhs))) {
-        LocalVariableNode mustCallChoiceParamLocal = getLocalPassedAsMustCallChoiceParam(rhs);
-        if (mustCallChoiceParamLocal != null) {
-          if (isVarInDefs(newDefs, mustCallChoiceParamLocal)) {
-            LocalVarWithTree latestAssignmentPair =
-                getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-            // If both side of this assignment node point to the same resource (rhs is MCC with the
-            // lhs), then we will replace the previous assignment tree of lhs with the current
-            // assignment tree, otherwise we will just add a new LocalVarWithTree to the set that
-            // contains mustCallChoiceParamLocal
-            ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
-                getSetContainingAssignmentTreeOfVar(newDefs, mustCallChoiceParamLocal);
-            // If latestAssignmentPair is null, nothing will get filtered by the filter call
-            ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
-                FluentIterable.from(setContainingMustCallChoiceParamLocal)
-                    .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
-                    .append(
-                        new LocalVarWithTree(
-                            new LocalVariable((LocalVariableNode) lhs), node.getTree()))
-                    .toSet();
+      // If the rhs is a temporary variable, we replace it with the lhs
+      if (typeFactory.mapTempVarToNode.containsKey(rhs)) {
+        if (isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
+          LocalVarWithTree latestAssignmentPair =
+              getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
+          ImmutableSet<LocalVarWithTree> setContainingRhsTempVar =
+              getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
+          ImmutableSet<LocalVarWithTree> newSetContainingRhsTempVar =
+              FluentIterable.from(setContainingRhsTempVar)
+                  .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
+                  .append(
+                      new LocalVarWithTree(
+                          new LocalVariable((LocalVariableNode) lhs), node.getTree()))
+                  .toSet();
 
-            newDefs.remove(setContainingMustCallChoiceParamLocal);
-            newDefs.add(newSetContainingMustCallChoiceParamLocal);
-          }
-        } else {
-          if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
-            throw new RuntimeException("did not expect lhs to be in newDefs");
-          }
-          LocalVarWithTree lhsLocalVarWithTreeNew =
-              new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
-          newDefs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
+          newDefs.remove(setContainingRhsTempVar);
+          newDefs.add(newSetContainingRhsTempVar);
         }
       }
-
       // Ownership Transfer
       if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
         // If the rhs is a LocalVariableNode that exists in the newDefs (Note that if a
         // localVariableNode exists in the newDefs it means it isn't assigned to a null
-        // literals), then it adds the localVariableNode to the newDefs
+        // literals), then it adds the lhs to the set containing rhs
         ImmutableSet<LocalVarWithTree> setContainingRhs =
             getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
         LocalVarWithTree lhsLocalVarWithTreeNew =
             new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
-        newDefs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
+        ImmutableSet<LocalVarWithTree> newSetContainingRhsTempVar =
+            FluentIterable.from(setContainingRhs).append(lhsLocalVarWithTreeNew).toSet();
+        newDefs.add(newSetContainingRhsTempVar);
         newDefs.remove(setContainingRhs);
       }
+    } else if (lhs instanceof LocalVariableNode
+        && isTryWithResourcesVariable((LocalVariableNode) lhs)
+        && rhs instanceof LocalVariableNode) {
+      // If the lhs is a resource variable, then we remove the set containing rhs from the newDefs
+      Set<LocalVarWithTree> setContainingRhs =
+          getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
+      newDefs.remove(setContainingRhs);
     }
   }
 
@@ -581,9 +449,9 @@ class MustCallInvokedChecker {
    * @return {@code node} iff {@code node} represents a local variable that is passed as
    *     a @MustCallChoice parameter, otherwise null
    */
-  private @Nullable LocalVariableNode getLocalPassedAsMustCallChoiceParam(Node node) {
+  private @Nullable Node getVarOrTempVarPassedAsMustCallChoiceParam(Node node) {
     node = removeCasts(node);
-
+    Node n = null;
     if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
 
       if (!typeFactory.hasMustCallChoice(node.getTree())) {
@@ -594,20 +462,25 @@ class MustCallInvokedChecker {
       List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
 
       for (int i = 0; i < arguments.size(); i++) {
-        if (!typeFactory.hasMustCallChoice(formals.get(i))) {
-          continue;
+        if (typeFactory.hasMustCallChoice(formals.get(i))) {
+          n = arguments.get(i);
+          if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
+            n = typeFactory.mapTempVarToNode.inverse().get(n.getTree());
+            break;
+          }
         }
-        Node n = arguments.get(i);
-        return getLocalPassedAsMustCallChoiceParam(n);
       }
+
       // If node does't have @MustCallChoice parameter then it checks the receiver parameter
-      if (node instanceof MethodInvocationNode) {
-        Node n = ((MethodInvocationNode) node).getTarget().getReceiver();
-        return getLocalPassedAsMustCallChoiceParam(n);
+      if (n == null && node instanceof MethodInvocationNode) {
+        n = ((MethodInvocationNode) node).getTarget().getReceiver();
+        if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
+          n = typeFactory.mapTempVarToNode.inverse().get(n.getTree());
+        }
       }
     }
 
-    return (node != null && node instanceof LocalVariableNode) ? (LocalVariableNode) node : null;
+    return n;
   }
 
   private List<Node> getArgumentsOfMethodOrConstructor(Node node) {
@@ -712,6 +585,21 @@ class MustCallInvokedChecker {
             setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null);
         if (succ instanceof SpecialBlockImpl || noSuccInfo) {
+
+          // Remove the temporary variable defined for a node that throws an exception from the
+          // exceptional successors
+          if (succAndExcType.second != null) {
+            LocalVariable localVariable = setAssign.iterator().next().localVar;
+            if (isTempVar(localVariable)) {
+              toRemove.add(setAssign);
+              break;
+            }
+          }
+
+          if (nodes.size() == 1 && nestedInCastOrTernary(block.getNodes().get(0))) {
+            break;
+          }
+
           if (nodes.size() == 0) { // If the cur block is special or conditional block
             // Use the store from the block actually being analyzed, rather than succRegularStore,
             // if succRegularStore contains no information about the variables of interest.
@@ -744,6 +632,10 @@ class MustCallInvokedChecker {
       defsCopy.removeAll(toRemove);
       propagate(new BlockWithLocals(succ, defsCopy), visited, worklist);
     }
+  }
+
+  private boolean isTempVar(LocalVariable localVariable) {
+    return localVariable.getElement().getSimpleName().toString().contains("temp-var");
   }
 
   /**

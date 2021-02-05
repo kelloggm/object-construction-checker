@@ -2,7 +2,9 @@ package org.checkerframework.checker.objectconstruction;
 
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
+import com.sun.source.util.TreePath;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -32,6 +34,7 @@ import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
+import org.checkerframework.dataflow.cfg.node.TernaryExpressionNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAnalysis;
@@ -39,6 +42,7 @@ import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.trees.TreeBuilder;
 
@@ -74,6 +78,14 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   @Override
+  public TransferResult<CFValue, CFStore> visitTernaryExpression(
+      TernaryExpressionNode node, TransferInput<CFValue, CFStore> input) {
+    TransferResult<CFValue, CFStore> result = super.visitTernaryExpression(node, input);
+    updateStoreWithTempVar(result, node);
+    return result;
+  }
+
+  @Override
   public TransferResult<CFValue, CFStore> visitMethodInvocation(
       final MethodInvocationNode node, final TransferInput<CFValue, CFStore> input) {
 
@@ -93,7 +105,9 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     // If the receiver exists in the mapTempVarToNode, then its temporal variable's type will be
     // updated.
     Node receiver = node.getTarget().getReceiver();
-    LocalVariableNode receiverTempVar = atypefactory.mapTempVarToNode.inverse().get(receiver);
+
+    LocalVariableNode receiverTempVar =
+        atypefactory.mapTempVarToNode.inverse().get(receiver.getTree());
     if (receiverTempVar != null) {
       String methodName = node.getTarget().getMethod().getSimpleName().toString();
       methodName =
@@ -132,13 +146,14 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   private LocalVariableNode getOrCreateTempVar(Node node) {
-    LocalVariableNode localVariableNode = atypefactory.mapTempVarToNode.inverse().get(node);
+    LocalVariableNode localVariableNode =
+        atypefactory.mapTempVarToNode.inverse().get(node.getTree());
     if (localVariableNode == null) {
       VariableTree temp = createTemporaryVar(node);
       IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
       localVariableNode = new LocalVariableNode(identifierTree);
       localVariableNode.setInSource(true);
-      atypefactory.mapTempVarToNode.put(localVariableNode, node);
+      atypefactory.mapTempVarToNode.put(localVariableNode, node.getTree());
     }
     return localVariableNode;
   }
@@ -253,22 +268,30 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   protected VariableTree createTemporaryVar(Node method) {
-    TypeMirror iteratorType = TreeUtils.typeOf(method.getTree());
-    Element ee = TreeUtils.elementFromTree(method.getTree());
+    ExpressionTree tree = (ExpressionTree) method.getTree();
+    TypeMirror iteratorType = TreeUtils.typeOf(tree);
+    Element enclosingElement;
+    TreePath path = atypefactory.getPath(tree);
+    if (path == null) {
+      enclosingElement = TreeUtils.elementFromTree(tree).getEnclosingElement();
+    } else {
+      Tree methodTree = TreePathUtil.enclosingMethod(path);
+      enclosingElement = TreeUtils.elementFromTree(methodTree);
+    }
     // Declare and initialize a new, unique iterator variable
     VariableTree iteratorVariable =
         treeBuilder.buildVariableDecl(
             iteratorType, // annotatedIteratorTypeTree,
-            uniqueName("tmp"),
-            ee.getEnclosingElement(),
-            (ExpressionTree) method.getTree());
+            uniqueName("temp-var"),
+            enclosingElement,
+            tree);
     return iteratorVariable;
   }
 
   protected long uid = 0;
 
   protected String uniqueName(String prefix) {
-    return prefix + "#num" + uid++;
+    return prefix + "-" + uid++;
   }
 
   private Map<TypeMirror, CFStore> makeExceptionalStores(
