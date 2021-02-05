@@ -333,6 +333,72 @@ public class ACSocketTest
         final PrependableSocket prependableSocket = new PrependableSocket(null);
     }
 
+
+
+
+
+//    private void acceptConnections() {
+//        int numRetries = 0;
+//        Socket client = null;
+//
+//        while ((!shutdown) && (portBindMaxRetry == 0 || numRetries < portBindMaxRetry)) {
+//            try {
+//                serverSocket = createNewServerSocket();
+//                LOG.info("{} is accepting connections now, my election bind port: {}", QuorumCnxManager.this.mySid, address.toString());
+//                while (!shutdown) {
+//                    try {
+//                        client = serverSocket.accept();
+//                        setSockOpts(client);
+//                        LOG.info("Received connection request from {}", client.getRemoteSocketAddress());
+//                        // Receive and handle the connection request
+//                        // asynchronously if the quorum sasl authentication is
+//                        // enabled. This is required because sasl server
+//                        // authentication process may take few seconds to finish,
+//                        // this may delay next peer connection requests.
+//                        if (quorumSaslAuthEnabled) {
+//                            receiveConnectionAsync(client);
+//                        } else {
+//                            receiveConnection(client);
+//                        }
+//                        numRetries = 0;
+//                    } catch (SocketTimeoutException e) {
+//                        LOG.warn("The socket is listening for the election accepted "
+//                                + "and it timed out unexpectedly, but will retry."
+//                                + "see ZOOKEEPER-2836");
+//                    }
+//                }
+//            } catch (IOException e) {
+//                if (shutdown) {
+//                    break;
+//                }
+//
+//                LOG.error("Exception while listening", e);
+//
+//                if (e instanceof SocketException) {
+//                    socketException.set(true);
+//                }
+//
+//                numRetries++;
+//                try {
+//                    close();
+//                    Thread.sleep(1000);
+//                } catch (IOException ie) {
+//                    LOG.error("Error closing server socket", ie);
+//                } catch (InterruptedException ie) {
+//                    LOG.error("Interrupted while sleeping. Ignoring exception", ie);
+//                }
+//                closeSocket(client);
+//            }
+//        }
+//        if (!shutdown) {
+//            LOG.error(
+//                    "Leaving listener thread for address {} after {} errors. Use {} property to increase retry count.",
+//                    formatInetAddr(address),
+//                    numRetries,
+//                    ELECTION_PORT_BIND_RETRY);
+//        }
+//    }
+
     /**
      * The errors in this method are caused by the lack of support for unconnected sockets.
      */
