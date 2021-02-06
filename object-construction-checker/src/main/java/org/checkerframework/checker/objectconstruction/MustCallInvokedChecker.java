@@ -798,10 +798,12 @@ class MustCallInvokedChecker {
    * positives? For now we ignore {@code java.lang.Throwable} and {@code NullPointerException}
    */
   private static boolean isIgnoredExceptionType(@FullyQualifiedName Name exceptionClassName) {
-    boolean isThrowableOrNPE =
-        exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
-            || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName());
-    return isThrowableOrNPE;
+    return exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
+        || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName())
+        || exceptionClassName.contentEquals(ClassCircularityError.class.getCanonicalName())
+        || exceptionClassName.contentEquals(ClassFormatError.class.getCanonicalName())
+        || exceptionClassName.contentEquals(NoClassDefFoundError.class.getCanonicalName())
+        || exceptionClassName.contentEquals(OutOfMemoryError.class.getCanonicalName());
   }
 
   /**
