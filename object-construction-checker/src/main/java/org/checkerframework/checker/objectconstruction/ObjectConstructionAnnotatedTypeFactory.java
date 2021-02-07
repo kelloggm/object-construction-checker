@@ -1,5 +1,7 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -22,6 +24,8 @@ import org.checkerframework.checker.unconnectedsocket.qual.Unconnected;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -31,6 +35,11 @@ import org.checkerframework.javacutil.TreeUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotatedTypeFactory {
 
+  /**
+   * Bidirectional map to preserve temporal variables created for nodes with non-empty @MustCall
+   * annotation and the corresponding nodes
+   */
+  protected BiMap<LocalVariableNode, Tree> tempVarToNode = HashBiMap.create();
   /**
    * Default constructor matching super. Should be called automatically.
    *
@@ -65,6 +74,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
       mustCallInvokedChecker.checkMustCallInvoked(cfg);
     }
     super.postAnalyze(cfg);
+    tempVarToNode.clear();
   }
 
   /**
@@ -73,6 +83,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   List<String> getMustCallValue(Tree tree) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
+    if (mustCallAnnotatedTypeFactory == null) {
+      return Collections.emptyList();
+    }
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
 
@@ -104,6 +117,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     return !getMustCallValue(t).isEmpty();
   }
 
+  protected LocalVariableNode getTempVarForTree(Node node) {
+    return tempVarToNode.inverse().get(node.getTree());
+  }
   /**
    * Returns true iff the unconnected sockets checker determined that this tree represents a socket
    * that is definitely unconnected.

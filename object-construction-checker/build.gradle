@@ -1,13 +1,6 @@
 plugins {
     // Apply the java plugin to add support for Java
     id 'java-library'
-
-    // For bringing in AWS dependencies. We're using the "legacy" version
-    // listed here: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-project-gradle.html,
-    // because the build fails when we use the Gradle 5+ way, saying that it can't find ec2.
-    // I believe that this is because we need the AWS SDK during testing, but not during the build.
-    id 'io.spring.dependency-management' version '1.0.10.RELEASE'
-
 }
 
 sourceCompatibility = 1.8
@@ -46,12 +39,14 @@ dependencies {
     testImplementation "junit:junit:4.13.1"
 
     // CF testing infrastructure
-    testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
+    testImplementation "org.checkerframework:framework-test:${versions.checkerFramework}"
 
+    // CVE and KMS tests both rely on this:
+    testImplementation platform("com.amazonaws:aws-java-sdk-bom:1.11.923")
     // For CVE tests
-    testCompile "com.amazonaws:aws-java-sdk-ec2"
+    testImplementation "com.amazonaws:aws-java-sdk-ec2"
     // For KMS tests
-    testCompile "com.amazonaws:aws-java-sdk-kms"
+    testImplementation "com.amazonaws:aws-java-sdk-kms"
 
     // For AutoValue Builders
     implementation "com.google.auto.value:auto-value-annotations:${versions.autoValue}"
@@ -65,12 +60,6 @@ dependencies {
 
     errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
 
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.930"
-    }
 }
 
 tasks.withType(JavaCompile).all {

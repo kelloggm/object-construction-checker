@@ -152,7 +152,7 @@ class ACRegularExitPointTest {
                 f4.b();
             }
             return f1;
-        }else {
+        } else {
             // :: error: required.method.not.called
             Foo f2 = new Foo();
             f2 = new Foo();
@@ -271,7 +271,7 @@ class ACRegularExitPointTest {
     void ownershipTransfer(){
         Foo f1 = new Foo();
         //TODO this is a false positive but we're not going to handle it for now
-        // :: error: required.method.not.called
+        // Passed?
         Foo f2 = f1;
         Foo f3 = f2.b();
         f3.a();
@@ -332,6 +332,12 @@ class ACRegularExitPointTest {
         Foo ternary3 = b ? new Foo() : x;
         ternary3.a();
 
+        // This is a false positive
+        // :: error: required.method.not.called
+        Foo y = new Foo();
+        Foo ternary4 = b ? y : y;
+        ternary4.a();
+
         takeOwnership(b ? new Foo() : makeFoo());
 
         // :: error: required.method.not.called
@@ -346,6 +352,8 @@ class ACRegularExitPointTest {
             i--;
         }
         ternaryInLoop.a();
+
+        (b ? new Foo() : makeFoo()).a();
     }
 
     /**
