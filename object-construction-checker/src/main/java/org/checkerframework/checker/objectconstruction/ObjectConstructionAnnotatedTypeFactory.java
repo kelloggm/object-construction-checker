@@ -1,5 +1,7 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -22,6 +24,8 @@ import org.checkerframework.com.google.common.collect.ImmutableSet;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
@@ -36,6 +40,11 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotatedTypeFactory {
 
+  /**
+   * Bidirectional map to preserve temporary variables created for nodes with non-empty @MustCall
+   * annotation and the corresponding nodes.
+   */
+  protected BiMap<LocalVariableNode, Tree> tempVarToNode = HashBiMap.create();
   /**
    * Default constructor matching super. Should be called automatically.
    *
@@ -70,6 +79,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
       mustCallInvokedChecker.checkMustCallInvoked(cfg);
     }
     super.postAnalyze(cfg);
+    tempVarToNode.clear();
   }
 
   /**
@@ -103,6 +113,11 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
                 .get();
       }
       // If it wasn't in the store, fall back to the default must-call type for the class.
+      // TODO: we currently end up in this case when checking a call to the return type
+      // of a returns-receiver method on something with a MustCall type; for example,
+      // see tests/socket/ZookeeperReport6.java. We should instead use a poly type if we
+      // can; that would probably require us to change the Must Call Checker to also
+      // track temporaries.
       if (mcAnno == null) {
         mcAnno =
             mustCallAnnotatedTypeFactory
@@ -124,6 +139,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   List<String> getMustCallValue(Tree tree) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
+    if (mustCallAnnotatedTypeFactory == null) {
+      return Collections.emptyList();
+    }
     AnnotationMirror mustCallAnnotation =
         mustCallAnnotatedTypeFactory.getAnnotatedType(tree).getAnnotation(MustCall.class);
 
@@ -154,11 +172,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     return mustCallValues;
   }
 
+  protected LocalVariableNode getTempVarForTree(Node node) {
+    return tempVarToNode.inverse().get(node.getTree());
+  }
   /**
    * Returns true if the type of the tree includes a must-call annotation. Note that this method may
-   * not consider dataflow, and is only safe to use on declarations, such as method invocation trees
-   * or parameter trees. Use {@link #getMustCallValue(ImmutableSet, CFStore)} (and check for
-   * emptiness) if you are trying to determine whether a local variable has must-call obligations.
+   * not consider dataflow, and is only safe to use on declarations, such as method trees or
+   * parameter trees. Use {@link #getMustCallValue(ImmutableSet, CFStore)} (and check for emptiness)
+   * if you are trying to determine whether a local variable has must-call obligations.
    */
   boolean hasMustCall(Tree t) {
     return !getMustCallValue(t).isEmpty();

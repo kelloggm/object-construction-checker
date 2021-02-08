@@ -203,17 +203,6 @@ public class ACSocketTest
         return sock;
     }
 
-    void replaceVarWithNull(String address, int port) {
-        try {
-            // :: error: required.method.not.called
-            Socket s = new Socket(address, port);
-            s = null;
-        } catch (IOException e) {
-
-        }
-
-    }
-
 //    @EnsuresCalledMethodsIf(expression = "#1", methods = {"close"}, result = true)
 //    void closeSocket(Socket sock) {
 ////        if (sock == null) {
@@ -226,6 +215,7 @@ public class ACSocketTest
 //
 //        }
 //    }
+
 
     public static void ruok(String host, int port) {
         Socket s = null;
@@ -483,4 +473,3 @@ public class ACSocketTest
     }
 
 }
-

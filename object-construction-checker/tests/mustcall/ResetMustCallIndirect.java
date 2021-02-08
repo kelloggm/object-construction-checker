@@ -38,6 +38,13 @@ class ResetMustCallIndirect {
         r.a();
     }
 
+    public static void reset_local3() {
+        // :: error: required.method.not.called
+        ResetMustCallIndirect r = new ResetMustCallIndirect();
+        // :: error: mustcall.not.parseable
+        ((ResetMustCallIndirect) r).reset();
+    }
+
     // :: error: required.method.not.called
     public static void test(@Owning ResetMustCallIndirect r) {
         resetIndirect_anno(r);

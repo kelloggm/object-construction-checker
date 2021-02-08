@@ -36,7 +36,6 @@ dependencies {
 
     // CF testing infrastructure
     testImplementation "org.checkerframework:framework-test:${versions.checkerFramework}"
-    // testImplementation "org.plumelib:plume-util:1.4.1"
 
     // CVE and KMS tests both rely on this:
     testImplementation platform("com.amazonaws:aws-java-sdk-bom:1.11.923")
