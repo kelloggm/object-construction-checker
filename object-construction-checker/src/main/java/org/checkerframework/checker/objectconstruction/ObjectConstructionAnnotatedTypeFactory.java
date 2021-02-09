@@ -92,7 +92,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
    *     then the default MustCall type of each variable's class will be used.
    * @return the list of must-call method names
    */
-  public List<String> getMustCallValue(
+  public @Nullable List<String> getMustCallValue(
       ImmutableSet<LocalVarWithTree> localVarWithTreeSet, @Nullable CFStore mcStore) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
@@ -119,10 +119,15 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
       // can; that would probably require us to change the Must Call Checker to also
       // track temporaries.
       if (mcAnno == null) {
-        mcAnno =
-            mustCallAnnotatedTypeFactory
-                .getAnnotatedType(TypesUtils.getTypeElement(local.getType()))
-                .getAnnotationInHierarchy(mustCallAnnotatedTypeFactory.TOP);
+        Element typeElt = TypesUtils.getTypeElement(local.getType());
+        if (typeElt == null) {
+          mcAnno = mustCallAnnotatedTypeFactory.TOP;
+        } else {
+          mcAnno =
+              mustCallAnnotatedTypeFactory
+                  .getAnnotatedType(typeElt)
+                  .getAnnotationInHierarchy(mustCallAnnotatedTypeFactory.TOP);
+        }
       }
       mcLub = mustCallAnnotatedTypeFactory.getQualifierHierarchy().leastUpperBound(mcLub, mcAnno);
     }
