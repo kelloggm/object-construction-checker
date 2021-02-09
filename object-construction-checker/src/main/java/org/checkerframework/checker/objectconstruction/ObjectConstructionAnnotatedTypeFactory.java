@@ -109,7 +109,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
         mcAnno =
             value.getAnnotations().stream()
                 .filter(anno -> AnnotationUtils.areSameByClass(anno, MustCall.class))
-                .findAny().orElse(null);
+                .findAny()
+                .orElse(null);
       }
       // If it wasn't in the store, fall back to the default must-call type for the class.
       // TODO: we currently end up in this case when checking a call to the return type
