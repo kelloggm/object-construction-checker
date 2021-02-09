@@ -1,8 +1,8 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
-import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import java.util.Arrays;
@@ -301,10 +301,8 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     if (path == null) {
       enclosingElement = TreeUtils.elementFromTree(tree).getEnclosingElement();
     } else {
-      Tree methodTree = TreePathUtil.enclosingMethod(path);
-      if (methodTree != null) {
-        enclosingElement = TreeUtils.elementFromTree(methodTree);
-      }
+      ClassTree classTree = TreePathUtil.enclosingClass(path);
+      enclosingElement = TreeUtils.elementFromTree(classTree);
     }
     if (enclosingElement == null) {
       return null;
