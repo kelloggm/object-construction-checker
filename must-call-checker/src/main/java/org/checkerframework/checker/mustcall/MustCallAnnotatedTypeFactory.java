@@ -67,8 +67,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     TOP = AnnotationBuilder.fromClass(elements, MustCallUnknown.class);
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
-    addAliasedAnnotation(InheritableMustCall.class, MustCall.class, true);
-    addAliasedAnnotation(MustCallChoice.class, POLY);
+    addAliasedTypeAnnotation(InheritableMustCall.class, MustCall.class, true);
+    addAliasedTypeAnnotation(MustCallChoice.class, POLY);
     this.postInit();
   }
 
@@ -204,7 +204,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   public AnnotatedTypeMirror fromElement(Element elt) {
     AnnotatedTypeMirror type = super.fromElement(elt);
     // Support @InheritableMustCall meaning @MustCall on all class declaration elements.
-    if (ElementUtils.isClassElement(elt)) {
+    if (ElementUtils.isTypeElement(elt)) {
       AnnotationMirror inheritableMustCall = getDeclAnnotation(elt, InheritableMustCall.class);
       if (inheritableMustCall != null) {
         List<String> mustCallVal =
