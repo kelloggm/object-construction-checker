@@ -1,7 +1,8 @@
 import java.net.*;
 
-class CrashOnCommon {
-//    Object baz = new Object(new Socket());
+class CommonModuleCrash {
+    // :: error: required.method.not.called
+    Socket baz = new Socket();
     static void baz(Socket s) {  }
     static {
         // :: error: required.method.not.called
