@@ -28,6 +28,8 @@ import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
+import org.checkerframework.dataflow.cfg.block.Block;
+import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
@@ -49,10 +51,10 @@ import org.checkerframework.javacutil.TypesUtils;
 public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /** The top annotation. */
-  final AnnotationMirror TOP;
+  public final AnnotationMirror TOP;
 
   /** The bottom annotation, which is the default in unannotated code. */
-  final AnnotationMirror BOTTOM;
+  public final AnnotationMirror BOTTOM;
 
   /** The polymorphic qualifier */
   final AnnotationMirror POLY;
@@ -67,8 +69,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     TOP = AnnotationBuilder.fromClass(elements, MustCallUnknown.class);
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
-    addAliasedAnnotation(InheritableMustCall.class, MustCall.class, true);
-    addAliasedAnnotation(MustCallChoice.class, POLY);
+    addAliasedTypeAnnotation(InheritableMustCall.class, MustCall.class, true);
+    addAliasedTypeAnnotation(MustCallChoice.class, POLY);
     this.postInit();
   }
 
@@ -204,7 +206,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   public AnnotatedTypeMirror fromElement(Element elt) {
     AnnotatedTypeMirror type = super.fromElement(elt);
     // Support @InheritableMustCall meaning @MustCall on all class declaration elements.
-    if (ElementUtils.isClassElement(elt)) {
+    if (ElementUtils.isTypeElement(elt)) {
       AnnotationMirror inheritableMustCall = getDeclAnnotation(elt, InheritableMustCall.class);
       if (inheritableMustCall != null) {
         List<String> mustCallVal =
@@ -247,6 +249,20 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   public QualifierHierarchy createQualifierHierarchy() {
     return new SubtypeIsSubsetQualifierHierarchy(
         this.getSupportedTypeQualifiers(), this.getProcessingEnv());
+  }
+
+  /**
+   * Fetches the store from the results of dataflow, for either block (if noSuccInfo is true) or
+   * succ (if noSuccInfo is false).
+   *
+   * @param noSuccInfo whether to use the store for the block itself or its successor, succ
+   * @param block a block
+   * @param succ block's successor
+   * @return the appropriate CFStore, populated with MustCall annotations, from the results of
+   *     running dataflow
+   */
+  public CFStore getStoreForBlock(boolean noSuccInfo, Block block, Block succ) {
+    return noSuccInfo ? flowResult.getStoreAfter(block) : flowResult.getStoreBefore(succ);
   }
 
   private class MustCallTreeAnnotator extends TreeAnnotator {

@@ -8,7 +8,6 @@ import java.util.Properties;
 import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.mustcall.MustCallChecker;
-import org.checkerframework.checker.unconnectedsocket.UnconnectedSocketChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.qual.StubFiles;
@@ -33,8 +32,6 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
 
   public static final String CHECK_MUST_CALL = "checkMustCall";
 
-  public static final String ENABLE_UNCONNECTED_SOCKET = "enableUnconnectedSocketChecker";
-
   public static final String COUNT_MUST_CALL = "countMustCall";
 
   /**
@@ -52,9 +49,6 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
 
     if (this.processingEnv.getOptions().containsKey(CHECK_MUST_CALL)) {
       checkers.add(MustCallChecker.class);
-      if (this.processingEnv.getOptions().containsKey(ENABLE_UNCONNECTED_SOCKET)) {
-        checkers.add(UnconnectedSocketChecker.class);
-      }
     }
 
     return checkers;
@@ -77,6 +71,15 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
     messages.setProperty(
         "required.method.not.called",
         "@MustCall method(s) %s for variable/expression not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
+    messages.setProperty(
+        "missing.reset.mustcall",
+        "This method re-assigns the non-final, owning field %s.%s, but does not have a corresponding @ResetMustCall annotation.\n");
+    messages.setProperty(
+        "incompatible.reset.mustcall",
+        "This method re-assigns the non-final, owning field %s.%s, but its @ResetMustCall annotation targets %s.\n");
+    messages.setProperty(
+        "reset.not.owning",
+        "Calling this method resets the must-call obligations of the expression %s, which is non-owning. Either annotate its declaration with an @Owning annotation or write a corresponding @ResetMustCall annotation on the method that encloses this statement.\n");
     return messages;
   }
 

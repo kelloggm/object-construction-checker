@@ -23,6 +23,10 @@ public class MustCallChecker extends BaseTypeChecker {
     messages.setProperty(
         "inconsistent.mustcall.subtype",
         "%s is annotated as %s, but one of its supertypes has an %s annotation, which is inconsistent.");
+    messages.setProperty(
+        "mustcall.not.parseable",
+        "The method %s is annotated as @ResetMustCall, but the target (%s) was unparseable in the current context. "
+            + "Rewrite your code so that the relevant expression is a local variable.");
     return messages;
   }
 }

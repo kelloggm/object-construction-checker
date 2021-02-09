@@ -24,10 +24,6 @@ dependencies {
     implementation project(":must-call-qual")
     implementation project(":must-call-checker")
 
-    // For UnconnectedSocket support
-    implementation project(":unconnected-socket-qual")
-    implementation project(":unconnected-socket-checker")
-
     // For the @CalledMethodsPredicate evaluation
     implementation "org.springframework:spring-expression:5.3.2"
 

@@ -22,6 +22,7 @@ import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.CalledMethodsTransfer;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.mustcall.MustCallTransfer;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.common.value.ValueCheckerUtils;
@@ -44,6 +45,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 import org.checkerframework.javacutil.trees.TreeBuilder;
 
 /**
@@ -92,6 +94,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     exceptionalStores = makeExceptionalStores(node, input);
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(node, input);
     handleEnsuresCalledMethodVarArgs(node, result);
+    handleResetMustCall(node, result);
     TransferResult<CFValue, CFStore> finalResult =
         new ConditionalTransferResult<>(
             result.getResultValue(),
@@ -117,6 +120,25 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     return finalResult;
   }
 
+  void handleResetMustCall(MethodInvocationNode n, TransferResult<CFValue, CFStore> result) {
+    JavaExpression targetExpr = MustCallTransfer.getResetMustCallExpression(n, atypeFactory);
+    if (targetExpr != null) {
+      AnnotationMirror defaultType = atypefactory.top;
+      if (result.containsTwoStores()) {
+        CFStore thenStore = result.getThenStore();
+        thenStore.clearValue(targetExpr);
+        thenStore.insertValue(targetExpr, defaultType);
+        CFStore elseStore = result.getElseStore();
+        elseStore.clearValue(targetExpr);
+        elseStore.insertValue(targetExpr, defaultType);
+      } else {
+        CFStore store = result.getRegularStore();
+        store.clearValue(targetExpr);
+        store.insertValue(targetExpr, defaultType);
+      }
+    }
+  }
+
   @Override
   public TransferResult<CFValue, CFStore> visitObjectCreation(
       ObjectCreationNode node, TransferInput<CFValue, CFStore> input) {
@@ -133,24 +155,30 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
    * @param result the transfer result containing the store to be modified
    */
   private void updateStoreWithTempVar(TransferResult<CFValue, CFStore> result, Node node) {
-    if (atypefactory.hasMustCall(node.getTree())) {
-      JavaExpression localExp = JavaExpression.fromNode(atypeFactory, getOrCreateTempVar(node));
-
-      insertIntoStores(
-          result,
-          localExp,
-          atypefactory.getAnnotatedType(node.getTree()).getAnnotationInHierarchy(atypeFactory.top));
+    // Must-call obligations on primitives are not supported.
+    if (!TypesUtils.isPrimitiveOrBoxed(node.getType())) {
+      LocalVariableNode temp = getOrCreateTempVar(node);
+      if (temp != null) {
+        JavaExpression localExp = JavaExpression.fromNode(atypeFactory, temp);
+        AnnotationMirror anm =
+            atypefactory
+                .getAnnotatedType(node.getTree())
+                .getAnnotationInHierarchy(atypeFactory.top);
+        insertIntoStores(result, localExp, anm == null ? atypefactory.top : anm);
+      }
     }
   }
 
-  private LocalVariableNode getOrCreateTempVar(Node node) {
+  private @Nullable LocalVariableNode getOrCreateTempVar(Node node) {
     LocalVariableNode localVariableNode = atypefactory.getTempVarForTree(node);
     if (localVariableNode == null) {
       VariableTree temp = createTemporaryVar(node);
-      IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
-      localVariableNode = new LocalVariableNode(identifierTree);
-      localVariableNode.setInSource(true);
-      atypefactory.tempVarToNode.put(localVariableNode, node.getTree());
+      if (temp != null) {
+        IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
+        localVariableNode = new LocalVariableNode(identifierTree);
+        localVariableNode.setInSource(true);
+        atypefactory.tempVarToNode.put(localVariableNode, node.getTree());
+      }
     }
     return localVariableNode;
   }
@@ -209,6 +237,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         if (newType == null) {
           continue;
         }
+
         JavaExpression receiverReceiver = JavaExpression.fromNode(atypeFactory, arg);
         thenStore.insertValue(receiverReceiver, newType);
         elseStore.insertValue(receiverReceiver, newType);
@@ -264,16 +293,19 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     }
   }
 
-  protected VariableTree createTemporaryVar(Node method) {
+  protected @Nullable VariableTree createTemporaryVar(Node method) {
     ExpressionTree tree = (ExpressionTree) method.getTree();
     TypeMirror treeType = TreeUtils.typeOf(tree);
-    Element enclosingElement;
+    Element enclosingElement = null;
     TreePath path = atypefactory.getPath(tree);
     if (path == null) {
       enclosingElement = TreeUtils.elementFromTree(tree).getEnclosingElement();
     } else {
       ClassTree classTree = TreePathUtil.enclosingClass(path);
       enclosingElement = TreeUtils.elementFromTree(classTree);
+    }
+    if (enclosingElement == null) {
+      return null;
     }
     // Declare and initialize a new, unique iterator variable
     VariableTree tmpVarTree =

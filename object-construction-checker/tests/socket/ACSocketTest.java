@@ -152,11 +152,11 @@ public class ACSocketTest
         } catch (IOException e) {
 
         }
+        // It is equally correct to report an error here.
         Socket s2 = s1;
-        if(true){
+        if (true) {
             closeSocket(s2);
         }
-
     }
 
     void test(String address, int port)
@@ -201,17 +201,6 @@ public class ACSocketTest
         sock.setSoTimeout(10000);
         closeSocket(sock);
         return sock;
-    }
-
-    void replaceVarWithNull(String address, int port) {
-        try {
-            // :: error: required.method.not.called
-            Socket s = new Socket(address, port);
-            s = null;
-        } catch (IOException e) {
-
-        }
-
     }
 
 //    @EnsuresCalledMethodsIf(expression = "#1", methods = {"close"}, result = true)
@@ -290,9 +279,7 @@ public class ACSocketTest
             if (sock instanceof SSLSocket) {
                 SSLSocket sslSock = (SSLSocket) sock;
                 sslSock.startHandshake();
-
             }
-
         } catch (ClassCastException e){
             closeSocket(sock);
             return;
@@ -399,20 +386,14 @@ public class ACSocketTest
 //        }
 //    }
 
-    /**
-     * The errors in this method are caused by the lack of support for unconnected sockets.
-     */
     void createNewServerSocket(InetSocketAddress address, boolean b, boolean c) throws IOException {
         ServerSocket socket;
 
         if (b) {
-            // :: error: required.method.not.called
             socket = new ServerSocket();
         } else if (c) {
-            // :: error: required.method.not.called
             socket = new ServerSocket();
         } else {
-            // :: error: required.method.not.called
             socket = new ServerSocket();
         }
 

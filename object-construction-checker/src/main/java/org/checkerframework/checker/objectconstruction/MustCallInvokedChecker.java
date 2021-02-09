@@ -4,6 +4,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
+import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -20,8 +21,14 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
+import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
+import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.checker.mustcall.MustCallTransfer;
+import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
@@ -29,6 +36,7 @@ import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.com.google.common.base.Predicates;
 import org.checkerframework.com.google.common.collect.FluentIterable;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
+import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -36,20 +44,29 @@ import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlockImpl;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
+import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.node.TernaryExpressionNode;
+import org.checkerframework.dataflow.cfg.node.ThisNode;
 import org.checkerframework.dataflow.cfg.node.TypeCastNode;
+import org.checkerframework.dataflow.expression.FieldAccess;
+import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
+import org.checkerframework.framework.util.JavaExpressionParseUtil;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -156,6 +173,15 @@ class MustCallInvokedChecker {
 
   private void handleInvocation(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     doOwnershipTransferToParameters(defs, node);
+    // Count calls to @ResetMustCall methods as creating new resources, for now.
+    if (node instanceof MethodInvocationNode
+        && typeFactory.getDeclAnnotation(
+                TreeUtils.elementFromUse((MethodInvocationTree) node.getTree()),
+                ResetMustCall.class)
+            != null) {
+      checkResetMustCallInvocation(defs, (MethodInvocationNode) node);
+      incrementNumMustCall();
+    }
 
     if (shouldSkipInvokeCheck(node)) {
       return;
@@ -164,8 +190,98 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Searches for the set of same resources in defs and add the new LocalVarWithTree to it if one
-   * exists. Otherwise creates a new set.
+   * Checks that an invocation of a ResetMustCall method is valid. Such an invocation is valid if
+   * one of the following conditions is true: 1) the target is an owning pointer 2) the target is
+   * tracked in newdefs 3) the method in which the invocation occurs also has an @ResetMustCall
+   * annotation, with the same target
+   *
+   * <p>If none of the above are true, this method issues a reset.not.owning error.
+   *
+   * @param newDefs the local variables that have been defined in the current compilation unit (and
+   *     are therefore going to be checked later)
+   * @param node a method invocation node, invoking a method with a ResetMustCall annotation
+   */
+  private void checkResetMustCallInvocation(
+      Set<ImmutableSet<LocalVarWithTree>> newDefs, MethodInvocationNode node) {
+    AnnotationMirror resetMustCall =
+        typeFactory.getDeclAnnotation(
+            TreeUtils.elementFromUse(node.getTree()), ResetMustCall.class);
+    String targetStrWithoutAdaptation =
+        AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
+    TreePath currentPath = typeFactory.getPath(node.getTree());
+    JavaExpressionContext context =
+        JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(node, checker);
+    String targetStr =
+        MustCallTransfer.standardizeAndViewpointAdapt(
+            targetStrWithoutAdaptation, currentPath, context);
+    JavaExpression target;
+    try {
+      target = typeFactory.parseJavaExpressionString(targetStr, currentPath);
+    } catch (JavaExpressionParseException e) {
+      typeFactory
+          .getChecker()
+          .reportError(
+              node.getTree(),
+              "mustcall.not.parseable",
+              node.getTarget().getMethod().getSimpleName(),
+              targetStr);
+      return;
+    }
+
+    if (target instanceof LocalVariable) {
+
+      Element elt = ((LocalVariable) target).getElement();
+      if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
+        // if the target is an Owning param, this satisfies case 1
+        return;
+      }
+
+      for (ImmutableSet<LocalVarWithTree> defAliasSet : newDefs) {
+        for (LocalVarWithTree localVarWithTree : defAliasSet) {
+          if (target.equals(localVarWithTree.localVar)) {
+            // satisfies case 2 above
+            return;
+          }
+        }
+      }
+    }
+    if (target instanceof FieldAccess) {
+      Element elt = ((FieldAccess) target).getField();
+      if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
+        // if the target is an Owning field, this satisfies case 1
+        return;
+      }
+    }
+
+    MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
+    if (enclosingMethod != null) {
+      ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
+      AnnotationMirror enclosingResetMustCall =
+          typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.class);
+      if (enclosingResetMustCall != null) {
+        String enclosingTargetStrWithoutAdaptation =
+            AnnotationUtils.getElementValue(enclosingResetMustCall, "value", String.class, true);
+        JavaExpressionContext enclosingContext =
+            JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
+                enclosingMethod, currentPath, checker);
+        String enclosingTargetStr =
+            MustCallTransfer.standardizeAndViewpointAdapt(
+                enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
+        if (enclosingTargetStr.equals(targetStr)) {
+          // The enclosing method also has a corresponding ResetMustCall annotation, so this
+          // satisfies case 3.
+          return;
+        }
+      }
+    }
+    checker.reportError(node.getTree(), "reset.not.owning", targetStr);
+  }
+
+  /**
+   * Given a node representing a method or constructor call, checks that if the call has a non-empty
+   * {@code @MustCall} type, then its result is pseudo-assigned to some location that can take
+   * ownership of the result. Searches for the set of same resources in defs and add the new
+   * LocalVarWithTree to it if one exists. Otherwise creates a new set.
    */
   private void updateDefsWithTempVar(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     Tree tree = node.getTree();
@@ -215,15 +331,12 @@ class MustCallInvokedChecker {
 
   /**
    * Checks for cases where we do not need to track a method. We can skip the check when the method
-   * invocation is a call to "this" or a super constructor call, or the method's return type is
-   * annotated {@link NotOwning}.
+   * invocation is a call to "this" or a super constructor call, or when the method's return type is
+   * non-owning, which can either be because the method has no return type or because it is
+   * annotated with {@link NotOwning}.
    */
   private boolean shouldSkipInvokeCheck(Node node) {
     Tree callTree = node.getTree();
-    List<String> mustCallVal = typeFactory.getMustCallValue(callTree);
-    if (mustCallVal.isEmpty()) {
-      return true;
-    }
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
       return TreeUtils.isSuperConstructorCall(methodInvokeTree)
@@ -358,48 +471,52 @@ class MustCallInvokedChecker {
     Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
 
     // Ownership transfer to @Owning field
-    if (lhsElement.getKind().equals(ElementKind.FIELD) && typeFactory.hasMustCall(lhs.getTree())) {
-      if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
-        if (typeFactory.getDeclAnnotation(lhsElement, Owning.class) != null) {
-          Set<LocalVarWithTree> setContainingRhs =
-              getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
-          newDefs.remove(setContainingRhs);
-        }
+    if (lhsElement.getKind().equals(ElementKind.FIELD)) {
+      boolean isOwningField = typeFactory.getDeclAnnotation(lhsElement, Owning.class) != null;
+      // Check that there is no obligation on the lhs, if the field is non-final and owning.
+      if (isOwningField && !ElementUtils.isFinal(lhsElement)) {
+        checkReassignmentToField(node, newDefs);
+      }
+      // Remove obligations from local variables, now that the owning field is responsible.
+      if (isOwningField
+          && rhs instanceof LocalVariableNode
+          && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
+        Set<LocalVarWithTree> setContainingRhs =
+            getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
+        newDefs.remove(setContainingRhs);
       }
     } else if (lhs instanceof LocalVariableNode
         && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
-
       // Reassignment to the lhs
       if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
         ImmutableSet<LocalVarWithTree> setContainingLhs =
             getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
         LocalVarWithTree latestAssignmentPair =
             getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-        if (rhs instanceof LocalVariableNode
-            && setContainingLhs.stream()
-                .map(localVarWithTree -> localVarWithTree.localVar.getElement())
-                .noneMatch(elem -> elem.equals(((LocalVariableNode) rhs).getElement()))) {
-          // If the rhs is not MCC with the lhs, we will remove the latest assignment pair of lhs
-          // from the newDefs. If the lhs is the only pointer to the previous resource then we will
-          // do MustCall checks for that resource
-          if (setContainingLhs.size() > 1) {
-            // If the setContainingLatestAssignmentPair has more LocalVarWithTree, remove
-            // latestAssignmentPair
-            ImmutableSet<LocalVarWithTree> newSetContainingLhs =
-                FluentIterable.from(setContainingLhs)
-                    .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
-                    .toSet();
-            newDefs.remove(setContainingLhs);
-            newDefs.add(newSetContainingLhs);
-          } else {
-            // If the setContainingLatestAssignmentPair size is one and the rhs is not MCC with the
-            // lhs
-            checkMustCall(
-                setContainingLhs,
-                typeFactory.getStoreBefore(node),
-                "variable overwritten by assignment " + node.getTree());
-            newDefs.remove(setContainingLhs);
-          }
+        // If the rhs is not MCC with the lhs, we will remove the latest assignment pair of lhs
+        // from the newDefs. If the lhs is the only pointer to the previous resource then we will
+        // do MustCall checks for that resource
+        if (setContainingLhs.size() > 1) {
+          // If the setContainingLatestAssignmentPair has more LocalVarWithTree, remove
+          // latestAssignmentPair
+          ImmutableSet<LocalVarWithTree> newSetContainingLhs =
+              FluentIterable.from(setContainingLhs)
+                  .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
+                  .toSet();
+          newDefs.remove(setContainingLhs);
+          newDefs.add(newSetContainingLhs);
+        } else {
+          // If the setContainingLatestAssignmentPair size is one and the rhs is not MCC with the
+          // lhs
+          MustCallAnnotatedTypeFactory mcAtf =
+              typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+
+          checkMustCall(
+              setContainingLhs,
+              typeFactory.getStoreBefore(node),
+              mcAtf.getStoreBefore(node),
+              "variable overwritten by assignment " + node.getTree());
+          newDefs.remove(setContainingLhs);
         }
       }
 
@@ -431,6 +548,9 @@ class MustCallInvokedChecker {
             getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
         LocalVarWithTree lhsLocalVarWithTreeNew =
             new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
+        // It is important that newDefs contains the set of these locals - that is, their
+        // aliasing relationship - because either one could have a reset method called on it,
+        // which would create a new obligation.
         ImmutableSet<LocalVarWithTree> newSetContainingRhsTempVar =
             FluentIterable.from(setContainingRhs).append(lhsLocalVarWithTreeNew).toSet();
         newDefs.add(newSetContainingRhsTempVar);
@@ -444,6 +564,140 @@ class MustCallInvokedChecker {
           getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
       newDefs.remove(setContainingRhs);
     }
+  }
+
+  /**
+   * Checks that the given re-assignment to a non-final, owning field is valid. Issues an error if
+   * not. A re-assignment is valid if the called methods type of the lhs before the assignment
+   * satisfies the must-call obligations.
+   *
+   * @param node an assignment to a non-final, owning field
+   * @param newDefs
+   */
+  private void checkReassignmentToField(
+      AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
+
+    Node lhsNode = node.getTarget();
+
+    if (!(lhsNode instanceof FieldAccessNode)) {
+      throw new BugInCF(
+          "tried to check reassignment to a field for a non-field node: "
+              + node
+              + " of type: "
+              + node.getClass());
+    }
+
+    FieldAccessNode lhs = (FieldAccessNode) lhsNode;
+
+    Node receiver = lhs.getReceiver();
+    // Check that there is a corresponding resetMustCall annotation, unless this is an
+    // assignment to a field of a newly-declared local variable that can't be in scope
+    // for the containing method.
+    if (!(receiver instanceof LocalVariableNode
+        && isVarInDefs(newDefs, (LocalVariableNode) receiver))) {
+      checkEnclosingMethodIsResetMC(node);
+    }
+
+    MustCallAnnotatedTypeFactory mcTypeFactory =
+        typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+    AnnotationMirror mcAnno =
+        mcTypeFactory.getAnnotationFromJavaExpression(
+            JavaExpression.fromNode(mcTypeFactory, lhs), node.getTree(), MustCall.class);
+    List<String> mcValues = ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mcAnno);
+
+    if (mcValues.isEmpty()) {
+      return;
+    }
+
+    CFStore cmStoreBefore = typeFactory.getStoreBefore(node);
+    CFValue cmValue = cmStoreBefore == null ? null : cmStoreBefore.getValue(lhs);
+    AnnotationMirror cmAnno =
+        cmValue == null
+            ? typeFactory.top
+            : cmValue.getAnnotations().stream()
+                .filter(anno -> AnnotationUtils.areSameByClass(anno, CalledMethods.class))
+                .findAny()
+                .orElse(typeFactory.top);
+
+    if (!calledMethodsSatisfyMustCall(mcValues, cmAnno)) {
+      Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
+      checker.reportError(
+          node.getTree(),
+          "required.method.not.called",
+          formatMissingMustCallMethods(mcValues),
+          lhsElement.asType().toString(),
+          " Non-final owning field might be overwritten");
+    }
+  }
+
+  /**
+   * Checks that the method that encloses an assignment is marked with @ResetMustCall annotation
+   * whose target is the object whose field is being re-assigned.
+   *
+   * @param node an assignment node whose lhs is a non-final, owning field
+   */
+  private void checkEnclosingMethodIsResetMC(AssignmentNode node) {
+    Node lhs = node.getTarget();
+    if (!(lhs instanceof FieldAccessNode)) {
+      return;
+    }
+
+    String receiverString = receiverAsString((FieldAccessNode) lhs);
+
+    // TODO: it would be better to defer getting the path until after we check
+    // for a ResetMustCall annotation, because getting the path can be expensive.
+    // It might be possible to exploit the CFG structure to find the containing
+    // method (rather than using the path, as below), because if a method is being
+    // analyzed then it should be the root of the CFG (I think).
+    TreePath currentPath = typeFactory.getPath(node.getTree());
+    MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
+    if (enclosingMethod == null) {
+      // Assignments outside of methods must be in constructors or field initializers, which
+      // are always safe.
+      return;
+    }
+    ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
+    AnnotationMirror resetMustCall =
+        typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.class);
+    if (resetMustCall == null) {
+      checker.reportError(
+          enclosingMethod,
+          "missing.reset.mustcall",
+          receiverString,
+          ((FieldAccessNode) lhs).getFieldName());
+      return;
+    }
+
+    String targetStrWithoutAdaptation =
+        AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
+    JavaExpressionContext context =
+        JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
+            enclosingMethod, currentPath, checker);
+    String targetStr =
+        MustCallTransfer.standardizeAndViewpointAdapt(
+            targetStrWithoutAdaptation, currentPath, context);
+    if (!targetStr.equals(receiverString)) {
+      checker.reportError(
+          enclosingMethod,
+          "incompatible.reset.mustcall",
+          receiverString,
+          ((FieldAccessNode) lhs).getFieldName(),
+          targetStr);
+    }
+  }
+
+  /** Gets a standardized name for an object whose field is being re-assigned. */
+  private String receiverAsString(FieldAccessNode lhs) {
+    Node receiver = lhs.getReceiver();
+    if (receiver instanceof ThisNode) {
+      return "this";
+    }
+    if (receiver instanceof LocalVariableNode) {
+
+      return ((LocalVariableNode) receiver).getName();
+    }
+    throw new BugInCF(
+        "unexpected receiver of field assignment: " + receiver + " of type " + receiver.getClass());
   }
 
   /**
@@ -523,7 +777,9 @@ class MustCallInvokedChecker {
   private boolean hasNotOwningReturnType(MethodInvocationNode node) {
     MethodInvocationTree methodInvocationTree = node.getTree();
     ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
-    return (typeFactory.getDeclAnnotation(executableElement, NotOwning.class) != null);
+    // void methods are "not owning" by construction
+    return (ElementUtils.getType(executableElement).getKind() == TypeKind.VOID)
+        || (typeFactory.getDeclAnnotation(executableElement, NotOwning.class) != null);
   }
 
   /**
@@ -592,6 +848,8 @@ class MustCallInvokedChecker {
             setAssign.stream()
                 .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null);
         if (succ instanceof SpecialBlockImpl || noSuccInfo) {
+          MustCallAnnotatedTypeFactory mcAtf =
+              typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
 
           // Remove the temporary variable defined for a node that throws an exception from the
           // exceptional successors
@@ -620,14 +878,24 @@ class MustCallInvokedChecker {
             // not have any information about it, by construction, and
             // any information in the previous store remains true. If any locals do appear
             // in succRegularStore, we will always use that store.
-            CFStore storeToUse =
+            CFStore cmStore =
                 noSuccInfo ? analysis.getInput(block).getRegularStore() : succRegularStore;
-            checkMustCall(setAssign, storeToUse, reasonForSucc);
+            CFStore mcStore = mcAtf.getStoreForBlock(noSuccInfo, block, succ);
+            checkMustCall(setAssign, cmStore, mcStore, reasonForSucc);
           } else { // If the cur block is Exception/Regular block then it checks MustCall
             // annotation in the store right after the last node
             Node last = nodes.get(nodes.size() - 1);
-            CFStore storeAfter = typeFactory.getStoreAfter(last);
-            checkMustCall(setAssign, storeAfter, reasonForSucc);
+            CFStore cmStoreAfter = typeFactory.getStoreAfter(last);
+            // If this is an exceptional block, check the MC store beforehand to avoid
+            // issuing an error about a call to a ResetMustCall method that might throw
+            // an exception. Otherwise, use the store after.
+            CFStore mcStore;
+            if (exceptionType != null) {
+              mcStore = mcAtf.getStoreBefore(last);
+            } else {
+              mcStore = mcAtf.getStoreAfter(last);
+            }
+            checkMustCall(setAssign, cmStoreAfter, mcStore, reasonForSucc);
           }
 
           toRemove.add(setAssign);
@@ -721,10 +989,12 @@ class MustCallInvokedChecker {
    * the check fails.
    */
   private void checkMustCall(
-      ImmutableSet<LocalVarWithTree> localVarWithTreeSet, CFStore store, String outOfScopeReason) {
+      ImmutableSet<LocalVarWithTree> localVarWithTreeSet,
+      CFStore cmStore,
+      CFStore mcStore,
+      String outOfScopeReason) {
 
-    List<String> mustCallValue =
-        typeFactory.getMustCallValue(localVarWithTreeSet.iterator().next().tree);
+    List<String> mustCallValue = typeFactory.getMustCallValue(localVarWithTreeSet, mcStore);
     // optimization: if there are no must-call methods, we do not need to perform the check
     if (mustCallValue.isEmpty()) {
       return;
@@ -733,13 +1003,9 @@ class MustCallInvokedChecker {
     boolean mustCallSatisfied = false;
     for (LocalVarWithTree localVarWithTree : localVarWithTreeSet) {
 
-      if (typeFactory.isUnconnectedSocket(localVarWithTree.tree)) {
-        return;
-      }
-
       // sometimes the store is null!  this looks like a bug in checker dataflow.
       // TODO track down and report the root-cause bug
-      CFValue lhsCFValue = store != null ? store.getValue(localVarWithTree.localVar) : null;
+      CFValue lhsCFValue = cmStore != null ? cmStore.getValue(localVarWithTree.localVar) : null;
       AnnotationMirror cmAnno;
 
       if (lhsCFValue != null) { // When store contains the lhs
@@ -795,7 +1061,9 @@ class MustCallInvokedChecker {
 
   /**
    * Is {@code exceptionClassName} an exception type we are ignoring, to avoid excessive false
-   * positives? For now we ignore {@code java.lang.Throwable} and {@code NullPointerException}
+   * positives? For now we ignore {@code java.lang.Throwable}, {@code NullPointerException}, and the
+   * runtime exceptions that can occur at any point during the program due to something going wrong
+   * in the JVM, like OutOfMemoryErrors or ClassCircularityErrors.
    */
   private static boolean isIgnoredExceptionType(@FullyQualifiedName Name exceptionClassName) {
     return exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
@@ -863,7 +1131,7 @@ class MustCallInvokedChecker {
    * formal parameter. We keep the tree for error-reporting purposes (so we can report an error per
    * assignment to a local, pinpointing the expression whose MustCall may not be satisfied).
    */
-  private static class LocalVarWithTree {
+  /* package-private */ static class LocalVarWithTree {
     public final LocalVariable localVar;
     public final Tree tree;
 
