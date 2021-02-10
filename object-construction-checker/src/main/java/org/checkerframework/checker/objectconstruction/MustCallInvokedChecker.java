@@ -82,6 +82,8 @@ class MustCallInvokedChecker {
   /** {@code @MustCall} errors reported thus far, to avoid duplicates */
   private final Set<LocalVarWithTree> reportedMustCallErrors = new HashSet<>();
 
+  private final Set<Tree> mustCallObligations = new HashSet<>();
+
   private final ObjectConstructionAnnotatedTypeFactory typeFactory;
 
   private final ObjectConstructionChecker checker;
@@ -1057,7 +1059,10 @@ class MustCallInvokedChecker {
 
   private void incrementNumMustCall(Tree tree) {
     if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
-      checker.mustCallObligations.add(tree);
+      if (!mustCallObligations.contains(tree)) {
+        checker.numMustCall++;
+        mustCallObligations.add(tree);
+      }
     }
   }
 
