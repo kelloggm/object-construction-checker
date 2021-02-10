@@ -3,8 +3,11 @@ package org.checkerframework.checker.objectconstruction;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.CHECK_MUST_CALL;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.COUNT_MUST_CALL;
 
+import com.sun.source.tree.Tree;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Properties;
+import java.util.Set;
 import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.mustcall.MustCallChecker;
@@ -35,10 +38,10 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
   public static final String COUNT_MUST_CALL = "countMustCall";
 
   /**
-   * The number of expressions with must-call obligations that were checked. Incremented only if the
+   * Set containing expressions with must-call obligations that were checked. Increment only if the
    * {@link #COUNT_MUST_CALL} option was supplied.
    */
-  int numMustCall = 0;
+  Set<Tree> mustCallObligations = new HashSet<>();
 
   int numMustCallFailed = 0;
 
@@ -99,6 +102,7 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
   @Override
   public void typeProcessingOver() {
     if (hasOption(COUNT_MUST_CALL)) {
+      int numMustCall = mustCallObligations.size();
       System.out.printf("Found %d must call obligation(s).%n", numMustCall);
       System.out.printf(
           "Found %d must call obligation(s) that were handled correctly.%n",

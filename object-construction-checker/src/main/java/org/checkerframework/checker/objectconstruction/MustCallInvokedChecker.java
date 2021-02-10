@@ -185,6 +185,7 @@ class MustCallInvokedChecker {
                 ResetMustCall.class)
             != null) {
       checkResetMustCallInvocation(defs, (MethodInvocationNode) node);
+      incrementNumMustCall(node.getTree());
     }
 
     if (shouldSkipInvokeCheck(node)) {
@@ -192,7 +193,7 @@ class MustCallInvokedChecker {
     }
 
     if (typeFactory.hasMustCall(node.getTree())) {
-      incrementNumMustCall();
+      incrementNumMustCall(node.getTree());
     }
     updateDefsWithTempVar(defs, node);
   }
@@ -942,7 +943,7 @@ class MustCallInvokedChecker {
           setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
           init.add(ImmutableSet.copyOf(setOfLocals));
           // Increment numMustCall for each @Owning parameter tracked by the enclosing method
-          incrementNumMustCall();
+          incrementNumMustCall(param);
         }
       }
     }
@@ -1054,9 +1055,9 @@ class MustCallInvokedChecker {
     }
   }
 
-  private void incrementNumMustCall() {
+  private void incrementNumMustCall(Tree tree) {
     if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
-      checker.numMustCall++;
+      checker.mustCallObligations.add(tree);
     }
   }
 
