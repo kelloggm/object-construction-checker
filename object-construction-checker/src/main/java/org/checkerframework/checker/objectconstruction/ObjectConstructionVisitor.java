@@ -90,6 +90,11 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
    * guaranteeing that the {@code @MustCall} obligation of the field will be satisfied.
    */
   private void checkFinalOwningField(Element field) {
+
+    if (checker.shouldSkipUses(field)) {
+      return;
+    }
+
     List<String> fieldMCAnno = atypeFactory.getMustCallValue(field);
     String error = "";
 
