@@ -146,7 +146,12 @@ class MustCallInvokedChecker {
 
   private void handleTernary(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
     LocalVariableNode ternaryLocal = typeFactory.getTempVarForTree(node);
-
+    // This can happen when one side of the ternary is null, I think.
+    // Without this, we get a crash in tests/mustcall/ZookeeperTernaryCrash.java
+    // on the only ternary in that program snippet.
+    if (ternaryLocal == null) {
+      return;
+    }
     // First check then operand
     Node operand = removeCasts(((TernaryExpressionNode) node).getThenOperand());
     LocalVariableNode operandLocal = typeFactory.getTempVarForTree(operand);
@@ -624,12 +629,14 @@ class MustCallInvokedChecker {
 
     if (!calledMethodsSatisfyMustCall(mcValues, cmAnno)) {
       Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
-      checker.reportError(
-          node.getTree(),
-          "required.method.not.called",
-          formatMissingMustCallMethods(mcValues),
-          lhsElement.asType().toString(),
-          " Non-final owning field might be overwritten");
+      if (!checker.shouldSkipUses(lhsElement)) {
+        checker.reportError(
+            node.getTree(),
+            "required.method.not.called",
+            formatMissingMustCallMethods(mcValues),
+            lhsElement.asType().toString(),
+            " Non-final owning field might be overwritten");
+      }
     }
   }
 
@@ -999,7 +1006,7 @@ class MustCallInvokedChecker {
 
     List<String> mustCallValue = typeFactory.getMustCallValue(localVarWithTreeSet, mcStore);
     // optimization: if there are no must-call methods, we do not need to perform the check
-    if (mustCallValue.isEmpty()) {
+    if (mustCallValue == null || mustCallValue.isEmpty()) {
       return;
     }
 
@@ -1034,13 +1041,15 @@ class MustCallInvokedChecker {
       if (reportedMustCallErrors.stream()
           .noneMatch(localVarTree -> localVarWithTreeSet.contains(localVarTree))) {
         LocalVarWithTree firstlocalVarWithTree = localVarWithTreeSet.iterator().next();
-        reportedMustCallErrors.add(firstlocalVarWithTree);
-        checker.reportError(
-            firstlocalVarWithTree.tree,
-            "required.method.not.called",
-            formatMissingMustCallMethods(mustCallValue),
-            firstlocalVarWithTree.localVar.getType().toString(),
-            outOfScopeReason);
+        if (!checker.shouldSkipUses(TreeUtils.elementFromTree(firstlocalVarWithTree.tree))) {
+          reportedMustCallErrors.add(firstlocalVarWithTree);
+          checker.reportError(
+              firstlocalVarWithTree.tree,
+              "required.method.not.called",
+              formatMissingMustCallMethods(mustCallValue),
+              firstlocalVarWithTree.localVar.getType().toString(),
+              outOfScopeReason);
+        }
       }
     }
   }
