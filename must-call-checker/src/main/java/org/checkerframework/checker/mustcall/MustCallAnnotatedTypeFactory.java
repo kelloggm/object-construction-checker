@@ -233,7 +233,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         AnnotationMirror writtenMCAnno = type.getAnnotationInHierarchy(this.TOP);
         if (writtenMCAnno != null
             && !this.getQualifierHierarchy().isSubtype(inheritedMCAnno, writtenMCAnno)) {
-          if (!elementsIssuedInconsistentMustCallSubtypeErrors.contains(elt)) {
+          if (!elementsIssuedInconsistentMustCallSubtypeErrors.contains(elt)
+              && !this.checker.shouldSkipUses(elt)) {
             checker.reportError(
                 elt,
                 "inconsistent.mustcall.subtype",

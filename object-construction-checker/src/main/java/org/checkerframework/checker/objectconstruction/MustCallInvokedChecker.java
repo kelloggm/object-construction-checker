@@ -626,12 +626,14 @@ class MustCallInvokedChecker {
 
     if (!calledMethodsSatisfyMustCall(mcValues, cmAnno)) {
       Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
-      checker.reportError(
-          node.getTree(),
-          "required.method.not.called",
-          formatMissingMustCallMethods(mcValues),
-          lhsElement.asType().toString(),
-          " Non-final owning field might be overwritten");
+      if (!checker.shouldSkipUses(lhsElement)) {
+        checker.reportError(
+            node.getTree(),
+            "required.method.not.called",
+            formatMissingMustCallMethods(mcValues),
+            lhsElement.asType().toString(),
+            " Non-final owning field might be overwritten");
+      }
     }
   }
 
@@ -1036,13 +1038,15 @@ class MustCallInvokedChecker {
       if (reportedMustCallErrors.stream()
           .noneMatch(localVarTree -> localVarWithTreeSet.contains(localVarTree))) {
         LocalVarWithTree firstlocalVarWithTree = localVarWithTreeSet.iterator().next();
-        reportedMustCallErrors.add(firstlocalVarWithTree);
-        checker.reportError(
-            firstlocalVarWithTree.tree,
-            "required.method.not.called",
-            formatMissingMustCallMethods(mustCallValue),
-            firstlocalVarWithTree.localVar.getType().toString(),
-            outOfScopeReason);
+        if (!checker.shouldSkipUses(TreeUtils.elementFromTree(firstlocalVarWithTree.tree))) {
+          reportedMustCallErrors.add(firstlocalVarWithTree);
+          checker.reportError(
+              firstlocalVarWithTree.tree,
+              "required.method.not.called",
+              formatMissingMustCallMethods(mustCallValue),
+              firstlocalVarWithTree.localVar.getType().toString(),
+              outOfScopeReason);
+        }
       }
     }
   }
