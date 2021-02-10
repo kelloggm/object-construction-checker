@@ -82,6 +82,8 @@ class MustCallInvokedChecker {
   /** {@code @MustCall} errors reported thus far, to avoid duplicates */
   private final Set<LocalVarWithTree> reportedMustCallErrors = new HashSet<>();
 
+  private final Set<Tree> mustCallObligations = new HashSet<>();
+
   private final ObjectConstructionAnnotatedTypeFactory typeFactory;
 
   private final ObjectConstructionChecker checker;
@@ -185,11 +187,15 @@ class MustCallInvokedChecker {
                 ResetMustCall.class)
             != null) {
       checkResetMustCallInvocation(defs, (MethodInvocationNode) node);
-      incrementNumMustCall();
+      incrementNumMustCall(node.getTree());
     }
 
     if (shouldSkipInvokeCheck(node)) {
       return;
+    }
+
+    if (typeFactory.hasMustCall(node.getTree())) {
+      incrementNumMustCall(node.getTree());
     }
     updateDefsWithTempVar(defs, node);
   }
@@ -939,7 +945,7 @@ class MustCallInvokedChecker {
           setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
           init.add(ImmutableSet.copyOf(setOfLocals));
           // Increment numMustCall for each @Owning parameter tracked by the enclosing method
-          incrementNumMustCall();
+          incrementNumMustCall(param);
         }
       }
     }
@@ -1051,9 +1057,12 @@ class MustCallInvokedChecker {
     }
   }
 
-  private void incrementNumMustCall() {
+  private void incrementNumMustCall(Tree tree) {
     if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
-      checker.numMustCall++;
+      if (!mustCallObligations.contains(tree)) {
+        checker.numMustCall++;
+        mustCallObligations.add(tree);
+      }
     }
   }
 
