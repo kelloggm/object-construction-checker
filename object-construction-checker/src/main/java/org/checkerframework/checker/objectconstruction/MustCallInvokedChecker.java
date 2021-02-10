@@ -180,11 +180,14 @@ class MustCallInvokedChecker {
                 ResetMustCall.class)
             != null) {
       checkResetMustCallInvocation(defs, (MethodInvocationNode) node);
-      incrementNumMustCall();
     }
 
     if (shouldSkipInvokeCheck(node)) {
       return;
+    }
+
+    if (typeFactory.hasMustCall(node.getTree())) {
+      incrementNumMustCall();
     }
     updateDefsWithTempVar(defs, node);
   }
