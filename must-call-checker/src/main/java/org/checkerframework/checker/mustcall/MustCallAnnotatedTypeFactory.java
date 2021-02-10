@@ -2,6 +2,7 @@ package org.checkerframework.checker.mustcall;
 
 import static javax.lang.model.element.ElementKind.PARAMETER;
 
+import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberReferenceTree;
@@ -10,6 +11,7 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -60,6 +62,13 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   final AnnotationMirror POLY;
 
   /**
+   * A cache of locations at which an inconsistent.mustcall.subtype error has already been issued,
+   * to avoid issuing duplicate errors. Reset with each compilation unit.
+   */
+  private final Set<Element> elementsIssuedInconsistentMustCallSubtypeErrors =
+      new HashSet<>(this.getCacheSize());
+
+  /**
    * Default constructor matching super. Should be called automatically.
    *
    * @param checker the checker associated with this type factory
@@ -72,6 +81,12 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     addAliasedTypeAnnotation(InheritableMustCall.class, MustCall.class, true);
     addAliasedTypeAnnotation(MustCallChoice.class, POLY);
     this.postInit();
+  }
+
+  @Override
+  public void setRoot(@Nullable CompilationUnitTree root) {
+    super.setRoot(root);
+    elementsIssuedInconsistentMustCallSubtypeErrors.clear();
   }
 
   @Override
@@ -218,12 +233,15 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         AnnotationMirror writtenMCAnno = type.getAnnotationInHierarchy(this.TOP);
         if (writtenMCAnno != null
             && !this.getQualifierHierarchy().isSubtype(inheritedMCAnno, writtenMCAnno)) {
-          checker.reportError(
-              elt,
-              "inconsistent.mustcall.subtype",
-              elt.getSimpleName(),
-              writtenMCAnno,
-              inheritableMustCall);
+          if (!elementsIssuedInconsistentMustCallSubtypeErrors.contains(elt)) {
+            checker.reportError(
+                elt,
+                "inconsistent.mustcall.subtype",
+                elt.getSimpleName(),
+                writtenMCAnno,
+                inheritableMustCall);
+            elementsIssuedInconsistentMustCallSubtypeErrors.add(elt);
+          }
         } else {
           type.replaceAnnotation(inheritedMCAnno);
         }
