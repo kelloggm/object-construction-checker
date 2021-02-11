@@ -24,6 +24,9 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
     @NotOwning SocketChannel shutdownInput() throws IOException;
     @NotOwning SocketChannel shutdownOutput() throws IOException;
     @MustCallChoice Socket socket(@MustCallChoice SocketChannel this);
+
+    @EnsuresCalledMethodsIf(expression="this", result=false, methods={"close"})
+    boolean isOpen();
 }
 
 class ServerSocketChannel extends AbstractSelectableChannel implements NetworkChannel {
