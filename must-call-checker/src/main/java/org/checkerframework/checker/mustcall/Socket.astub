@@ -114,8 +114,8 @@ import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 class SSLSocketFactory extends SocketFactory {
-    Socket createSocket(@Owning Socket arg0, String arg1, int arg2, boolean arg3) throws IOException;
-    Socket createSocket(@Owning Socket arg0, InputStream arg1, boolean arg2) throws IOException;
+    @MustCallChoice Socket createSocket(@MustCallChoice Socket arg0, String arg1, int arg2, boolean arg3) throws IOException;
+    @MustCallChoice Socket createSocket(@MustCallChoice Socket arg0, InputStream arg1, boolean arg2) throws IOException;
 }
 
 class SSLSocket { }
