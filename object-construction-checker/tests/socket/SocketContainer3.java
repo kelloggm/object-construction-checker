@@ -14,8 +14,7 @@ class SocketContainer3 {
 
     public SocketContainer3(String host, int port) throws Exception {
         // Even if the field appears to always be initialized to null,
-        // a subclass constructor could have already run - making this
-        // assignment dangerous!.
+        // so why isn't this safe?
         // :: error: required.method.not.called
         sock = new Socket(host, port);
     }
