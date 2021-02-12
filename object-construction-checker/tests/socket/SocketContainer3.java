@@ -13,7 +13,10 @@ class SocketContainer3 {
     @Owning Socket sock = null;
 
     public SocketContainer3(String host, int port) throws Exception {
-        // It's not okay to assign to a field with an initializer, unless that initializer is a null literal.
+        // Even if the field appears to always be initialized to null,
+        // a subclass constructor could have already run - making this
+        // assignment dangerous!.
+        // :: error: required.method.not.called
         sock = new Socket(host, port);
     }
 
