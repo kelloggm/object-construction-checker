@@ -353,7 +353,7 @@ class MustCallInvokedChecker {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
       return TreeUtils.isSuperConstructorCall(methodInvokeTree)
           || TreeUtils.isThisConstructorCall(methodInvokeTree)
-          || returnTypeIsMustCallChoiceWithOwningField((MethodInvocationNode) node)
+          || returnTypeIsMustCallChoiceWithOwningFieldOrThis((MethodInvocationNode) node)
           || hasNotOwningReturnType((MethodInvocationNode) node);
     }
     return false;
@@ -361,15 +361,19 @@ class MustCallInvokedChecker {
 
   /**
    * Returns true if this node represents a method invocation of a must-call choice method, where
-   * the other must call choice is an owning field.
+   * the other must call choice is an owning field or this.
    *
    * @param node a method invocation node
-   * @return if this is the invocation of a method whose return type is MCC with an owning field
+   * @return if this is the invocation of a method whose return type is MCC with an owning field or
+   *     this
    */
-  private boolean returnTypeIsMustCallChoiceWithOwningField(MethodInvocationNode node) {
+  private boolean returnTypeIsMustCallChoiceWithOwningFieldOrThis(MethodInvocationNode node) {
     Node mccParam = getVarOrTempVarPassedAsMustCallChoiceParam(node);
     if (mccParam == null) {
       return false;
+    }
+    if (mccParam instanceof ThisNode) {
+      return true;
     }
     if (!(mccParam instanceof FieldAccessNode)) {
       return false;
