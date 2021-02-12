@@ -342,9 +342,10 @@ class MustCallInvokedChecker {
 
   /**
    * Checks for cases where we do not need to track a method. We can skip the check when the method
-   * invocation is a call to "this" or a super constructor call, or when the method's return type is
-   * non-owning, which can either be because the method has no return type or because it is
-   * annotated with {@link NotOwning}.
+   * invocation is a call to "this" or a super constructor call, when the method's return type is
+   * annotated with MustCallChoice and the argument in the corresponding position is an owning
+   * field, or when the method's return type is non-owning, which can either be because the method
+   * has no return type or because it is annotated with {@link NotOwning}.
    */
   private boolean shouldSkipInvokeCheck(Node node) {
     Tree callTree = node.getTree();
@@ -352,9 +353,29 @@ class MustCallInvokedChecker {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
       return TreeUtils.isSuperConstructorCall(methodInvokeTree)
           || TreeUtils.isThisConstructorCall(methodInvokeTree)
+          || returnTypeIsMustCallChoiceWithOwningField((MethodInvocationNode) node)
           || hasNotOwningReturnType((MethodInvocationNode) node);
     }
     return false;
+  }
+
+  /**
+   * Returns true if this node represents a method invocation of a must-call choice method, where
+   * the other must call choice is an owning field.
+   *
+   * @param node a method invocation node
+   * @return if this is the invocation of a method whose return type is MCC with an owning field
+   */
+  private boolean returnTypeIsMustCallChoiceWithOwningField(MethodInvocationNode node) {
+    Node mccParam = getVarOrTempVarPassedAsMustCallChoiceParam(node);
+    if (mccParam == null) {
+      return false;
+    }
+    if (!(mccParam instanceof FieldAccessNode)) {
+      return false;
+    }
+    FieldAccessNode faNode = (FieldAccessNode) mccParam;
+    return typeFactory.getDeclAnnotation(faNode.getElement(), Owning.class) != null;
   }
 
   /**
