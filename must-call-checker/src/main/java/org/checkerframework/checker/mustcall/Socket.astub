@@ -125,7 +125,7 @@ class SSLServerSocket { }
 package javax.net;
 
 class SocketFactory {
-    @Owning Socket createSocket() throws IOException;
+    @Owning @MustCall({}) Socket createSocket() throws IOException;
     @Owning Socket createSocket(String arg0, int arg1) throws IOException, UnknownHostException;
     @Owning Socket createSocket(String arg0, int arg1, InetAddress arg2, int arg3) throws IOException, UnknownHostException;
     @Owning Socket createSocket(InetAddress arg0, int arg1) throws IOException;
@@ -135,7 +135,7 @@ class SocketFactory {
 class ServerSocketFactory {
     protected ServerSocketFactory();
     static ServerSocketFactory getDefault();
-    @Owning ServerSocket createServerSocket() throws IOException;
+    @Owning @MustCall({}) ServerSocket createServerSocket() throws IOException;
     @Owning ServerSocket createServerSocket(int arg0) throws IOException;
     @Owning ServerSocket createServerSocket(int arg0, int arg1) throws IOException;
     @Owning ServerSocket createServerSocket(int arg0, int arg1, InetAddress arg2) throws IOException;
