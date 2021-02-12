@@ -135,7 +135,7 @@ class SocketFactory {
 class ServerSocketFactory {
     protected ServerSocketFactory();
     static ServerSocketFactory getDefault();
-    @Owning ServerSocket createServerSocket() throws IOException;
+    @Owning @MustCall({}) ServerSocket createServerSocket() throws IOException;
     @Owning ServerSocket createServerSocket(int arg0) throws IOException;
     @Owning ServerSocket createServerSocket(int arg0, int arg1) throws IOException;
     @Owning ServerSocket createServerSocket(int arg0, int arg1, InetAddress arg2) throws IOException;
