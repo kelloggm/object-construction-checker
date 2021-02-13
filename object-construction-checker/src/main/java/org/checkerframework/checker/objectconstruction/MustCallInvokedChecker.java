@@ -353,7 +353,7 @@ class MustCallInvokedChecker {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
       return TreeUtils.isSuperConstructorCall(methodInvokeTree)
           || TreeUtils.isThisConstructorCall(methodInvokeTree)
-          || returnTypeIsMustCallChoiceWithOwningFieldOrThis((MethodInvocationNode) node)
+          || returnTypeIsMustCallChoiceWithIgnorable((MethodInvocationNode) node)
           || hasNotOwningReturnType((MethodInvocationNode) node);
     }
     return false;
@@ -361,25 +361,16 @@ class MustCallInvokedChecker {
 
   /**
    * Returns true if this node represents a method invocation of a must-call choice method, where
-   * the other must call choice is an owning field or this.
+   * the other must call choice is some ignorable pointer, such as an owning field or a pointer that
+   * is guaranteed to be non-owning, such as this or a non-owning field.
    *
    * @param node a method invocation node
    * @return if this is the invocation of a method whose return type is MCC with an owning field or
-   *     this
+   *     a non-owning pointer
    */
-  private boolean returnTypeIsMustCallChoiceWithOwningFieldOrThis(MethodInvocationNode node) {
+  private boolean returnTypeIsMustCallChoiceWithIgnorable(MethodInvocationNode node) {
     Node mccParam = getVarOrTempVarPassedAsMustCallChoiceParam(node);
-    if (mccParam == null) {
-      return false;
-    }
-    if (mccParam instanceof ThisNode) {
-      return true;
-    }
-    if (!(mccParam instanceof FieldAccessNode)) {
-      return false;
-    }
-    FieldAccessNode faNode = (FieldAccessNode) mccParam;
-    return typeFactory.getDeclAnnotation(faNode.getElement(), Owning.class) != null;
+    return mccParam instanceof FieldAccessNode || mccParam instanceof ThisNode;
   }
 
   /**
