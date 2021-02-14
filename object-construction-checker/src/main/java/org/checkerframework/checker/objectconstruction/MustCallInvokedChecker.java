@@ -6,6 +6,7 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
@@ -1118,7 +1119,10 @@ class MustCallInvokedChecker {
         // it's not our problem if the Java type system is wrong
         || exceptionClassName.contentEquals(ClassCastException.class.getCanonicalName())
         // it's not our problem if the code is going to divide by zero.
-        || exceptionClassName.contentEquals(ArithmeticException.class.getCanonicalName());
+        || exceptionClassName.contentEquals(ArithmeticException.class.getCanonicalName())
+        || exceptionClassName.contentEquals(ArrayIndexOutOfBoundsException.class.getCanonicalName())
+        || exceptionClassName.contentEquals(NegativeArraySizeException.class.getCanonicalName())
+        || exceptionClassName.contentEquals(UnsupportedEncodingException.class.getCanonicalName());
   }
 
   /**
