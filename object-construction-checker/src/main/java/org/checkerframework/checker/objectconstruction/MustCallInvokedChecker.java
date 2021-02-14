@@ -1120,8 +1120,12 @@ class MustCallInvokedChecker {
         || exceptionClassName.contentEquals(ClassCastException.class.getCanonicalName())
         // it's not our problem if the code is going to divide by zero.
         || exceptionClassName.contentEquals(ArithmeticException.class.getCanonicalName())
+        // use the Index Checker to catch the next two cases
         || exceptionClassName.contentEquals(ArrayIndexOutOfBoundsException.class.getCanonicalName())
         || exceptionClassName.contentEquals(NegativeArraySizeException.class.getCanonicalName())
+        // Most of the time, this exception is infeasible, as the charset used
+        // is guaranteed to be present by the Java spec (e.g., "UTF-8"). Eventually,
+        // we could refine this exclusion by looking at the charset being requested
         || exceptionClassName.contentEquals(UnsupportedEncodingException.class.getCanonicalName());
   }
 
