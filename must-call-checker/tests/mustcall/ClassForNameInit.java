@@ -18,7 +18,6 @@ class ClassForNameInit {
     public static Object objectFactory() throws Exception {
         Class<?> objClass = Class.forName("java.lang.Object");
         Object obj = objClass.getConstructor().newInstance();
-        // :: error: return.type.incompatible
         return (Object) obj;
     }
 

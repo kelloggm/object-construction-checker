@@ -9,7 +9,13 @@ import org.checkerframework.framework.qual.StubFiles;
  * This typechecker ensures that {@link MustCall} annotations are consistent with one another. The
  * Object Construction Checker verifies that the given methods are actually called.
  */
-@StubFiles({"Socket.astub", "NotOwning.astub", "Stream.astub", "NoObligationStreams.astub"})
+@StubFiles({
+  "Socket.astub",
+  "NotOwning.astub",
+  "Stream.astub",
+  "NoObligationStreams.astub",
+  "Reflection.astub"
+})
 public class MustCallChecker extends BaseTypeChecker {
 
   /**
