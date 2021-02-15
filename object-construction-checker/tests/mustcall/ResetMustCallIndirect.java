@@ -41,7 +41,7 @@ class ResetMustCallIndirect {
     public static void reset_local3() {
         // :: error: required.method.not.called
         ResetMustCallIndirect r = new ResetMustCallIndirect();
-        // :: error: mustcall.not.parseable
+        // :: error: mustcall.not.parseable :: error: reset.not.owning
         ((ResetMustCallIndirect) r).reset();
     }
 

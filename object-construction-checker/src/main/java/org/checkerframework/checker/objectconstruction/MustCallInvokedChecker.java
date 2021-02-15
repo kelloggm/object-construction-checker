@@ -8,6 +8,7 @@ import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -62,7 +63,6 @@ import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
-import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
@@ -183,10 +183,7 @@ class MustCallInvokedChecker {
     doOwnershipTransferToParameters(defs, node);
     // Count calls to @ResetMustCall methods as creating new resources, for now.
     if (node instanceof MethodInvocationNode
-        && typeFactory.getDeclAnnotation(
-                TreeUtils.elementFromUse((MethodInvocationTree) node.getTree()),
-                ResetMustCall.class)
-            != null) {
+        && typeFactory.hasResetMustCall((MethodInvocationNode) node)) {
       checkResetMustCallInvocation(defs, (MethodInvocationNode) node);
       incrementNumMustCall(node.getTree());
     }
@@ -215,78 +212,63 @@ class MustCallInvokedChecker {
    */
   private void checkResetMustCallInvocation(
       Set<ImmutableSet<LocalVarWithTree>> newDefs, MethodInvocationNode node) {
-    AnnotationMirror resetMustCall =
-        typeFactory.getDeclAnnotation(
-            TreeUtils.elementFromUse(node.getTree()), ResetMustCall.class);
-    String targetStrWithoutAdaptation =
-        AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
+
     TreePath currentPath = typeFactory.getPath(node.getTree());
-    JavaExpressionContext context =
-        JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(node, checker);
-    String targetStr =
-        MustCallTransfer.standardizeAndViewpointAdapt(
-            targetStrWithoutAdaptation, currentPath, context);
-    JavaExpression target;
-    try {
-      target = typeFactory.parseJavaExpressionString(targetStr, currentPath);
-    } catch (JavaExpressionParseException e) {
-      typeFactory
-          .getChecker()
-          .reportError(
-              node.getTree(),
-              "mustcall.not.parseable",
-              node.getTarget().getMethod().getSimpleName(),
-              targetStr);
-      return;
-    }
+    Set<JavaExpression> targetExprs =
+        MustCallTransfer.getResetMustCallExpressions(node, typeFactory, currentPath);
+    Set<JavaExpression> missing = new HashSet<>();
+    for (JavaExpression target : targetExprs) {
+      if (target instanceof LocalVariable) {
 
-    if (target instanceof LocalVariable) {
+        Element elt = ((LocalVariable) target).getElement();
+        if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
+          // if the target is an Owning param, this satisfies case 1
+          return;
+        }
 
-      Element elt = ((LocalVariable) target).getElement();
-      if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
-        // if the target is an Owning param, this satisfies case 1
-        return;
+        for (ImmutableSet<LocalVarWithTree> defAliasSet : newDefs) {
+          for (LocalVarWithTree localVarWithTree : defAliasSet) {
+            if (target.equals(localVarWithTree.localVar)) {
+              // satisfies case 2 above
+              return;
+            }
+          }
+        }
+      }
+      if (target instanceof FieldAccess) {
+        Element elt = ((FieldAccess) target).getField();
+        if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
+          // if the target is an Owning field, this satisfies case 1
+          return;
+        }
       }
 
-      for (ImmutableSet<LocalVarWithTree> defAliasSet : newDefs) {
-        for (LocalVarWithTree localVarWithTree : defAliasSet) {
-          if (target.equals(localVarWithTree.localVar)) {
-            // satisfies case 2 above
+      MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
+      if (enclosingMethod != null) {
+        ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
+        AnnotationMirror enclosingResetMustCall =
+            typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.class);
+        if (enclosingResetMustCall != null) {
+          String enclosingTargetStrWithoutAdaptation =
+              AnnotationUtils.getElementValue(enclosingResetMustCall, "value", String.class, true);
+          JavaExpressionContext enclosingContext =
+              JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
+                  enclosingMethod, currentPath, checker);
+          String enclosingTargetStr =
+              MustCallTransfer.standardizeAndViewpointAdapt(
+                  enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
+          if (enclosingTargetStr.equals(target.toString())) {
+            // The enclosing method also has a corresponding ResetMustCall annotation, so this
+            // satisfies case 3.
             return;
           }
         }
       }
+      missing.add(target);
     }
-    if (target instanceof FieldAccess) {
-      Element elt = ((FieldAccess) target).getField();
-      if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
-        // if the target is an Owning field, this satisfies case 1
-        return;
-      }
-    }
-
-    MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
-    if (enclosingMethod != null) {
-      ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
-      AnnotationMirror enclosingResetMustCall =
-          typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.class);
-      if (enclosingResetMustCall != null) {
-        String enclosingTargetStrWithoutAdaptation =
-            AnnotationUtils.getElementValue(enclosingResetMustCall, "value", String.class, true);
-        JavaExpressionContext enclosingContext =
-            JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
-                enclosingMethod, currentPath, checker);
-        String enclosingTargetStr =
-            MustCallTransfer.standardizeAndViewpointAdapt(
-                enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
-        if (enclosingTargetStr.equals(targetStr)) {
-          // The enclosing method also has a corresponding ResetMustCall annotation, so this
-          // satisfies case 3.
-          return;
-        }
-      }
-    }
-    checker.reportError(node.getTree(), "reset.not.owning", targetStr);
+    String missingStrs =
+        missing.stream().map(JavaExpression::toString).collect(Collectors.joining(", "));
+    checker.reportError(node.getTree(), "reset.not.owning", missingStrs);
   }
 
   /**
@@ -689,7 +671,9 @@ class MustCallInvokedChecker {
     ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
     AnnotationMirror resetMustCall =
         typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.class);
-    if (resetMustCall == null) {
+    AnnotationMirror resetMustCalls =
+        typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.List.class);
+    if (resetMustCall == null && resetMustCalls == null) {
       checker.reportError(
           enclosingMethod,
           "missing.reset.mustcall",
@@ -698,22 +682,46 @@ class MustCallInvokedChecker {
       return;
     }
 
-    String targetStrWithoutAdaptation =
-        AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
+    Set<String> targetStrsWithoutAdaptation;
+    if (resetMustCall != null) {
+      targetStrsWithoutAdaptation =
+          Collections.singleton(
+              AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true));
+    } else {
+      // multiple reset must calls
+      List<AnnotationMirror> resetMustCallAnnos =
+          AnnotationUtils.getElementValueArray(
+              resetMustCalls, "value", AnnotationMirror.class, false);
+      targetStrsWithoutAdaptation = new HashSet<>();
+      for (AnnotationMirror rmc : resetMustCallAnnos) {
+        targetStrsWithoutAdaptation.add(
+            AnnotationUtils.getElementValue(rmc, "value", String.class, true));
+      }
+    }
     JavaExpressionContext context =
         JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
             enclosingMethod, currentPath, checker);
-    String targetStr =
-        MustCallTransfer.standardizeAndViewpointAdapt(
-            targetStrWithoutAdaptation, currentPath, context);
-    if (!targetStr.equals(receiverString)) {
-      checker.reportError(
-          enclosingMethod,
-          "incompatible.reset.mustcall",
-          receiverString,
-          ((FieldAccessNode) lhs).getFieldName(),
-          targetStr);
+    String checked = "";
+    for (String targetStrWithoutAdaptation : targetStrsWithoutAdaptation) {
+      String targetStr =
+          MustCallTransfer.standardizeAndViewpointAdapt(
+              targetStrWithoutAdaptation, currentPath, context);
+      if (targetStr.equals(receiverString)) {
+        // This reset must call annotation matches.
+        return;
+      }
+      if ("".equals(checked)) {
+        checked += targetStr;
+      } else {
+        checked += ", " + targetStr;
+      }
     }
+    checker.reportError(
+        enclosingMethod,
+        "incompatible.reset.mustcall",
+        receiverString,
+        ((FieldAccessNode) lhs).getFieldName(),
+        checked);
   }
 
   /** Gets a standardized name for an object whose field is being re-assigned. */

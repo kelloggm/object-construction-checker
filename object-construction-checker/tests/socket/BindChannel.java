@@ -17,7 +17,7 @@ class BindChannel {
             //
             // :: error: required.method.not.called
             ServerSocketChannel httpChannel = ServerSocketChannel.open();
-            // :: error: mustcall.not.parseable
+            // :: error: mustcall.not.parseable :: error: reset.not.owning
             httpChannel.socket().bind(addr);
         } catch (IOException io) {
 
