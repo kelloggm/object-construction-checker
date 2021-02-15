@@ -25,7 +25,8 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   "NotOwning.astub",
   "Stream.astub",
   "NoObligationStreams.astub",
-  "IOUtils.astub"
+  "IOUtils.astub",
+  "Reflection.astub"
 })
 @SupportedOptions({CHECK_MUST_CALL, COUNT_MUST_CALL})
 public class ObjectConstructionChecker extends CalledMethodsChecker {

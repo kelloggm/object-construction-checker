@@ -3,6 +3,7 @@
 // persist even with that flag, which also imposes about a 50% perf overhead. So these are now expected warnings.
 
 import java.io.*;
+import java.lang.reflect.Constructor;
 
 class ClassForNameInit {
 
@@ -17,7 +18,20 @@ class ClassForNameInit {
     public static Object objectFactory() throws Exception {
         Class<?> objClass = Class.forName("java.lang.Object");
         Object obj = objClass.getConstructor().newInstance();
-        // :: error: return.type.incompatible
         return (Object) obj;
+    }
+
+    private static Object getAuditLogger(String auditLoggerClass) {
+        if (auditLoggerClass == null) {
+            auditLoggerClass = Object.class.getName();
+        }
+        try {
+            Constructor<?> clientCxnConstructor = Class.forName(auditLoggerClass)
+                    .getDeclaredConstructor();
+            Object auditLogger = (Object) clientCxnConstructor.newInstance();
+            return auditLogger;
+        } catch (Exception e) {
+            throw new RuntimeException("Couldn't instantiate " + auditLoggerClass, e);
+        }
     }
 }
