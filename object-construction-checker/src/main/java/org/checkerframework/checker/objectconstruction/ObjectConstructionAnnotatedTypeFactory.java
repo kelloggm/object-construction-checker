@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsBottom;
@@ -18,6 +19,7 @@ import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.MustCallInvokedChecker.LocalVarWithTree;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
@@ -25,6 +27,7 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFStore;
@@ -200,5 +203,19 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
         getTypeFactoryOfSubchecker(MustCallChecker.class);
     return mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallChoice.class)
         != null;
+  }
+
+  /**
+   * Returns true if the declaration of the method being invoked has one or more {@link
+   * ResetMustCall} annotations.
+   *
+   * @param node a method invocation node
+   * @return true iff there is one or more reset must call annotations on the declaration of the
+   *     invoked method
+   */
+  public boolean hasResetMustCall(MethodInvocationNode node) {
+    ExecutableElement decl = TreeUtils.elementFromUse(node.getTree());
+    return getDeclAnnotation(decl, ResetMustCall.class) != null
+        || getDeclAnnotation(decl, ResetMustCall.List.class) != null;
   }
 }
