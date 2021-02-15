@@ -6,6 +6,7 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
@@ -81,6 +82,8 @@ class MustCallInvokedChecker {
 
   /** {@code @MustCall} errors reported thus far, to avoid duplicates */
   private final Set<LocalVarWithTree> reportedMustCallErrors = new HashSet<>();
+
+  private final Set<Tree> mustCallObligations = new HashSet<>();
 
   private final ObjectConstructionAnnotatedTypeFactory typeFactory;
 
@@ -185,11 +188,15 @@ class MustCallInvokedChecker {
                 ResetMustCall.class)
             != null) {
       checkResetMustCallInvocation(defs, (MethodInvocationNode) node);
-      incrementNumMustCall();
+      incrementNumMustCall(node.getTree());
     }
 
     if (shouldSkipInvokeCheck(node)) {
       return;
+    }
+
+    if (typeFactory.hasMustCall(node.getTree())) {
+      incrementNumMustCall(node.getTree());
     }
     updateDefsWithTempVar(defs, node);
   }
@@ -336,9 +343,10 @@ class MustCallInvokedChecker {
 
   /**
    * Checks for cases where we do not need to track a method. We can skip the check when the method
-   * invocation is a call to "this" or a super constructor call, or when the method's return type is
-   * non-owning, which can either be because the method has no return type or because it is
-   * annotated with {@link NotOwning}.
+   * invocation is a call to "this" or a super constructor call, when the method's return type is
+   * annotated with MustCallChoice and the argument in the corresponding position is an owning
+   * field, or when the method's return type is non-owning, which can either be because the method
+   * has no return type or because it is annotated with {@link NotOwning}.
    */
   private boolean shouldSkipInvokeCheck(Node node) {
     Tree callTree = node.getTree();
@@ -346,9 +354,24 @@ class MustCallInvokedChecker {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
       return TreeUtils.isSuperConstructorCall(methodInvokeTree)
           || TreeUtils.isThisConstructorCall(methodInvokeTree)
+          || returnTypeIsMustCallChoiceWithIgnorable((MethodInvocationNode) node)
           || hasNotOwningReturnType((MethodInvocationNode) node);
     }
     return false;
+  }
+
+  /**
+   * Returns true if this node represents a method invocation of a must-call choice method, where
+   * the other must call choice is some ignorable pointer, such as an owning field or a pointer that
+   * is guaranteed to be non-owning, such as this or a non-owning field.
+   *
+   * @param node a method invocation node
+   * @return if this is the invocation of a method whose return type is MCC with an owning field or
+   *     a non-owning pointer
+   */
+  private boolean returnTypeIsMustCallChoiceWithIgnorable(MethodInvocationNode node) {
+    Node mccParam = getVarOrTempVarPassedAsMustCallChoiceParam(node);
+    return mccParam instanceof FieldAccessNode || mccParam instanceof ThisNode;
   }
 
   /**
@@ -939,7 +962,7 @@ class MustCallInvokedChecker {
           setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
           init.add(ImmutableSet.copyOf(setOfLocals));
           // Increment numMustCall for each @Owning parameter tracked by the enclosing method
-          incrementNumMustCall();
+          incrementNumMustCall(param);
         }
       }
     }
@@ -1051,9 +1074,12 @@ class MustCallInvokedChecker {
     }
   }
 
-  private void incrementNumMustCall() {
+  private void incrementNumMustCall(Tree tree) {
     if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
-      checker.numMustCall++;
+      if (!mustCallObligations.contains(tree)) {
+        checker.numMustCall++;
+        mustCallObligations.add(tree);
+      }
     }
   }
 
@@ -1075,12 +1101,27 @@ class MustCallInvokedChecker {
    * in the JVM, like OutOfMemoryErrors or ClassCircularityErrors.
    */
   private static boolean isIgnoredExceptionType(@FullyQualifiedName Name exceptionClassName) {
+    // any method call has a CFG edge for Throwable to represent run-time misbehavior. Ignore it.
     return exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
+        // use the Nullness Checker to prove this won't happen
         || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName())
+        // these errors can't be predicted statically, so we'll ignore them and assume they won't
+        // happen
         || exceptionClassName.contentEquals(ClassCircularityError.class.getCanonicalName())
         || exceptionClassName.contentEquals(ClassFormatError.class.getCanonicalName())
         || exceptionClassName.contentEquals(NoClassDefFoundError.class.getCanonicalName())
-        || exceptionClassName.contentEquals(OutOfMemoryError.class.getCanonicalName());
+        || exceptionClassName.contentEquals(OutOfMemoryError.class.getCanonicalName())
+        // it's not our problem if the Java type system is wrong
+        || exceptionClassName.contentEquals(ClassCastException.class.getCanonicalName())
+        // it's not our problem if the code is going to divide by zero.
+        || exceptionClassName.contentEquals(ArithmeticException.class.getCanonicalName())
+        // use the Index Checker to catch the next two cases
+        || exceptionClassName.contentEquals(ArrayIndexOutOfBoundsException.class.getCanonicalName())
+        || exceptionClassName.contentEquals(NegativeArraySizeException.class.getCanonicalName())
+        // Most of the time, this exception is infeasible, as the charset used
+        // is guaranteed to be present by the Java spec (e.g., "UTF-8"). Eventually,
+        // we could refine this exclusion by looking at the charset being requested
+        || exceptionClassName.contentEquals(UnsupportedEncodingException.class.getCanonicalName());
   }
 
   /**
