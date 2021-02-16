@@ -110,7 +110,7 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
       message(NOTE, "Found %d must call obligation(s).%n", numMustCall);
       message(
           NOTE,
-          "Found %d must call obligation(s) that were handled correctly.%n",
+          "Successfully verified %d must call obligation(s).%n",
           numMustCall - numMustCallFailed);
     }
     super.typeProcessingOver();
