@@ -943,7 +943,7 @@ class MustCallInvokedChecker {
             // issuing an error about a call to a ResetMustCall method that might throw
             // an exception. Otherwise, use the store after.
             CFStore mcStore;
-            if (exceptionType != null) {
+            if (exceptionType != null && isInvocationOfRMCMethod(last)) {
               mcStore = mcAtf.getStoreBefore(last);
             } else {
               mcStore = mcAtf.getStoreAfter(last);
@@ -964,6 +964,20 @@ class MustCallInvokedChecker {
       defsCopy.removeAll(toRemove);
       propagate(new BlockWithLocals(succ, defsCopy), visited, worklist);
     }
+  }
+
+  /**
+   * returns true if node is a MethodInvocationNode of a method with a ResetMustCall annotation.
+   *
+   * @param node a node
+   * @return true if node is a MethodInvocationNode of a method with a ResetMustCall annotation
+   */
+  private boolean isInvocationOfRMCMethod(Node node) {
+    if (!(node instanceof MethodInvocationNode)) {
+      return false;
+    }
+    MethodInvocationNode miNode = (MethodInvocationNode) node;
+    return typeFactory.hasResetMustCall(miNode);
   }
 
   /**

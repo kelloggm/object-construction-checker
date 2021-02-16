@@ -39,7 +39,6 @@ public class ACSocketTest
         }
         catch(IOException i)
         {
-
         }
     }
 
@@ -411,7 +410,6 @@ public class ACSocketTest
     private SSLServerSocket nonOwningSSField;
 
     void assignToNonOwningViaCast(SSLContext sslContext) throws IOException {
-        // :: error: required.method.not.called
         nonOwningSSField = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket();
     }
 
@@ -470,6 +468,10 @@ public class ACSocketTest
     private ServerSocket testMCCParamInReturn() throws IOException{
         ServerSocketChannel chan = ServerSocketChannel.open();
         return chan.socket();
+    }
+
+    private void testMCCParamInReturn2() throws IOException{
+        ServerSocket chan = ServerSocketChannel.open().socket();
     }
 
 }
