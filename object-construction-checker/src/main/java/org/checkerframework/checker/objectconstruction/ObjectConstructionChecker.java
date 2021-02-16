@@ -1,5 +1,6 @@
 package org.checkerframework.checker.objectconstruction;
 
+import static javax.tools.Diagnostic.Kind.NOTE;
 import static org.checkerframework.checker.mustcall.MustCallChecker.NO_ACCUMULATION_FRAMES;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.CHECK_MUST_CALL;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.COUNT_MUST_CALL;
@@ -106,9 +107,10 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
   @Override
   public void typeProcessingOver() {
     if (hasOption(COUNT_MUST_CALL)) {
-      System.out.printf("Found %d must call obligation(s).%n", numMustCall);
-      System.out.printf(
-          "Found %d must call obligation(s) that were handled correctly.%n",
+      message(NOTE, "Found %d must call obligation(s).%n", numMustCall);
+      message(
+          NOTE,
+          "Successfully verified %d must call obligation(s).%n",
           numMustCall - numMustCallFailed);
     }
     super.typeProcessingOver();
