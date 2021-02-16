@@ -52,6 +52,8 @@ public class MustCallTransfer extends CFTransfer {
   public TransferResult<CFValue, CFStore> visitMethodInvocation(
       MethodInvocationNode n, TransferInput<CFValue, CFStore> in) {
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(n, in);
+
+    updateStoreWithTempVar(result, n);
     if (!atypeFactory.getChecker().hasOption(MustCallChecker.NO_ACCUMULATION_FRAMES)) {
       Set<JavaExpression> targetExprs = getResetMustCallExpressions(n, atypeFactory);
       for (JavaExpression targetExpr : targetExprs) {
@@ -74,9 +76,6 @@ public class MustCallTransfer extends CFTransfer {
         }
       }
     }
-
-    updateStoreWithTempVar(result, n);
-
     return result;
   }
 
@@ -200,6 +199,9 @@ public class MustCallTransfer extends CFTransfer {
     String targetStr =
         MustCallTransfer.standardizeAndViewpointAdapt(
             targetStrWithoutAdaptation, currentPath, context);
+    // TODO: find a way to also check if the target is a known tempvar, and if so return that. That
+    // should
+    // improve the quality of the error messages we give, e.g. in tests/socket/BindChannel.java.
     JavaExpression targetExpr;
     try {
       targetExpr = atypeFactory.parseJavaExpressionString(targetStr, currentPath);

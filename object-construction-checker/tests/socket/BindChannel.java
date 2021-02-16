@@ -10,12 +10,15 @@ class BindChannel {
             // This channel is bound - so even with unconnected socket support, we need to
             // treat either this channel or the .socket() expression as must-close.
             //
-            // The mustcall.not.parseable error could go away, if the MustCall Checker were
-            // aware of which expressions will eventually get temporaries. For now, I think
-            // it's okay to keep issuing this error; see the second method in this class
-            // for an example of how to rewrite the code to avoid the parse error.
-            //
-            // TODO we should report a warning here
+            // Even though there's now a temporary in the Must Call Checker for the value that
+            // has the reset method (bind) called on it below, we can't successfully translate
+            // the reset expression to that temporary, since all we have is a string (from the
+            // reset annotation) and so we have to go through the type factory's parsing facility,
+            // which doesn't know about the temporaries and so doesn't return them. We're therefore
+            // limited to issuing the mustcall.not.parseable and reset.not.owning errors below,
+            // instead of the preferable required.method.not.called error on this line - as in
+            // the method below, which extracts the socket into a local variable, which can be
+            // parsed as an RMC target.
             ServerSocketChannel httpChannel = ServerSocketChannel.open();
             // :: error: mustcall.not.parseable :: error: reset.not.owning
             httpChannel.socket().bind(addr);
