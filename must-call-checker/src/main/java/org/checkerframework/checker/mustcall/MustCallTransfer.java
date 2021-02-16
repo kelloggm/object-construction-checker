@@ -43,24 +43,26 @@ public class MustCallTransfer extends CFTransfer {
   public TransferResult<CFValue, CFStore> visitMethodInvocation(
       MethodInvocationNode n, TransferInput<CFValue, CFStore> in) {
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(n, in);
-    Set<JavaExpression> targetExprs = getResetMustCallExpressions(n, atypeFactory);
-    for (JavaExpression targetExpr : targetExprs) {
-      AnnotationMirror defaultType =
-          atypeFactory
-              .getAnnotatedType(TypesUtils.getTypeElement(targetExpr.getType()))
-              .getAnnotationInHierarchy(atypeFactory.TOP);
+    if (!atypeFactory.getChecker().hasOption(MustCallChecker.NO_ACCUMULATION_FRAMES)) {
+      Set<JavaExpression> targetExprs = getResetMustCallExpressions(n, atypeFactory);
+      for (JavaExpression targetExpr : targetExprs) {
+        AnnotationMirror defaultType =
+                atypeFactory
+                        .getAnnotatedType(TypesUtils.getTypeElement(targetExpr.getType()))
+                        .getAnnotationInHierarchy(atypeFactory.TOP);
 
-      if (result.containsTwoStores()) {
-        CFStore thenStore = result.getThenStore();
-        thenStore.clearValue(targetExpr);
-        thenStore.insertValue(targetExpr, defaultType);
-        CFStore elseStore = result.getElseStore();
-        elseStore.clearValue(targetExpr);
-        elseStore.insertValue(targetExpr, defaultType);
-      } else {
-        CFStore store = result.getRegularStore();
-        store.clearValue(targetExpr);
-        store.insertValue(targetExpr, defaultType);
+        if (result.containsTwoStores()) {
+          CFStore thenStore = result.getThenStore();
+          thenStore.clearValue(targetExpr);
+          thenStore.insertValue(targetExpr, defaultType);
+          CFStore elseStore = result.getElseStore();
+          elseStore.clearValue(targetExpr);
+          elseStore.insertValue(targetExpr, defaultType);
+        } else {
+          CFStore store = result.getRegularStore();
+          store.clearValue(targetExpr);
+          store.insertValue(targetExpr, defaultType);
+        }
       }
     }
     return result;

@@ -218,4 +218,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     return getDeclAnnotation(decl, ResetMustCall.class) != null
         || getDeclAnnotation(decl, ResetMustCall.List.class) != null;
   }
+
+  public boolean useAccumulationFrames() {
+    return !checker.hasOption(MustCallChecker.NO_ACCUMULATION_FRAMES);
+  }
 }

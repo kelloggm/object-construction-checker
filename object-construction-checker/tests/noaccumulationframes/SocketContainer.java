@@ -25,8 +25,7 @@ class SocketContainer {
         // For the RHS, because the field can't take ownership
         // :: error: required.method.not.called
         Socket sr = new Socket(host, port);
-        // For the field, since it should never get re-assigned.
-        // :: error: required.method.not.called
+        // No warning for overwriting the field, since it can't take ownership!
         sock = sr;
     }
 

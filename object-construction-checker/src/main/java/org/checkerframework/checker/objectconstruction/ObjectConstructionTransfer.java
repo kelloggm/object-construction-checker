@@ -121,6 +121,10 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   void handleResetMustCall(MethodInvocationNode n, TransferResult<CFValue, CFStore> result) {
+    if (!atypefactory.useAccumulationFrames()) {
+      return;
+    }
+
     Set<JavaExpression> targetExprs = MustCallTransfer.getResetMustCallExpressions(n, atypeFactory);
     for (JavaExpression targetExpr : targetExprs) {
       AnnotationMirror defaultType = atypefactory.top;
