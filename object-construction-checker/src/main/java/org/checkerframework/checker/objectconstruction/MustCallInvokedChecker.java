@@ -282,6 +282,8 @@ class MustCallInvokedChecker {
   private void updateDefsWithTempVar(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     Tree tree = node.getTree();
     LocalVariableNode temporaryLocal = typeFactory.getTempVarForTree(node);
+    System.out.println("finding tempvar for " + node);
+    System.out.println("tempvar: " + temporaryLocal);
     if (temporaryLocal != null) {
 
       LocalVarWithTree lhsLocalVarWithTreeNew =

@@ -33,8 +33,6 @@ class HdfsReport3
 
     // StringBuilder doesn't implement closeable
     final private StringBuilder sb = new StringBuilder();
-    // false positive
-    // :: error: required.method.not.called
     final private Formatter formatter = new Formatter(sb);
 
 }
