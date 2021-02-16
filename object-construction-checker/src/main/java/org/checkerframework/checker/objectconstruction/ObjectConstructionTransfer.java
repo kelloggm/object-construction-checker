@@ -107,8 +107,12 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   }
 
   void handleResetMustCall(MethodInvocationNode n, TransferResult<CFValue, CFStore> result) {
-    JavaExpression targetExpr = MustCallTransfer.getResetMustCallExpression(n, atypeFactory);
-    if (targetExpr != null) {
+    if (!atypefactory.useAccumulationFrames()) {
+      return;
+    }
+
+    Set<JavaExpression> targetExprs = MustCallTransfer.getResetMustCallExpressions(n, atypeFactory);
+    for (JavaExpression targetExpr : targetExprs) {
       AnnotationMirror defaultType = atypefactory.top;
       if (result.containsTwoStores()) {
         CFStore thenStore = result.getThenStore();

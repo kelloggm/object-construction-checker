@@ -2,7 +2,11 @@ package org.checkerframework.checker.mustcall;
 
 import com.sun.source.tree.*;
 import com.sun.source.util.TreePath;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -48,24 +52,26 @@ public class MustCallTransfer extends CFTransfer {
   public TransferResult<CFValue, CFStore> visitMethodInvocation(
       MethodInvocationNode n, TransferInput<CFValue, CFStore> in) {
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(n, in);
-    JavaExpression targetExpr = getResetMustCallExpression(n, atypeFactory);
-    if (targetExpr != null) {
-      AnnotationMirror defaultType =
-          atypeFactory
-              .getAnnotatedType(TypesUtils.getTypeElement(targetExpr.getType()))
-              .getAnnotationInHierarchy(atypeFactory.TOP);
+    if (!atypeFactory.getChecker().hasOption(MustCallChecker.NO_ACCUMULATION_FRAMES)) {
+      Set<JavaExpression> targetExprs = getResetMustCallExpressions(n, atypeFactory);
+      for (JavaExpression targetExpr : targetExprs) {
+        AnnotationMirror defaultType =
+            atypeFactory
+                .getAnnotatedType(TypesUtils.getTypeElement(targetExpr.getType()))
+                .getAnnotationInHierarchy(atypeFactory.TOP);
 
-      if (result.containsTwoStores()) {
-        CFStore thenStore = result.getThenStore();
-        thenStore.clearValue(targetExpr);
-        thenStore.insertValue(targetExpr, defaultType);
-        CFStore elseStore = result.getElseStore();
-        elseStore.clearValue(targetExpr);
-        elseStore.insertValue(targetExpr, defaultType);
-      } else {
-        CFStore store = result.getRegularStore();
-        store.clearValue(targetExpr);
-        store.insertValue(targetExpr, defaultType);
+        if (result.containsTwoStores()) {
+          CFStore thenStore = result.getThenStore();
+          thenStore.clearValue(targetExpr);
+          thenStore.insertValue(targetExpr, defaultType);
+          CFStore elseStore = result.getElseStore();
+          elseStore.clearValue(targetExpr);
+          elseStore.insertValue(targetExpr, defaultType);
+        } else {
+          CFStore store = result.getRegularStore();
+          store.clearValue(targetExpr);
+          store.insertValue(targetExpr, defaultType);
+        }
       }
     }
 
@@ -104,26 +110,87 @@ public class MustCallTransfer extends CFTransfer {
   }
 
   /**
-   * If the given method invocation node is a ResetMustCall method, then gets the corresponding
-   * JavaExpression. If the expression is unparseable, this method uses the type factory's error
-   * reporting inferface to throw an error and returns null. Also return null if the given method is
-   * not a ResetMustCall method.
+   * If the given method invocation node is a ResetMustCall method, then gets the JavaExpressions
+   * corresponding to the targets. If any expression is unparseable, this method uses the type
+   * factory's error reporting inferface to throw an error and returns the empty set. Also return
+   * the empty set if the given method is not a ResetMustCall method.
    *
    * @param n a method invocation
    * @param atypeFactory the type factory to report errors and parse the expression string
-   * @return a JavaExpression representing the target, if the method is a ResetMustCall method and
-   *     the target is parseable; null otherwise.
+   * @return a list of JavaExpressions representing the targets, if the method is a ResetMustCall
+   *     method and the targets are parseable; the empty set otherwise.
    */
-  public static @Nullable JavaExpression getResetMustCallExpression(
+  public static Set<JavaExpression> getResetMustCallExpressions(
       MethodInvocationNode n, GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory) {
+    return getResetMustCallExpressions(n, atypeFactory, null);
+  }
+
+  /**
+   * If the given method invocation node is a ResetMustCall method, then gets the JavaExpressions
+   * corresponding to the targets. If any expression is unparseable, this method uses the type
+   * factory's error reporting inferface to throw an error and returns the empty set. Also return
+   * the empty set if the given method is not a ResetMustCall method.
+   *
+   * @param n a method invocation
+   * @param atypeFactory the type factory to report errors and parse the expression string
+   * @param currentPath the path to n, if it is already available, to avoid potentially-expensive
+   *     recomputation. If null, the path will be computed.
+   * @return a list of JavaExpressions representing the targets, if the method is a ResetMustCall
+   *     method and the targets are parseable; the empty set otherwise.
+   */
+  public static Set<JavaExpression> getResetMustCallExpressions(
+      MethodInvocationNode n,
+      GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
+      @Nullable TreePath currentPath) {
     AnnotationMirror resetMustCall =
         atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), ResetMustCall.class);
     if (resetMustCall == null) {
-      return null;
+      AnnotationMirror resetMustCallList =
+          atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), ResetMustCall.List.class);
+      if (resetMustCallList == null) {
+        return Collections.emptySet();
+      }
+      // Handle a set of reset must call annotations.
+      List<AnnotationMirror> resetMustCalls =
+          AnnotationUtils.getElementValueArray(
+              resetMustCallList, "value", AnnotationMirror.class, false);
+      Set<JavaExpression> results = new HashSet<>();
+      if (currentPath == null) {
+        currentPath = atypeFactory.getPath(n.getTree());
+      }
+      for (AnnotationMirror rmc : resetMustCalls) {
+        JavaExpression expr = getResetMustCallExpressionsImpl(rmc, n, atypeFactory, currentPath);
+        if (expr != null) {
+          results.add(expr);
+        }
+      }
+      return results;
     }
+    // Handle a single reset must call annotation.
+    if (currentPath == null) {
+      currentPath = atypeFactory.getPath(n.getTree());
+    }
+    JavaExpression expr =
+        getResetMustCallExpressionsImpl(resetMustCall, n, atypeFactory, currentPath);
+    return expr != null ? Collections.singleton(expr) : Collections.emptySet();
+  }
+
+  /**
+   * Implementation of parsing a single ResetMustCall annotation. See {@link
+   * #getResetMustCallExpressions(MethodInvocationNode, GenericAnnotatedTypeFactory)}.
+   *
+   * @param resetMustCall a reset must call annotation
+   * @param n the method invocation of a reset method
+   * @param atypeFactory the type factory
+   * @return the java expression representing the target, or null if the target is unparseable
+   */
+  private static @Nullable JavaExpression getResetMustCallExpressionsImpl(
+      AnnotationMirror resetMustCall,
+      MethodInvocationNode n,
+      GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
+      TreePath currentPath) {
     String targetStrWithoutAdaptation =
         AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true);
-    TreePath currentPath = atypeFactory.getPath(n.getTree());
     JavaExpressionContext context =
         JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(
             n, atypeFactory.getChecker());

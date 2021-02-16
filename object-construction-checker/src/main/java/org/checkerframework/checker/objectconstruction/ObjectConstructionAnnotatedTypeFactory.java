@@ -10,14 +10,17 @@ import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsBottom;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.checker.mustcall.MustCallNoAccumulationFramesChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.MustCallInvokedChecker.LocalVarWithTree;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
@@ -25,11 +28,13 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -200,5 +205,34 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
         getTypeFactoryOfSubchecker(MustCallChecker.class);
     return mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallChoice.class)
         != null;
+  }
+
+  /**
+   * Returns true if the declaration of the method being invoked has one or more {@link
+   * ResetMustCall} annotations.
+   *
+   * @param node a method invocation node
+   * @return true iff there is one or more reset must call annotations on the declaration of the
+   *     invoked method
+   */
+  public boolean hasResetMustCall(MethodInvocationNode node) {
+    ExecutableElement decl = TreeUtils.elementFromUse(node.getTree());
+    return getDeclAnnotation(decl, ResetMustCall.class) != null
+        || getDeclAnnotation(decl, ResetMustCall.List.class) != null;
+  }
+
+  public boolean useAccumulationFrames() {
+    return !checker.hasOption(MustCallChecker.NO_ACCUMULATION_FRAMES);
+  }
+
+  @Override
+  public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>, U extends BaseTypeChecker>
+      T getTypeFactoryOfSubchecker(Class<U> checkerClass) {
+    if (checkerClass.equals(MustCallChecker.class)) {
+      if (!useAccumulationFrames()) {
+        return super.getTypeFactoryOfSubchecker(MustCallNoAccumulationFramesChecker.class);
+      }
+    }
+    return super.getTypeFactoryOfSubchecker(checkerClass);
   }
 }
