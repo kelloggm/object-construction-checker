@@ -6,6 +6,8 @@ import java.io.IOException;
 class ZookeeperReport6 {
     SocketChannel createSock() throws IOException {
         SocketChannel sock;
+        // false positive
+        // :: error: required.method.not.called
         sock = SocketChannel.open();
         // An error is currently issued here, because the temporary variable
         // that's constructed for this returns-receiver method isn't present

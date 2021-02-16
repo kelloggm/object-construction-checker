@@ -15,7 +15,7 @@ class BindChannel {
             // it's okay to keep issuing this error; see the second method in this class
             // for an example of how to rewrite the code to avoid the parse error.
             //
-            // :: error: required.method.not.called
+            // TODO we should report a warning here
             ServerSocketChannel httpChannel = ServerSocketChannel.open();
             // :: error: mustcall.not.parseable :: error: reset.not.owning
             httpChannel.socket().bind(addr);
