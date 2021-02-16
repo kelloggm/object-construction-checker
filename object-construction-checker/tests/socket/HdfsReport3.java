@@ -20,8 +20,6 @@ import java.lang.StringBuilder;
 class HdfsReport3
 {
     private StringBuffer nonObligationTest(int id) {
-        // false positive
-        // :: error: required.method.not.called
         final StringWriter out = new StringWriter();
         dumpTreeRecursively(new PrintWriter(out, true), new StringBuilder(),
                 id);
@@ -35,8 +33,6 @@ class HdfsReport3
 
     // StringBuilder doesn't implement closeable
     final private StringBuilder sb = new StringBuilder();
-    // false positive
-    // :: error: required.method.not.called
     final private Formatter formatter = new Formatter(sb);
 
 }

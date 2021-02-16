@@ -1,10 +1,5 @@
 package org.checkerframework.checker.objectconstruction;
 
-import com.sun.source.tree.ClassTree;
-import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.IdentifierTree;
-import com.sun.source.tree.VariableTree;
-import com.sun.source.util.TreePath;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -13,9 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -43,10 +36,8 @@ import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
-import org.checkerframework.javacutil.trees.TreeBuilder;
 
 /**
  * The transfer function for the object construction type system. Its primary job is to refine the
@@ -58,9 +49,6 @@ import org.checkerframework.javacutil.trees.TreeBuilder;
  */
 public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   private final ObjectConstructionAnnotatedTypeFactory atypefactory;
-
-  /** TreeBuilder for building new AST nodes */
-  private final TreeBuilder treeBuilder;
 
   /**
    * {@link #makeExceptionalStores(MethodInvocationNode, TransferInput)} requires a TransferInput,
@@ -75,15 +63,13 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   public ObjectConstructionTransfer(final CFAnalysis analysis) {
     super(analysis);
     this.atypefactory = (ObjectConstructionAnnotatedTypeFactory) analysis.getTypeFactory();
-    ProcessingEnvironment env = atypeFactory.getChecker().getProcessingEnvironment();
-    treeBuilder = new TreeBuilder(env);
   }
 
   @Override
   public TransferResult<CFValue, CFStore> visitTernaryExpression(
       TernaryExpressionNode node, TransferInput<CFValue, CFStore> input) {
     TransferResult<CFValue, CFStore> result = super.visitTernaryExpression(node, input);
-    updateStoreWithTempVar(result, node);
+    //    updateStoreWithTempVar(result, node);
     return result;
   }
 
@@ -108,7 +94,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     // If there is a temporary variable for the receiver, update its type.
     Node receiver = node.getTarget().getReceiver();
 
-    LocalVariableNode receiverTempVar = atypefactory.getTempVarForTree(receiver);
+    LocalVariableNode receiverTempVar = MustCallTransfer.getTempVar(receiver);
     if (receiverTempVar != null) {
       String methodName = node.getTarget().getMethod().getSimpleName().toString();
       methodName =
@@ -154,34 +140,20 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
    * @param node the node to be assigned to a temporal variable
    * @param result the transfer result containing the store to be modified
    */
-  private void updateStoreWithTempVar(TransferResult<CFValue, CFStore> result, Node node) {
+  public void updateStoreWithTempVar(TransferResult<CFValue, CFStore> result, Node node) {
     // Must-call obligations on primitives are not supported.
     if (!TypesUtils.isPrimitiveOrBoxed(node.getType())) {
-      LocalVariableNode temp = getOrCreateTempVar(node);
+      LocalVariableNode temp = MustCallTransfer.getTempVar(node);
       if (temp != null) {
+        atypefactory.tempVarToNode.put(temp, node.getTree());
         JavaExpression localExp = JavaExpression.fromNode(atypeFactory, temp);
         AnnotationMirror anm =
-            atypefactory
+            atypeFactory
                 .getAnnotatedType(node.getTree())
                 .getAnnotationInHierarchy(atypeFactory.top);
-        insertIntoStores(result, localExp, anm == null ? atypefactory.top : anm);
+        insertIntoStores(result, localExp, anm == null ? atypeFactory.top : anm);
       }
     }
-  }
-
-  private @Nullable LocalVariableNode getOrCreateTempVar(Node node) {
-    LocalVariableNode localVariableNode = atypefactory.getTempVarForTree(node);
-    if (localVariableNode == null) {
-      VariableTree temp = createTemporaryVar(node);
-      if (temp != null) {
-        IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
-        localVariableNode = new LocalVariableNode(identifierTree);
-        localVariableNode.setInSource(true);
-        atypefactory.tempVarToNode.put(localVariableNode, node.getTree());
-        MustCallTransfer.newTempVar(localVariableNode, node);
-      }
-    }
-    return localVariableNode;
   }
 
   private AnnotationMirror getUpdatedCalledMethodsType(
@@ -292,36 +264,6 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
       CFStore store = result.getRegularStore();
       store.insertValue(target, newAnno);
     }
-  }
-
-  protected @Nullable VariableTree createTemporaryVar(Node method) {
-    ExpressionTree tree = (ExpressionTree) method.getTree();
-    TypeMirror treeType = TreeUtils.typeOf(tree);
-    Element enclosingElement = null;
-    TreePath path = atypefactory.getPath(tree);
-    if (path == null) {
-      enclosingElement = TreeUtils.elementFromTree(tree).getEnclosingElement();
-    } else {
-      ClassTree classTree = TreePathUtil.enclosingClass(path);
-      enclosingElement = TreeUtils.elementFromTree(classTree);
-    }
-    if (enclosingElement == null) {
-      return null;
-    }
-    // Declare and initialize a new, unique iterator variable
-    VariableTree tmpVarTree =
-        treeBuilder.buildVariableDecl(
-            treeType, // annotatedIteratorTypeTree,
-            uniqueName("temp-var"),
-            enclosingElement,
-            tree);
-    return tmpVarTree;
-  }
-
-  protected long uid = 0;
-
-  protected String uniqueName(String prefix) {
-    return prefix + "-" + uid++;
   }
 
   private Map<TypeMirror, CFStore> makeExceptionalStores(

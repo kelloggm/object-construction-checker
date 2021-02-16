@@ -1,12 +1,15 @@
 package org.checkerframework.checker.mustcall;
 
+import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.IdentifierTree;
+import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
+import java.util.HashMap;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeKind;
+import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
-
-import com.sun.tools.javac.code.Symbol;
 import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.analysis.RegularTransferResult;
@@ -20,14 +23,18 @@ import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TreePathUtil;
+import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
-
-import java.util.HashMap;
+import org.checkerframework.javacutil.trees.TreeBuilder;
 
 /**
  * Transfer function for the must-call type system. Handles defaulting for string concatenations.
  */
 public class MustCallTransfer extends CFTransfer {
+
+  /** TreeBuilder for building new AST nodes */
+  private final TreeBuilder treeBuilder;
 
   private MustCallAnnotatedTypeFactory atypeFactory;
 
@@ -36,6 +43,8 @@ public class MustCallTransfer extends CFTransfer {
   public MustCallTransfer(CFAnalysis analysis) {
     super(analysis);
     atypeFactory = (MustCallAnnotatedTypeFactory) analysis.getTypeFactory();
+    ProcessingEnvironment env = atypeFactory.getChecker().getProcessingEnvironment();
+    treeBuilder = new TreeBuilder(env);
   }
 
   @Override
@@ -62,52 +71,30 @@ public class MustCallTransfer extends CFTransfer {
         store.insertValue(targetExpr, defaultType);
       }
     }
-    if (tempVars.containsKey(n)) {
-      LocalVariableNode tempVar = tempVars.get(n);
-      JavaExpression localExp = JavaExpression.fromNode(atypeFactory, tempVar);
-      insertIntoStores(result, localExp, n);
-      tempVars.remove(n);
-    }
-    return result;
-  }
 
-  @Override
-  public TransferResult<CFValue, CFStore> visitObjectCreation(ObjectCreationNode n, TransferInput<CFValue, CFStore> p) {
-    TransferResult<CFValue, CFStore> result = super.visitObjectCreation(n, p);
-
-    if (tempVars.containsKey(n)) {
-      LocalVariableNode tempVar = tempVars.get(n);
-      JavaExpression localExp = JavaExpression.fromNode(atypeFactory, tempVar);
-      insertIntoStores(result, localExp, n);
-      tempVars.remove(n);
-    }
+    updateStoreWithTempVar(result, n);
 
     return result;
   }
 
   @Override
-  public TransferResult<CFValue, CFStore> visitTernaryExpression(TernaryExpressionNode n, TransferInput<CFValue, CFStore> p) {
-    TransferResult<CFValue, CFStore> result = super.visitTernaryExpression(n, p);
-
-    if (tempVars.containsKey(n)) {
-      LocalVariableNode tempVar = tempVars.get(n);
-      JavaExpression localExp = JavaExpression.fromNode(atypeFactory, tempVar);
-      insertIntoStores(result, localExp, n);
-      tempVars.remove(n);
-    }
-
+  public TransferResult<CFValue, CFStore> visitObjectCreation(
+      ObjectCreationNode node, TransferInput<CFValue, CFStore> input) {
+    TransferResult<CFValue, CFStore> result = super.visitObjectCreation(node, input);
+    updateStoreWithTempVar(result, node);
     return result;
   }
 
-  private void insertIntoStores(
-          TransferResult<CFValue, CFStore> result, JavaExpression target, Node node) {
-    TypeElement te = TypesUtils.getTypeElement(node.getType());
-    if (((Symbol.ClassSymbol) te).type.getKind().equals(TypeKind.VOID))
-      return;
-    AnnotationMirror newAnno =
-            atypeFactory
-                    .getAnnotatedType(te)
-                    .getAnnotationInHierarchy(atypeFactory.TOP);
+  @Override
+  public TransferResult<CFValue, CFStore> visitTernaryExpression(
+      TernaryExpressionNode node, TransferInput<CFValue, CFStore> input) {
+    TransferResult<CFValue, CFStore> result = super.visitTernaryExpression(node, input);
+    updateStoreWithTempVar(result, node);
+    return result;
+  }
+
+  public void insertIntoStores(
+      TransferResult<CFValue, CFStore> result, JavaExpression target, AnnotationMirror newAnno) {
     if (result.containsTwoStores()) {
       CFStore thenStore = result.getThenStore();
       CFStore elseStore = result.getElseStore();
@@ -165,10 +152,6 @@ public class MustCallTransfer extends CFTransfer {
     return targetExpr;
   }
 
-  public static void newTempVar(LocalVariableNode tempVar, Node node) {
-    tempVars.put(node, tempVar);
-  }
-
   /*
    * Helper function to standardize and viewpoint adapt a String given a path and a context.
    * Wraps JavaExpressionParseUtil#parse. If a parse exception is encountered, this returns
@@ -200,5 +183,75 @@ public class MustCallTransfer extends CFTransfer {
     TypeMirror underlyingType = result.getResultValue().getUnderlyingType();
     CFValue newValue = analysis.createSingleAnnotationValue(atypeFactory.BOTTOM, underlyingType);
     return new RegularTransferResult<>(newValue, result.getRegularStore());
+  }
+
+  /**
+   * This method either creates or looks up the temp var t for node, and then updates the store to
+   * give t the same type as node
+   *
+   * @param node the node to be assigned to a temporal variable
+   * @param result the transfer result containing the store to be modified
+   */
+  public void updateStoreWithTempVar(TransferResult<CFValue, CFStore> result, Node node) {
+    // Must-call obligations on primitives are not supported.
+    if (!TypesUtils.isPrimitiveOrBoxed(node.getType())) {
+      LocalVariableNode temp = getOrCreateTempVar(node);
+      if (temp != null) {
+        JavaExpression localExp = JavaExpression.fromNode(atypeFactory, temp);
+        AnnotationMirror anm =
+            atypeFactory
+                .getAnnotatedType(node.getTree())
+                .getAnnotationInHierarchy(atypeFactory.TOP);
+        insertIntoStores(result, localExp, anm == null ? atypeFactory.TOP : anm);
+      }
+    }
+  }
+
+  public static @Nullable LocalVariableNode getTempVar(Node node) {
+    return tempVars.get(node);
+  }
+
+  private @Nullable LocalVariableNode getOrCreateTempVar(Node node) {
+    LocalVariableNode localVariableNode = tempVars.get(node);
+    if (localVariableNode == null) {
+      VariableTree temp = createTemporaryVar(node);
+      if (temp != null) {
+        IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
+        localVariableNode = new LocalVariableNode(identifierTree);
+        localVariableNode.setInSource(true);
+        tempVars.put(node, localVariableNode);
+      }
+    }
+    return localVariableNode;
+  }
+
+  protected @Nullable VariableTree createTemporaryVar(Node method) {
+    ExpressionTree tree = (ExpressionTree) method.getTree();
+    TypeMirror treeType = TreeUtils.typeOf(tree);
+    Element enclosingElement = null;
+    TreePath path = atypeFactory.getPath(tree);
+    if (path == null) {
+      enclosingElement = TreeUtils.elementFromTree(tree).getEnclosingElement();
+    } else {
+      ClassTree classTree = TreePathUtil.enclosingClass(path);
+      enclosingElement = TreeUtils.elementFromTree(classTree);
+    }
+    if (enclosingElement == null) {
+      return null;
+    }
+    // Declare and initialize a new, unique iterator variable
+    VariableTree tmpVarTree =
+        treeBuilder.buildVariableDecl(
+            treeType, // annotatedIteratorTypeTree,
+            uniqueName("temp-var"),
+            enclosingElement,
+            tree);
+    return tmpVarTree;
+  }
+
+  protected long uid = 0;
+
+  protected String uniqueName(String prefix) {
+    return prefix + "-" + uid++;
   }
 }

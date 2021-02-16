@@ -1,7 +1,5 @@
 // Based on a Zookeeper false positive that requires unconnected socket support.
 
-// @skip-test
-
 import java.nio.channels.SocketChannel;
 import java.io.IOException;
 
