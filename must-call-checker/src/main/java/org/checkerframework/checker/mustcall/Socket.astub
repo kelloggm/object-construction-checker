@@ -1,15 +1,19 @@
-package java.net;
+// DO NOT INCLUDE ANNOTATIONS THAT RELY ON ACCUMULATION FRAMES IN THIS FILE.
+// This file is loaded regardless of the -AnoAccumulationFrames option. All
+// assumptions that rely on the presence of accumulation frames (such as @MustCall({})
+// on unconnected sockets) MUST go in SocketAccumulationFrames.astub. ResetMustCall
+// okay, because the OCC turns that off anyway.
 
+package java.net;
 
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
-
 class Socket implements Closeable {
-    @MustCall({}) Socket();
-    @MustCall({}) Socket(Proxy arg0);
+    // @MustCall({}) Socket();
+    // @MustCall({}) Socket(Proxy arg0);
     protected Socket(SocketImpl arg0) throws SocketException;
     Socket(String arg0, int arg1) throws UnknownHostException, IOException;
     Socket(InetAddress arg0, int arg1) throws IOException;
@@ -73,7 +77,7 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
 }
 
 class ServerSocket implements Closeable {
-    @MustCall({}) ServerSocket() throws IOException;
+    // @MustCall({}) ServerSocket() throws IOException;
     ServerSocket(int arg0) throws IOException;
     ServerSocket(int arg0, int arg1) throws IOException;
     ServerSocket(int arg0, int arg1, InetAddress arg2) throws IOException;
@@ -125,7 +129,7 @@ class SSLServerSocket { }
 package javax.net;
 
 class SocketFactory {
-    @Owning @MustCall({}) Socket createSocket() throws IOException;
+    // @Owning @MustCall({}) Socket createSocket() throws IOException;
     @Owning Socket createSocket(String arg0, int arg1) throws IOException, UnknownHostException;
     @Owning Socket createSocket(String arg0, int arg1, InetAddress arg2, int arg3) throws IOException, UnknownHostException;
     @Owning Socket createSocket(InetAddress arg0, int arg1) throws IOException;
@@ -135,7 +139,7 @@ class SocketFactory {
 class ServerSocketFactory {
     protected ServerSocketFactory();
     static ServerSocketFactory getDefault();
-    @Owning @MustCall({}) ServerSocket createServerSocket() throws IOException;
+    // @Owning @MustCall({}) ServerSocket createServerSocket() throws IOException;
     @Owning ServerSocket createServerSocket(int arg0) throws IOException;
     @Owning ServerSocket createServerSocket(int arg0, int arg1) throws IOException;
     @Owning ServerSocket createServerSocket(int arg0, int arg1, InetAddress arg2) throws IOException;

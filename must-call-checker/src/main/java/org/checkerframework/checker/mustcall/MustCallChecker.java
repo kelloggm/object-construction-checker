@@ -4,13 +4,24 @@ import java.util.Properties;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.qual.StubFiles;
+import org.checkerframework.framework.source.SupportedOptions;
 
 /**
  * This typechecker ensures that {@link MustCall} annotations are consistent with one another. The
  * Object Construction Checker verifies that the given methods are actually called.
  */
-@StubFiles({"Socket.astub", "NotOwning.astub", "Stream.astub", "NoObligationStreams.astub"})
+@StubFiles({
+  "Socket.astub",
+  "NotOwning.astub",
+  "Stream.astub",
+  "NoObligationStreams.astub",
+  "Reflection.astub",
+  "SocketAccumulationFrames.astub"
+})
+@SupportedOptions({MustCallChecker.NO_ACCUMULATION_FRAMES})
 public class MustCallChecker extends BaseTypeChecker {
+
+  public static final String NO_ACCUMULATION_FRAMES = "noAccumulationFrames";
 
   /**
    * Overridden because the messages.properties file isn't being loaded, for some reason. I think it
