@@ -216,7 +216,6 @@ public class MustCallTransfer extends CFTransfer {
         IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
         localVariableNode = new LocalVariableNode(identifierTree);
         localVariableNode.setInSource(true);
-
       }
     }
     tempVars.put(node.getTree(), localVariableNode);

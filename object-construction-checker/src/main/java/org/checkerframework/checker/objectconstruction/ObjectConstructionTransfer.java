@@ -69,7 +69,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   public TransferResult<CFValue, CFStore> visitTernaryExpression(
       TernaryExpressionNode node, TransferInput<CFValue, CFStore> input) {
     TransferResult<CFValue, CFStore> result = super.visitTernaryExpression(node, input);
-    //    updateStoreWithTempVar(result, node);
+    updateStoreWithTempVar(result, node);
     return result;
   }
 
