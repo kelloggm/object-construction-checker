@@ -178,6 +178,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         localVariableNode = new LocalVariableNode(identifierTree);
         localVariableNode.setInSource(true);
         atypefactory.tempVarToNode.put(localVariableNode, node.getTree());
+        MustCallTransfer.newTempVar(localVariableNode, node);
       }
     }
     return localVariableNode;
