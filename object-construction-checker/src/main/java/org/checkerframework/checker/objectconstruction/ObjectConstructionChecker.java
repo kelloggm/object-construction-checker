@@ -2,6 +2,7 @@ package org.checkerframework.checker.objectconstruction;
 
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.CHECK_MUST_CALL;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.COUNT_MUST_CALL;
+import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.NO_ACCUMULATION_FRAMES;
 
 import java.util.LinkedHashSet;
 import java.util.Properties;
@@ -28,12 +29,14 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   "IOUtils.astub",
   "Reflection.astub"
 })
-@SupportedOptions({CHECK_MUST_CALL, COUNT_MUST_CALL})
+@SupportedOptions({CHECK_MUST_CALL, COUNT_MUST_CALL, NO_ACCUMULATION_FRAMES})
 public class ObjectConstructionChecker extends CalledMethodsChecker {
 
   public static final String CHECK_MUST_CALL = "checkMustCall";
 
   public static final String COUNT_MUST_CALL = "countMustCall";
+
+  public static final String NO_ACCUMULATION_FRAMES = "noAccumulationFrames";
 
   /**
    * The number of expressions with must-call obligations that were checked. Incremented only if the
