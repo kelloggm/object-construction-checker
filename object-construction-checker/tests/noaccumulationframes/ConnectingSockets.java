@@ -1,4 +1,4 @@
-// a set of test cases that demonstrate that errors are actually insued in appropriate
+// a set of test cases that demonstrate that errors are actually issued in appropriate
 // places when Sockets are connected
 
 import java.net.*;
