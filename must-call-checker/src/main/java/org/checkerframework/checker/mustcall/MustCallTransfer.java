@@ -1,9 +1,6 @@
 package org.checkerframework.checker.mustcall;
 
-import com.sun.source.tree.ClassTree;
-import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.IdentifierTree;
-import com.sun.source.tree.VariableTree;
+import com.sun.source.tree.*;
 import com.sun.source.util.TreePath;
 import java.util.HashMap;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -38,7 +35,7 @@ public class MustCallTransfer extends CFTransfer {
 
   private MustCallAnnotatedTypeFactory atypeFactory;
 
-  static HashMap<Node, LocalVariableNode> tempVars = new HashMap<>();
+  static HashMap<Tree, LocalVariableNode> tempVars = new HashMap<>();
 
   public MustCallTransfer(CFAnalysis analysis) {
     super(analysis);
@@ -208,20 +205,21 @@ public class MustCallTransfer extends CFTransfer {
   }
 
   public static @Nullable LocalVariableNode getTempVar(Node node) {
-    return tempVars.get(node);
+    return tempVars.get(node.getTree());
   }
 
   private @Nullable LocalVariableNode getOrCreateTempVar(Node node) {
-    LocalVariableNode localVariableNode = tempVars.get(node);
+    LocalVariableNode localVariableNode = tempVars.get(node.getTree());
     if (localVariableNode == null) {
       VariableTree temp = createTemporaryVar(node);
       if (temp != null) {
         IdentifierTree identifierTree = treeBuilder.buildVariableUse(temp);
         localVariableNode = new LocalVariableNode(identifierTree);
         localVariableNode.setInSource(true);
-        tempVars.put(node, localVariableNode);
+
       }
     }
+    tempVars.put(node.getTree(), localVariableNode);
     return localVariableNode;
   }
 
