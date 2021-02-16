@@ -28,7 +28,6 @@ class HdfsReport3
 
     public void dumpTreeRecursively(PrintWriter out, StringBuilder prefix,
                                     int snapshotId) {
-//        printing something
     }
 
     // StringBuilder doesn't implement closeable
