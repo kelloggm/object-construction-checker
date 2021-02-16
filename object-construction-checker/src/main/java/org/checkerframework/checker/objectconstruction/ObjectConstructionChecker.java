@@ -9,6 +9,7 @@ import java.util.Properties;
 import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.checker.mustcall.MustCallNoAccumulationFramesChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.qual.StubFiles;
@@ -50,7 +51,11 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
         super.getImmediateSubcheckerClasses();
 
     if (this.processingEnv.getOptions().containsKey(CHECK_MUST_CALL)) {
-      checkers.add(MustCallChecker.class);
+      if (this.processingEnv.getOptions().containsKey(NO_ACCUMULATION_FRAMES)) {
+        checkers.add(MustCallNoAccumulationFramesChecker.class);
+      } else {
+        checkers.add(MustCallChecker.class);
+      }
     }
 
     return checkers;

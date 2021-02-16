@@ -34,7 +34,6 @@ class ConnectingServerSockets {
     }
 
     static void simple_ss_test5(SocketAddress sa) throws Exception {
-        // :: error: required.method.not.called
         ServerSocket s = makeUnconnected();
         s.bind(sa);
     }

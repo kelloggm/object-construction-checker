@@ -47,9 +47,9 @@ public class MustCallTransfer extends CFTransfer {
       Set<JavaExpression> targetExprs = getResetMustCallExpressions(n, atypeFactory);
       for (JavaExpression targetExpr : targetExprs) {
         AnnotationMirror defaultType =
-                atypeFactory
-                        .getAnnotatedType(TypesUtils.getTypeElement(targetExpr.getType()))
-                        .getAnnotationInHierarchy(atypeFactory.TOP);
+            atypeFactory
+                .getAnnotatedType(TypesUtils.getTypeElement(targetExpr.getType()))
+                .getAnnotationInHierarchy(atypeFactory.TOP);
 
         if (result.containsTwoStores()) {
           CFStore thenStore = result.getThenStore();

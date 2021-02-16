@@ -1,3 +1,9 @@
+// DO NOT INCLUDE ANNOTATIONS THAT RELY ON ACCUMULATION FRAMES IN THIS FILE.
+// This file is loaded regardless of the -AnoAccumulationFrames option. All
+// assumptions that rely on the presence of accumulation frames (such as @MustCall({})
+// on unconnected sockets) MUST go in SocketAccumulationFrames.astub. ResetMustCall
+// okay, because the OCC turns that off anyway.
+
 package java.net;
 
 import org.checkerframework.checker.mustcall.qual.*;
@@ -17,7 +23,7 @@ class FileChannel {
 
 class SocketChannel extends AbstractSelectableChannel implements ByteChannel, ScatteringByteChannel, GatheringByteChannel, NetworkChannel {
     protected SocketChannel(SelectorProvider arg0);
-    static @MustCall({}) SocketChannel open() throws IOException;
+    // static @MustCall({}) SocketChannel open() throws IOException;
     static SocketChannel open(SocketAddress arg0) throws IOException;
     @ResetMustCall("this")
     SocketChannel bind(SocketAddress arg0) throws IOException;
@@ -31,7 +37,7 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
 
 class ServerSocketChannel extends AbstractSelectableChannel implements NetworkChannel {
     protected ServerSocketChannel(SelectorProvider arg0);
-    static @MustCall({}) ServerSocketChannel open() throws IOException;
+    // static @MustCall({}) ServerSocketChannel open() throws IOException;
     int validOps();
     @ResetMustCall("this")
     @MustCallChoice ServerSocketChannel bind(@MustCallChoice ServerSocketChannel this, SocketAddress arg0) throws IOException;

@@ -15,7 +15,8 @@ import org.checkerframework.framework.source.SupportedOptions;
   "NotOwning.astub",
   "Stream.astub",
   "NoObligationStreams.astub",
-  "Reflection.astub"
+  "Reflection.astub",
+  "SocketAccumulationFrames.astub"
 })
 @SupportedOptions({MustCallChecker.NO_ACCUMULATION_FRAMES})
 public class MustCallChecker extends BaseTypeChecker {

@@ -17,6 +17,7 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethodsBottom;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.checker.mustcall.MustCallNoAccumulationFramesChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.checker.mustcall.qual.ResetMustCall;
@@ -33,6 +34,7 @@ import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -221,5 +223,16 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
 
   public boolean useAccumulationFrames() {
     return !checker.hasOption(MustCallChecker.NO_ACCUMULATION_FRAMES);
+  }
+
+  @Override
+  public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>, U extends BaseTypeChecker>
+      T getTypeFactoryOfSubchecker(Class<U> checkerClass) {
+    if (checkerClass.equals(MustCallChecker.class)) {
+      if (!useAccumulationFrames()) {
+        return super.getTypeFactoryOfSubchecker(MustCallNoAccumulationFramesChecker.class);
+      }
+    }
+    return super.getTypeFactoryOfSubchecker(checkerClass);
   }
 }
