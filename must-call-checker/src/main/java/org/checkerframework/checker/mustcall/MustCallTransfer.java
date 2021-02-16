@@ -1,7 +1,9 @@
 package org.checkerframework.checker.mustcall;
 
 import com.sun.source.util.TreePath;
+import com.sun.tools.javac.code.Symbol;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -9,8 +11,6 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-
-import com.sun.tools.javac.code.Symbol;
 import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.analysis.RegularTransferResult;
@@ -25,8 +25,6 @@ import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressio
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
-
-import java.util.HashMap;
 
 /**
  * Transfer function for the must-call type system. Handles defaulting for string concatenations.
@@ -78,7 +76,8 @@ public class MustCallTransfer extends CFTransfer {
   }
 
   @Override
-  public TransferResult<CFValue, CFStore> visitObjectCreation(ObjectCreationNode n, TransferInput<CFValue, CFStore> p) {
+  public TransferResult<CFValue, CFStore> visitObjectCreation(
+      ObjectCreationNode n, TransferInput<CFValue, CFStore> p) {
     TransferResult<CFValue, CFStore> result = super.visitObjectCreation(n, p);
 
     if (tempVars.containsKey(n)) {
@@ -92,7 +91,8 @@ public class MustCallTransfer extends CFTransfer {
   }
 
   @Override
-  public TransferResult<CFValue, CFStore> visitTernaryExpression(TernaryExpressionNode n, TransferInput<CFValue, CFStore> p) {
+  public TransferResult<CFValue, CFStore> visitTernaryExpression(
+      TernaryExpressionNode n, TransferInput<CFValue, CFStore> p) {
     TransferResult<CFValue, CFStore> result = super.visitTernaryExpression(n, p);
 
     if (tempVars.containsKey(n)) {
@@ -106,14 +106,13 @@ public class MustCallTransfer extends CFTransfer {
   }
 
   private void insertIntoStores(
-          TransferResult<CFValue, CFStore> result, JavaExpression target, Node node) {
+      TransferResult<CFValue, CFStore> result, JavaExpression target, Node node) {
     TypeElement te = TypesUtils.getTypeElement(node.getType());
-    if (((Symbol.ClassSymbol) te).type.getKind().equals(TypeKind.VOID))
+    if (te == null || ((Symbol.ClassSymbol) te).type.getKind().equals(TypeKind.VOID)) {
       return;
+    }
     AnnotationMirror newAnno =
-            atypeFactory
-                    .getAnnotatedType(te)
-                    .getAnnotationInHierarchy(atypeFactory.TOP);
+        atypeFactory.getAnnotatedType(te).getAnnotationInHierarchy(atypeFactory.TOP);
     if (result.containsTwoStores()) {
       CFStore thenStore = result.getThenStore();
       CFStore elseStore = result.getElseStore();
