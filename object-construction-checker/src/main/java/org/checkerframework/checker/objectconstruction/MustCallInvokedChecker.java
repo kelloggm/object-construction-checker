@@ -50,6 +50,7 @@ import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
+import org.checkerframework.dataflow.cfg.node.NullLiteralNode;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.node.TernaryExpressionNode;
@@ -598,14 +599,29 @@ class MustCallInvokedChecker {
     }
 
     FieldAccessNode lhs = (FieldAccessNode) lhsNode;
-
     Node receiver = lhs.getReceiver();
-    // Check that there is a corresponding resetMustCall annotation, unless this is an
-    // assignment to a field of a newly-declared local variable that can't be in scope
-    // for the containing method.
+
+    // TODO: it would be better to defer getting the path until after we check
+    // for a ResetMustCall annotation, because getting the path can be expensive.
+    // It might be possible to exploit the CFG structure to find the containing
+    // method (rather than using the path, as below), because if a method is being
+    // analyzed then it should be the root of the CFG (I think).
+    TreePath currentPath = typeFactory.getPath(node.getTree());
+    MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
+
+    if (enclosingMethod == null) {
+      // Assignments outside of methods must be field initializers, which
+      // are always safe.
+      return;
+    }
+
+    // Check that there is a corresponding resetMustCall annotation, unless this is
+    // 1) an assignment to a field of a newly-declared local variable that can't be in scope
+    // for the containing method, 2) the rhs is a null literal (so there's nothing to reset).
     if (!(receiver instanceof LocalVariableNode
-        && isVarInDefs(newDefs, (LocalVariableNode) receiver))) {
-      checkEnclosingMethodIsResetMC(node);
+            && isVarInDefs(newDefs, (LocalVariableNode) receiver))
+        && !(node.getExpression() instanceof NullLiteralNode)) {
+      checkEnclosingMethodIsResetMC(node, enclosingMethod, currentPath);
     }
 
     MustCallAnnotatedTypeFactory mcTypeFactory =
@@ -647,25 +663,19 @@ class MustCallInvokedChecker {
    * whose target is the object whose field is being re-assigned.
    *
    * @param node an assignment node whose lhs is a non-final, owning field
+   * @param enclosingMethod the MethodTree in which the re-assignment takes place
+   * @param currentPath the currentPath
    */
-  private void checkEnclosingMethodIsResetMC(AssignmentNode node) {
+  private void checkEnclosingMethodIsResetMC(
+      AssignmentNode node, MethodTree enclosingMethod, TreePath currentPath) {
     Node lhs = node.getTarget();
     if (!(lhs instanceof FieldAccessNode)) {
       return;
     }
 
     String receiverString = receiverAsString((FieldAccessNode) lhs);
-
-    // TODO: it would be better to defer getting the path until after we check
-    // for a ResetMustCall annotation, because getting the path can be expensive.
-    // It might be possible to exploit the CFG structure to find the containing
-    // method (rather than using the path, as below), because if a method is being
-    // analyzed then it should be the root of the CFG (I think).
-    TreePath currentPath = typeFactory.getPath(node.getTree());
-    MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
-    if (enclosingMethod == null) {
-      // Assignments outside of methods must be in constructors or field initializers, which
-      // are always safe.
+    if (TreeUtils.isConstructor(enclosingMethod)) {
+      // Resetting a constructor doesn't make sense.
       return;
     }
     ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
