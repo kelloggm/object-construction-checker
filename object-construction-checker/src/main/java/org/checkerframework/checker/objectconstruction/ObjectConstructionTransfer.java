@@ -12,9 +12,10 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.CalledMethodsTransfer;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
+import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallTransfer;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
@@ -48,7 +49,6 @@ import org.checkerframework.javacutil.TypesUtils;
  * <p>the type of obj is @CalledMethods({"a","b"}) (assuming obj had no type beforehand).
  */
 public class ObjectConstructionTransfer extends CalledMethodsTransfer {
-  private final ObjectConstructionAnnotatedTypeFactory atypefactory;
 
   /**
    * {@link #makeExceptionalStores(MethodInvocationNode, TransferInput)} requires a TransferInput,
@@ -60,9 +60,15 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
    */
   private @Nullable Map<TypeMirror, CFStore> exceptionalStores;
 
+  /**
+   * Shadowed because we MUST dispatch to the OCC's version of getTypefactoryOfSubchecker to get the
+   * correct MCATF.
+   */
+  private final ObjectConstructionAnnotatedTypeFactory atypeFactory;
+
   public ObjectConstructionTransfer(final CFAnalysis analysis) {
     super(analysis);
-    this.atypefactory = (ObjectConstructionAnnotatedTypeFactory) analysis.getTypeFactory();
+    this.atypeFactory = (ObjectConstructionAnnotatedTypeFactory) analysis.getTypeFactory();
   }
 
   @Override
@@ -91,29 +97,35 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
 
     updateStoreWithTempVar(result, node);
 
-    // If there is a temporary variable for the receiver, update its type.
     Node receiver = node.getTarget().getReceiver();
+    Node accumulationTarget;
+    if (this.atypeFactory.getChecker().hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)) {
+      // If there is a temporary variable for the receiver, update its type.
+      MustCallAnnotatedTypeFactory mcAtf =
+          atypeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+      accumulationTarget = mcAtf.getTempVar(receiver);
+    } else {
+      // only update the receiver type
+      accumulationTarget = receiver;
+    }
 
-    LocalVariableNode receiverTempVar = MustCallTransfer.getTempVar(receiver);
-    if (receiverTempVar != null) {
+    if (accumulationTarget != null) {
       String methodName = node.getTarget().getMethod().getSimpleName().toString();
-      methodName =
-          ((CalledMethodsAnnotatedTypeFactory) atypeFactory)
-              .adjustMethodNameUsingValueChecker(methodName, node.getTree());
-      accumulate(receiverTempVar, result, methodName);
+      methodName = atypeFactory.adjustMethodNameUsingValueChecker(methodName, node.getTree());
+      accumulate(accumulationTarget, result, methodName);
     }
 
     return finalResult;
   }
 
   void handleResetMustCall(MethodInvocationNode n, TransferResult<CFValue, CFStore> result) {
-    if (!atypefactory.useAccumulationFrames()) {
+    if (!atypeFactory.useAccumulationFrames()) {
       return;
     }
 
     Set<JavaExpression> targetExprs = MustCallTransfer.getResetMustCallExpressions(n, atypeFactory);
     for (JavaExpression targetExpr : targetExprs) {
-      AnnotationMirror defaultType = atypefactory.top;
+      AnnotationMirror defaultType = atypeFactory.top;
       if (result.containsTwoStores()) {
         CFStore thenStore = result.getThenStore();
         thenStore.clearValue(targetExpr);
@@ -145,11 +157,17 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
    * @param result the transfer result containing the store to be modified
    */
   public void updateStoreWithTempVar(TransferResult<CFValue, CFStore> result, Node node) {
+    if (!this.atypeFactory.getChecker().hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)) {
+      return;
+    }
+
     // Must-call obligations on primitives are not supported.
     if (!TypesUtils.isPrimitiveOrBoxed(node.getType())) {
-      LocalVariableNode temp = MustCallTransfer.getTempVar(node);
+      MustCallAnnotatedTypeFactory mcAtf =
+          atypeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+      LocalVariableNode temp = mcAtf.getTempVar(node);
       if (temp != null) {
-        atypefactory.tempVarToNode.put(temp, node.getTree());
+        atypeFactory.tempVarToNode.put(temp, node.getTree());
         JavaExpression localExp = JavaExpression.fromNode(atypeFactory, temp);
         AnnotationMirror anm =
             atypeFactory
@@ -163,19 +181,19 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
   private AnnotationMirror getUpdatedCalledMethodsType(
       AnnotatedTypeMirror currentType, String... methodNames) {
     AnnotationMirror type;
-    if (currentType == null || !currentType.isAnnotatedInHierarchy(atypefactory.top)) {
-      type = atypefactory.top;
+    if (currentType == null || !currentType.isAnnotatedInHierarchy(atypeFactory.top)) {
+      type = atypeFactory.top;
     } else {
-      type = currentType.getAnnotationInHierarchy(atypefactory.top);
+      type = currentType.getAnnotationInHierarchy(atypeFactory.top);
     }
 
     // Don't attempt to strengthen @CalledMethodsPredicate annotations, because that would
     // require reasoning about the predicate itself. Instead, start over from top.
     if (AnnotationUtils.areSameByClass(type, CalledMethodsPredicate.class)) {
-      type = atypefactory.top;
+      type = atypeFactory.top;
     }
 
-    if (AnnotationUtils.areSame(type, atypefactory.bottom)) {
+    if (AnnotationUtils.areSame(type, atypeFactory.bottom)) {
       return null;
     }
 
@@ -184,14 +202,14 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         Stream.concat(Arrays.stream(methodNames), currentMethods.stream())
             .collect(Collectors.toList());
 
-    AnnotationMirror newType = atypefactory.createCalledMethods(newList.toArray(new String[0]));
+    AnnotationMirror newType = atypeFactory.createCalledMethods(newList.toArray(new String[0]));
     return newType;
   }
 
   private void handleEnsuresCalledMethodVarArgs(
       MethodInvocationNode node, TransferResult<CFValue, CFStore> result) {
     ExecutableElement elt = TreeUtils.elementFromUse(node.getTree());
-    AnnotationMirror annot = atypefactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarArgs.class);
+    AnnotationMirror annot = atypeFactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarArgs.class);
     if (annot == null) {
       return;
     }
@@ -209,7 +227,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
       CFStore thenStore = result.getThenStore();
       CFStore elseStore = result.getElseStore();
       for (Node arg : arrayCreationNode.getInitializers()) {
-        AnnotatedTypeMirror currentType = atypefactory.getAnnotatedType(arg.getTree());
+        AnnotatedTypeMirror currentType = atypeFactory.getAnnotatedType(arg.getTree());
         AnnotationMirror newType = getUpdatedCalledMethodsType(currentType, ensuredMethodNames);
         if (newType == null) {
           continue;
@@ -239,7 +257,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         Set<AnnotationMirror> flowAnnos = flowValue.getAnnotations();
         assert flowAnnos.size() <= 1;
         for (AnnotationMirror anno : flowAnnos) {
-          if (atypefactory.isAccumulatorAnnotation(anno)) {
+          if (atypeFactory.isAccumulatorAnnotation(anno)) {
             List<String> oldFlowValues =
                 ValueCheckerUtils.getValueOfAnnotationWithStringArgument(anno);
             if (oldFlowValues != null) {
@@ -252,7 +270,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
           }
         }
       }
-      AnnotationMirror newAnno = atypefactory.createAccumulatorAnnotation(valuesAsList);
+      AnnotationMirror newAnno = atypeFactory.createAccumulatorAnnotation(valuesAsList);
       exceptionalStores.values().stream().forEach(s -> s.insertValue(target, newAnno));
     }
   }

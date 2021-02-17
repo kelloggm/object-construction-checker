@@ -11,6 +11,7 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,6 +32,8 @@ import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.block.Block;
+import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
@@ -69,6 +72,13 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       new HashSet<>(this.getCacheSize());
 
   /**
+   * Map from trees representing expressions to the temporary variables that represent them in the
+   * store.
+   */
+  /* package-private */ HashMap<Tree, LocalVariableNode> tempVars =
+      new HashMap<>(this.getCacheSize());
+
+  /**
    * Default constructor matching super. Should be called automatically.
    *
    * @param checker the checker associated with this type factory
@@ -87,6 +97,11 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   public void setRoot(@Nullable CompilationUnitTree root) {
     super.setRoot(root);
     elementsIssuedInconsistentMustCallSubtypeErrors.clear();
+    // TODO: this should probably be guarded by isSafeToClearSharedCFG from
+    // GenericAnnotatedTypeFactory,
+    // but this works here because we know the MCC is always the first subchecker that's sharing
+    // tempvars.
+    tempVars.clear();
   }
 
   @Override
@@ -299,5 +314,9 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       }
       return super.visitIdentifier(node, type);
     }
+  }
+
+  public @Nullable LocalVariableNode getTempVar(Node node) {
+    return tempVars.get(node.getTree());
   }
 }
