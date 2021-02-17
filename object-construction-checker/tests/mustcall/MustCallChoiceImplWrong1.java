@@ -1,18 +1,19 @@
 // A simple test that the extra obligations that MustCallChoice imposes are
-// respected.
+// respected. This version gets it wrong by not assigning the MCC param
+// to a field.
 
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-public class MustCallChoiceImpl implements Closeable {
+public class MustCallChoiceImplWrong1 implements Closeable {
 
     final @Owning Closeable foo;
 
-    // I got this error here: (type.invalid.annotations.on.use)
-    public @MustCallChoice MustCallChoiceImpl(@MustCallChoice Closeable foo) {
-        this.foo = foo;
+    // :: error: required.method.not.called
+    public @MustCallChoice MustCallChoiceImplWrong1(@MustCallChoice Closeable foo) {
+        this.foo = null;
     }
 
     @Override
