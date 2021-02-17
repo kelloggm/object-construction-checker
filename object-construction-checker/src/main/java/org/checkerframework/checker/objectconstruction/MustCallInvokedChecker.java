@@ -1138,8 +1138,11 @@ class MustCallInvokedChecker {
    * in the JVM, like OutOfMemoryErrors or ClassCircularityErrors.
    */
   private static boolean isIgnoredExceptionType(@FullyQualifiedName Name exceptionClassName) {
-    // any method call has a CFG edge for Throwable to represent run-time misbehavior. Ignore it.
+    // any method call has a CFG edge for Throwable/RuntimeException/Error to represent run-time
+    // misbehavior. Ignore it.
     return exceptionClassName.contentEquals(Throwable.class.getCanonicalName())
+        || exceptionClassName.contentEquals(RuntimeException.class.getCanonicalName())
+        || exceptionClassName.contentEquals(Error.class.getCanonicalName())
         // use the Nullness Checker to prove this won't happen
         || exceptionClassName.contentEquals(NullPointerException.class.getCanonicalName())
         // these errors can't be predicted statically, so we'll ignore them and assume they won't

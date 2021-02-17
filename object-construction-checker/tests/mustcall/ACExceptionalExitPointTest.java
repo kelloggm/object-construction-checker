@@ -23,16 +23,16 @@ class ACExceptionalExitPointTest {
         return f;
     }
 
-    void exceptionalExitWrong() {
+    void exceptionalExitWrong() throws Exception {
         // :: error: required.method.not.called
         Foo fw = makeFoo();
-        throw new RuntimeException();
+        throw new Exception();
     }
 
-    void exceptionalExitCorrect() {
+    void exceptionalExitCorrect() throws Exception {
         Foo fw = new Foo();
         fw.a();
-        throw new RuntimeException();
+        throw new Exception();
     }
 
 }
