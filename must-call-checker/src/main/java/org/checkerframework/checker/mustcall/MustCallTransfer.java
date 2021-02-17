@@ -3,7 +3,6 @@ package org.checkerframework.checker.mustcall;
 import com.sun.source.tree.*;
 import com.sun.source.util.TreePath;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,8 +37,6 @@ public class MustCallTransfer extends CFTransfer {
   private final TreeBuilder treeBuilder;
 
   private MustCallAnnotatedTypeFactory atypeFactory;
-
-  static HashMap<Tree, LocalVariableNode> tempVars = new HashMap<>();
 
   public MustCallTransfer(CFAnalysis analysis) {
     super(analysis);
@@ -273,12 +270,8 @@ public class MustCallTransfer extends CFTransfer {
     }
   }
 
-  public static @Nullable LocalVariableNode getTempVar(Node node) {
-    return tempVars.get(node.getTree());
-  }
-
   private @Nullable LocalVariableNode getOrCreateTempVar(Node node) {
-    LocalVariableNode localVariableNode = tempVars.get(node.getTree());
+    LocalVariableNode localVariableNode = atypeFactory.tempVars.get(node.getTree());
     if (localVariableNode == null) {
       VariableTree temp = createTemporaryVar(node);
       if (temp != null) {
@@ -287,7 +280,7 @@ public class MustCallTransfer extends CFTransfer {
         localVariableNode.setInSource(true);
       }
     }
-    tempVars.put(node.getTree(), localVariableNode);
+    atypeFactory.tempVars.put(node.getTree(), localVariableNode);
     return localVariableNode;
   }
 
