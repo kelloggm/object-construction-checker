@@ -18,6 +18,7 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -122,12 +123,13 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
   }
 
   /**
-   * Does not issue any warnings.
-   *
-   * <p>This method typically issues a warning if the result type of the constructor is not top,
+   * This method typically issues a warning if the result type of the constructor is not top,
    * because in top-default type systems that indicates a potential problem. The must call checker
    * does not need this warning, because it expects the type of all constructors to be {@code
    * MustCall({})} (by default) or some other {@code MustCall} type, not the top type.
+   *
+   * <p>Instead, this method checks that the result type of a constructor is a supertype of the
+   * declared type on the class, if one exists.
    *
    * @param constructorType AnnotatedExecutableType for the constructor
    * @param constructorElement element that declares the constructor
@@ -135,7 +137,15 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
   @Override
   protected void checkConstructorResult(
       AnnotatedExecutableType constructorType, ExecutableElement constructorElement) {
-    // Do nothing
+    AnnotatedTypeMirror defaultType =
+        atypeFactory.getAnnotatedType(ElementUtils.enclosingTypeElement(constructorElement));
+    AnnotationMirror defaultAnno = defaultType.getAnnotationInHierarchy(atypeFactory.TOP);
+    AnnotationMirror resultAnno =
+        constructorType.getReturnType().getAnnotationInHierarchy(atypeFactory.TOP);
+    if (!atypeFactory.getQualifierHierarchy().isSubtype(defaultAnno, resultAnno)) {
+      checker.reportError(
+          constructorElement, "inconsistent.constructor.type", resultAnno, defaultAnno);
+    }
   }
 
   /**

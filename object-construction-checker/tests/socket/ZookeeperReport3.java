@@ -62,6 +62,7 @@ class ZookeeperReport3 {
 
     class UnifiedServerSocket extends ServerSocket {
         // A human has to verify that this constructor actually does produce an unconnected socket.
+        @SuppressWarnings("inconsistent.constructor.type")
         public @MustCall({}) UnifiedServerSocket(boolean b) throws IOException {
             super();
         }
