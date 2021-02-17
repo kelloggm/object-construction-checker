@@ -30,6 +30,7 @@ import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallTransfer;
 import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.mustcall.qual.MustCallChoice;
 import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
@@ -190,7 +191,7 @@ class MustCallInvokedChecker {
       incrementNumMustCall(node.getTree());
     }
 
-    if (shouldSkipInvokeCheck(node)) {
+    if (shouldSkipInvokeCheck(defs, node)) {
       return;
     }
 
@@ -198,6 +199,32 @@ class MustCallInvokedChecker {
       incrementNumMustCall(node.getTree());
     }
     updateDefsWithTempVar(defs, node);
+  }
+
+  /**
+   * If node is an invocation of a this or super constructor that has a MCC return type and an MCC
+   * parameter, check if any variable in defs is an MCC parameter being passed to the other
+   * constructor. If so, remove it from defs.
+   *
+   * @param defs current defs
+   * @param node a method or constructor invocation
+   */
+  private void handleThisOrSuperConstructorMustCallChoice(
+      Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
+    if (node instanceof ObjectCreationNode || node instanceof MethodInvocationNode) {
+      Node mccParam = getVarOrTempVarPassedAsMustCallChoiceParam(node);
+      // if the MCC param is also a MCC def in the def set, then remove it -
+      // its obligation has been fulfilled by being passed on to another MCC method/constructor
+      if (mccParam instanceof LocalVariableNode
+          && isVarInDefs(defs, (LocalVariableNode) mccParam)) {
+        LocalVarWithTree lvt = getAssignmentTreeOfVar(defs, (LocalVariableNode) mccParam);
+        if (lvt.isMustCallChoice) {
+          ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
+              getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) mccParam);
+          defs.remove(setContainingMustCallChoiceParamLocal);
+        }
+      }
+    }
   }
 
   /**
@@ -332,13 +359,17 @@ class MustCallInvokedChecker {
    * field, or when the method's return type is non-owning, which can either be because the method
    * has no return type or because it is annotated with {@link NotOwning}.
    */
-  private boolean shouldSkipInvokeCheck(Node node) {
+  private boolean shouldSkipInvokeCheck(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     Tree callTree = node.getTree();
     if (callTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
       MethodInvocationTree methodInvokeTree = (MethodInvocationTree) callTree;
-      return TreeUtils.isSuperConstructorCall(methodInvokeTree)
-          || TreeUtils.isThisConstructorCall(methodInvokeTree)
-          || returnTypeIsMustCallChoiceWithIgnorable((MethodInvocationNode) node)
+
+      if (TreeUtils.isSuperConstructorCall(methodInvokeTree)
+          || TreeUtils.isThisConstructorCall(methodInvokeTree)) {
+        handleThisOrSuperConstructorMustCallChoice(defs, node);
+        return true;
+      }
+      return returnTypeIsMustCallChoiceWithIgnorable((MethodInvocationNode) node)
           || hasNotOwningReturnType((MethodInvocationNode) node);
     }
     return false;
@@ -994,9 +1025,13 @@ class MustCallInvokedChecker {
       MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
       for (VariableTree param : method.getParameters()) {
         Element paramElement = TreeUtils.elementFromDeclaration(param);
-        if (typeFactory.hasMustCall(param) && paramElement.getAnnotation(Owning.class) != null) {
+        boolean isMustCallChoice = paramElement.getAnnotation(MustCallChoice.class) != null;
+        if (isMustCallChoice
+            || (typeFactory.hasMustCall(param)
+                && paramElement.getAnnotation(Owning.class) != null)) {
           Set<LocalVarWithTree> setOfLocals = new LinkedHashSet<>();
-          setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
+          setOfLocals.add(
+              new LocalVarWithTree(new LocalVariable(paramElement), param, isMustCallChoice));
           init.add(ImmutableSet.copyOf(setOfLocals));
           // Increment numMustCall for each @Owning parameter tracked by the enclosing method
           incrementNumMustCall(param);
@@ -1225,9 +1260,17 @@ class MustCallInvokedChecker {
     public final LocalVariable localVar;
     public final Tree tree;
 
+    /** true if this is a must-call-choice parameter, which gives it special rules */
+    public final boolean isMustCallChoice;
+
     public LocalVarWithTree(LocalVariable localVarNode, Tree tree) {
+      this(localVarNode, tree, false);
+    }
+
+    public LocalVarWithTree(LocalVariable localVarNode, Tree tree, boolean isMustCallChoice) {
       this.localVar = localVarNode;
       this.tree = tree;
+      this.isMustCallChoice = isMustCallChoice;
     }
 
     @Override
