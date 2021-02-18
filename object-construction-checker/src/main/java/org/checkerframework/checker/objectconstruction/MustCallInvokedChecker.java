@@ -659,7 +659,7 @@ class MustCallInvokedChecker {
         typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
     AnnotationMirror mcAnno =
         mcTypeFactory.getAnnotationFromJavaExpression(
-            JavaExpression.fromNode(mcTypeFactory, lhs), node.getTree(), MustCall.class);
+            JavaExpression.fromNode(lhs), node.getTree(), MustCall.class);
     List<String> mcValues = ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mcAnno);
 
     if (mcValues.isEmpty()) {

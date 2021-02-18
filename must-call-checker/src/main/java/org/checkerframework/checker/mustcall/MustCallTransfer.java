@@ -260,7 +260,7 @@ public class MustCallTransfer extends CFTransfer {
     if (!TypesUtils.isPrimitiveOrBoxed(node.getType())) {
       LocalVariableNode temp = getOrCreateTempVar(node);
       if (temp != null) {
-        JavaExpression localExp = JavaExpression.fromNode(atypeFactory, temp);
+        JavaExpression localExp = JavaExpression.fromNode(temp);
         AnnotationMirror anm =
             atypeFactory
                 .getAnnotatedType(node.getTree())
