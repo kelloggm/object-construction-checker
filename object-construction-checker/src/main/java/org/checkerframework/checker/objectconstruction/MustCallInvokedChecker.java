@@ -203,27 +203,22 @@ class MustCallInvokedChecker {
 
   /**
    * If node is an invocation of a this or super constructor that has a MCC return type and an MCC
-   * parameter, check if any variable in defs is an MCC parameter being passed to the other
-   * constructor. If so, remove it from defs.
+   * parameter, check if any variable in defs is being passed to the other constructor. If so,
+   * remove it from defs.
    *
    * @param defs current defs
-   * @param node a method or constructor invocation
+   * @param node a super or this constructor invocation
    */
   private void handleThisOrSuperConstructorMustCallChoice(
       Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
-    if (node instanceof ObjectCreationNode || node instanceof MethodInvocationNode) {
-      Node mccParam = getVarOrTempVarPassedAsMustCallChoiceParam(node);
-      // if the MCC param is also a MCC def in the def set, then remove it -
-      // its obligation has been fulfilled by being passed on to another MCC method/constructor
-      if (mccParam instanceof LocalVariableNode
-          && isVarInDefs(defs, (LocalVariableNode) mccParam)) {
-        LocalVarWithTree lvt = getAssignmentTreeOfVar(defs, (LocalVariableNode) mccParam);
-        if (lvt.isMustCallChoice) {
-          ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
-              getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) mccParam);
-          defs.remove(setContainingMustCallChoiceParamLocal);
-        }
-      }
+    Node mccParam = getVarOrTempVarPassedAsMustCallChoiceParam(node);
+    // If the MCC param is also in the def set, then remove it -
+    // its obligation has been fulfilled by being passed on to the MCC constructor (because we must
+    // be in a constructor body if we've encountered a this/super constructor call).
+    if (mccParam instanceof LocalVariableNode && isVarInDefs(defs, (LocalVariableNode) mccParam)) {
+      ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
+          getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) mccParam);
+      defs.remove(setContainingMustCallChoiceParamLocal);
     }
   }
 
