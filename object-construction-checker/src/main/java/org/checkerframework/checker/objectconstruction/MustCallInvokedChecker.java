@@ -1025,8 +1025,7 @@ class MustCallInvokedChecker {
             || (typeFactory.hasMustCall(param)
                 && paramElement.getAnnotation(Owning.class) != null)) {
           Set<LocalVarWithTree> setOfLocals = new LinkedHashSet<>();
-          setOfLocals.add(
-              new LocalVarWithTree(new LocalVariable(paramElement), param, isMustCallChoice));
+          setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
           init.add(ImmutableSet.copyOf(setOfLocals));
           // Increment numMustCall for each @Owning parameter tracked by the enclosing method
           incrementNumMustCall(param);
@@ -1255,17 +1254,9 @@ class MustCallInvokedChecker {
     public final LocalVariable localVar;
     public final Tree tree;
 
-    /** true if this is a must-call-choice parameter, which gives it special rules */
-    public final boolean isMustCallChoice;
-
     public LocalVarWithTree(LocalVariable localVarNode, Tree tree) {
-      this(localVarNode, tree, false);
-    }
-
-    public LocalVarWithTree(LocalVariable localVarNode, Tree tree, boolean isMustCallChoice) {
       this.localVar = localVarNode;
       this.tree = tree;
-      this.isMustCallChoice = isMustCallChoice;
     }
 
     @Override
