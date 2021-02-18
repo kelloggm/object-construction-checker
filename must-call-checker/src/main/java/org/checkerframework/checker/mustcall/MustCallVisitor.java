@@ -16,6 +16,7 @@ import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.common.basetype.TypeValidator;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.ElementUtils;
@@ -177,5 +178,10 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
   @Override
   public Void visitAnnotation(AnnotationTree node, Void p) {
     return null;
+  }
+
+  @Override
+  protected TypeValidator createTypeValidator() {
+    return new MustCallTypeValidator(checker, this, atypeFactory);
   }
 }
