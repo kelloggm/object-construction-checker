@@ -168,7 +168,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
       LocalVariableNode temp = mcAtf.getTempVar(node);
       if (temp != null) {
         atypeFactory.tempVarToNode.put(temp, node.getTree());
-        JavaExpression localExp = JavaExpression.fromNode(atypeFactory, temp);
+        JavaExpression localExp = JavaExpression.fromNode(temp);
         AnnotationMirror anm =
             atypeFactory
                 .getAnnotatedType(node.getTree())
@@ -233,7 +233,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
           continue;
         }
 
-        JavaExpression receiverReceiver = JavaExpression.fromNode(atypeFactory, arg);
+        JavaExpression receiverReceiver = JavaExpression.fromNode(arg);
         thenStore.insertValue(receiverReceiver, newType);
         elseStore.insertValue(receiverReceiver, newType);
       }
@@ -250,7 +250,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     List<String> valuesAsList = Arrays.asList(values);
     // If dataflow has already recorded information about the target, fetch it and integrate
     // it into the list of values in the new annotation.
-    JavaExpression target = JavaExpression.fromNode(atypeFactory, node);
+    JavaExpression target = JavaExpression.fromNode(node);
     if (CFAbstractStore.canInsertJavaExpression(target)) {
       CFValue flowValue = result.getRegularStore().getValue(target);
       if (flowValue != null) {

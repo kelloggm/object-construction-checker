@@ -15,12 +15,12 @@ class BindChannel {
             // the reset expression to that temporary, since all we have is a string (from the
             // reset annotation) and so we have to go through the type factory's parsing facility,
             // which doesn't know about the temporaries and so doesn't return them. We're therefore
-            // limited to issuing the mustcall.not.parseable and reset.not.owning errors below,
+            // limited to issuing the reset.not.owning error below,
             // instead of the preferable required.method.not.called error on this line - as in
             // the method below, which extracts the socket into a local variable, which can be
             // parsed as an RMC target.
             ServerSocketChannel httpChannel = ServerSocketChannel.open();
-            // :: error: mustcall.not.parseable :: error: reset.not.owning
+            // :: error: reset.not.owning
             httpChannel.socket().bind(addr);
         } catch (IOException io) {
 
