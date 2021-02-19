@@ -18,10 +18,15 @@ import org.checkerframework.framework.source.SupportedOptions;
   "Reflection.astub",
   "SocketAccumulationFrames.astub"
 })
-@SupportedOptions({MustCallChecker.NO_ACCUMULATION_FRAMES})
+@SupportedOptions({
+  MustCallChecker.NO_ACCUMULATION_FRAMES,
+  MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP
+})
 public class MustCallChecker extends BaseTypeChecker {
 
   public static final String NO_ACCUMULATION_FRAMES = "noAccumulationFrames";
+
+  public static final String NO_LIGHTWEIGHT_OWNERSHIP = "noLightweightOwnership";
 
   /**
    * Overridden because the messages.properties file isn't being loaded, for some reason. I think it

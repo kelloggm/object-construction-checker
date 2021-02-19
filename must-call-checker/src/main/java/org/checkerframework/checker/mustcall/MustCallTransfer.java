@@ -223,7 +223,7 @@ public class MustCallTransfer extends CFTransfer {
   public static String standardizeAndViewpointAdapt(
       String s, TreePath currentPath, JavaExpressionContext context) {
     try {
-      return JavaExpressionParseUtil.parse(s, context, currentPath).toString();
+      return JavaExpressionParseUtil.parse(s, context, currentPath, true).toString();
     } catch (JavaExpressionParseException e) {
       return s;
     }

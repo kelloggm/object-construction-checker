@@ -1,3 +1,8 @@
+// This copy of the ACOwning.java test from the mustcall tests
+// has expected errors as if ownership transfer can only happen based
+// on defaults - that is, that @Owning and @NotOwning annotations are
+// ignored.
+
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
@@ -13,40 +18,33 @@ class ACOwning {
         return new Foo();
     }
 
-    static void takeOwnership(@Owning Foo foo, Foo f) {
+    static void takeOwnership(@Owning Foo foo) {
         foo.a();
     }
 
     static void noOwnership(Foo foo) {}
 
-    // :: error: required.method.not.called
     static void takeOwnershipWrong(@Owning Foo foo) {
 
     }
 
     static @NotOwning Foo getNonOwningFoo() {
-        // :: error: required.method.not.called
         return new Foo();
     }
 
     static void callGetNonOwningFoo() {
+        // :: error: required.method.not.called
         getNonOwningFoo();
     }
 
     static void ownershipInCallee() {
-        Foo f = new Foo();
         // :: error: required.method.not.called
-        takeOwnership(f, new Foo());
+        Foo f = new Foo();
+        takeOwnership(f);
         // :: error: required.method.not.called
         Foo g = new Foo();
         noOwnership(g);
     }
-
-    // make sure enum doesn't crash things
-    static enum TestEnum {
-        CASE1, CASE2, CASE3
-    }
-
 
     @Owning public Foo owningAtReturn() {
         return new Foo();
@@ -61,25 +59,6 @@ class ACOwning {
 
     void ownershipTest(){
         // :: error: required.method.not.called
-        takeOwnership(new Foo(), makeFoo());
-    }
-
-    @MustCall({})
-    // :: error: super.invocation.invalid
-    private class SubFoo extends Foo{
-
-        void test() {
-            SubFoo f = new SubFoo();
-        }
-
-        void test2() {
-            // :: error: required.method.not.called
-            Foo f = new Foo();
-        }
-
-        void test3() {
-            Foo f = new SubFoo();
-        }
-
+        takeOwnership(new Foo());
     }
 }

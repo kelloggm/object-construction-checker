@@ -214,7 +214,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       ExecutableElement declaration, AnnotatedExecutableType type) {
     for (int i = 0; i < type.getParameterTypes().size(); i++) {
       Element paramDecl = declaration.getParameters().get(i);
-      if (getDeclAnnotation(paramDecl, Owning.class) == null) {
+      if (checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
+          || getDeclAnnotation(paramDecl, Owning.class) == null) {
         AnnotatedTypeMirror paramType = type.getParameterTypes().get(i);
         if (!paramType.hasAnnotation(POLY)) {
           paramType.replaceAnnotation(TOP);
@@ -309,7 +310,9 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
       Element elt = TreeUtils.elementFromTree(node);
-      if (elt.getKind() == PARAMETER && getDeclAnnotation(elt, Owning.class) == null) {
+      if (elt.getKind() == PARAMETER
+          && (checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
+              || getDeclAnnotation(elt, Owning.class) == null)) {
         type.replaceAnnotation(BOTTOM);
       }
       return super.visitIdentifier(node, type);

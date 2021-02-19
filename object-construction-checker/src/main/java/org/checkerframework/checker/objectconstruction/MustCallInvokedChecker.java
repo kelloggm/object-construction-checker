@@ -245,7 +245,8 @@ class MustCallInvokedChecker {
       if (target instanceof LocalVariable) {
 
         Element elt = ((LocalVariable) target).getElement();
-        if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
+        if (!checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
+            && typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
           // if the target is an Owning param, this satisfies case 1
           return;
         }
@@ -261,7 +262,8 @@ class MustCallInvokedChecker {
       }
       if (target instanceof FieldAccess) {
         Element elt = ((FieldAccess) target).getField();
-        if (typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
+        if (!checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
+            && typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
           // if the target is an Owning field, this satisfies case 1
           return;
         }
@@ -421,6 +423,12 @@ class MustCallInvokedChecker {
    */
   private void doOwnershipTransferToParameters(
       Set<ImmutableSet<LocalVarWithTree>> newDefs, Node node) {
+
+    if (checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)) {
+      // never transfer ownership to parameters, matching ECJ's default
+      return;
+    }
+
     List<Node> arguments = getArgumentsOfMethodOrConstructor(node);
     List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
 
@@ -476,6 +484,11 @@ class MustCallInvokedChecker {
    * the return type
    */
   private boolean isTransferOwnershipAtReturn(ControlFlowGraph cfg) {
+    if (checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)) {
+      // Default to always transferring at return if not using LO, just like ECJ does.
+      return true;
+    }
+
     UnderlyingAST underlyingAST = cfg.getUnderlyingAST();
     if (underlyingAST instanceof UnderlyingAST.CFGMethod) {
       // TODO: lambdas?
@@ -510,7 +523,9 @@ class MustCallInvokedChecker {
 
     // Ownership transfer to @Owning field
     if (lhsElement.getKind().equals(ElementKind.FIELD)) {
-      boolean isOwningField = typeFactory.getDeclAnnotation(lhsElement, Owning.class) != null;
+      boolean isOwningField =
+          !checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
+              && typeFactory.getDeclAnnotation(lhsElement, Owning.class) != null;
       // Check that there is no obligation on the lhs, if the field is non-final and owning.
       if (isOwningField
           && typeFactory.useAccumulationFrames()
@@ -854,6 +869,10 @@ class MustCallInvokedChecker {
   }
 
   private boolean hasNotOwningReturnType(MethodInvocationNode node) {
+    if (checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)) {
+      // Default to always transferring at return if not using LO, just like ECJ does.
+      return false;
+    }
     MethodInvocationTree methodInvocationTree = node.getTree();
     ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
     // void methods are "not owning" by construction
@@ -1023,6 +1042,7 @@ class MustCallInvokedChecker {
         boolean isMustCallChoice = paramElement.getAnnotation(MustCallChoice.class) != null;
         if (isMustCallChoice
             || (typeFactory.hasMustCall(param)
+                && !checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
                 && paramElement.getAnnotation(Owning.class) != null)) {
           Set<LocalVarWithTree> setOfLocals = new LinkedHashSet<>();
           setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
