@@ -1,0 +1,46 @@
+package org.apache.hadoop.net;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@org.apache.hadoop.classification.InterfaceAudience.LimitedPrivate({"HDFS", "MapReduce"})
+@org.apache.hadoop.classification.InterfaceStability.Unstable
+class NetUtils {
+    static final String UNKNOWN_HOST;
+    static final String HADOOP_WIKI;
+    NetUtils();
+    static SocketFactory getSocketFactory(Configuration arg0, Class<?> arg1);
+    static SocketFactory getDefaultSocketFactory(Configuration arg0);
+    static SocketFactory getSocketFactoryFromProperty(Configuration arg0, String arg1);
+    static InetSocketAddress createSocketAddr(String arg0);
+    static InetSocketAddress createSocketAddr(String arg0, int arg1);
+    static InetSocketAddress createSocketAddr(String arg0, int arg1, String arg2);
+    static InetSocketAddress createSocketAddrForHost(String arg0, int arg1);
+    static URI getCanonicalUri(URI arg0, int arg1);
+    static void addStaticResolution(String arg0, String arg1);
+    static String getStaticResolution(String arg0);
+    static List<String[]> getAllStaticResolutions();
+    static InetSocketAddress getConnectAddress(Server arg0);
+    static InetSocketAddress getConnectAddress(InetSocketAddress arg0);
+    @MustCallChoice static SocketInputWrapper getInputStream(@MustCallChoice Socket arg0) throws IOException;
+    @MustCallChoice static SocketInputWrapper getInputStream(@MustCallChoice Socket arg0, long arg1) throws IOException;
+    @MustCallChoice static OutputStream getOutputStream(@MustCallChoice Socket arg0) throws IOException;
+    @MustCallChoice static OutputStream getOutputStream(@MustCallChoice Socket arg0, long arg1) throws IOException;
+    static void connect(Socket arg0, SocketAddress arg1, int arg2) throws IOException;
+    static void connect(Socket arg0, SocketAddress arg1, SocketAddress arg2, int arg3) throws IOException;
+    static String normalizeHostName(String arg0);
+    static List<String> normalizeHostNames(Collection<String> arg0);
+    static void verifyHostnames(String[] arg0) throws UnknownHostException;
+    static String getHostNameOfIP(String arg0);
+    static String getLocalHostname();
+    static String getHostname();
+    static String getHostPortString(InetSocketAddress arg0);
+    static InetAddress getLocalInetAddress(String arg0) throws SocketException;
+    static boolean isLocalAddress(InetAddress arg0);
+    static IOException wrapException(String arg0, int arg1, String arg2, int arg3, IOException arg4);
+    static boolean isValidSubnet(String arg0);
+    static List<InetAddress> getIPs(String arg0, boolean arg1);
+    static int getFreeSocketPort();
+    static InetAddress bindToLocalAddress(InetAddress arg0, boolean arg1);
+}
