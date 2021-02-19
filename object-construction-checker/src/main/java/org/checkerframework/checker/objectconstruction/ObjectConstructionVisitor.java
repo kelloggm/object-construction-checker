@@ -12,6 +12,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.tools.Diagnostic;
 import org.checkerframework.checker.calledmethods.CalledMethodsVisitor;
 import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
+import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
@@ -70,6 +71,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
     Element varElement = TreeUtils.elementFromTree(node);
 
     if (varElement.getKind().isField()
+        && !checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
         && atypeFactory.getDeclAnnotation(varElement, Owning.class) != null) {
       if (ElementUtils.isFinal(varElement)) {
         // Final, owning fields are checked once at the declaration. This class handles that check.

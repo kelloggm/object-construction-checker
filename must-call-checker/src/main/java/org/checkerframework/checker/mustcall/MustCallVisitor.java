@@ -45,7 +45,7 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
     MethodTree enclosingMethod = TreePathUtil.enclosingMethod(this.getCurrentPath());
     // enclosingMethod is null if this return site is inside a lambda. TODO: handle lambdas more
     // precisely?
-    if (enclosingMethod != null) {
+    if (!checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP) && enclosingMethod != null) {
       ExecutableElement methodElt = TreeUtils.elementFromDeclaration(enclosingMethod);
       AnnotationMirror notOwningAnno = atypeFactory.getDeclAnnotation(methodElt, NotOwning.class);
       if (notOwningAnno != null) {

@@ -11,6 +11,8 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeKind;
 import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFactory;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsBottom;
@@ -124,10 +126,14 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
       // can; that would probably require us to change the Must Call Checker to also
       // track temporaries.
       if (mcAnno == null) {
-        Element typeElt = TypesUtils.getTypeElement(local.getType());
+        TypeElement typeElt = TypesUtils.getTypeElement(local.getType());
         if (typeElt == null) {
           mcAnno = mustCallAnnotatedTypeFactory.TOP;
         } else {
+          // Why does this happen sometimes?
+          if (typeElt.asType().getKind() == TypeKind.VOID) {
+            return Collections.emptyList();
+          }
           mcAnno =
               mustCallAnnotatedTypeFactory
                   .getAnnotatedType(typeElt)
