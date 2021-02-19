@@ -3,6 +3,7 @@ package org.checkerframework.checker.objectconstruction;
 import static javax.tools.Diagnostic.Kind.WARNING;
 import static org.checkerframework.checker.mustcall.MustCallChecker.NO_ACCUMULATION_FRAMES;
 import static org.checkerframework.checker.mustcall.MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP;
+import static org.checkerframework.checker.mustcall.MustCallChecker.NO_RESOURCE_ALIASES;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.CHECK_MUST_CALL;
 import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.COUNT_MUST_CALL;
 
@@ -36,7 +37,8 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   CHECK_MUST_CALL,
   COUNT_MUST_CALL,
   NO_ACCUMULATION_FRAMES,
-  NO_LIGHTWEIGHT_OWNERSHIP
+  NO_LIGHTWEIGHT_OWNERSHIP,
+  NO_RESOURCE_ALIASES
 })
 public class ObjectConstructionChecker extends CalledMethodsChecker {
 

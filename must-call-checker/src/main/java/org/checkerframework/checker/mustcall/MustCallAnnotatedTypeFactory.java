@@ -89,7 +89,10 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     BOTTOM = createMustCall();
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
     addAliasedTypeAnnotation(InheritableMustCall.class, MustCall.class, true);
-    addAliasedTypeAnnotation(MustCallChoice.class, POLY);
+    if (!checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES)) {
+      // in NO_RESOURCE_ALIASES mode, all MCC annotations are simply ignored
+      addAliasedTypeAnnotation(MustCallChoice.class, POLY);
+    }
     this.postInit();
   }
 
