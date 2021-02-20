@@ -229,8 +229,14 @@ class MustCallInvokedChecker {
    *
    * <p>If none of the above are true, this method issues a reset.not.owning error.
    *
+   * <p>For soundness, this method also guarantees that if the target is tracked in newdefs, any
+   * tracked aliases will be removed (lest the analysis conclude that it is already closed because
+   * one of these aliases was closed before the reset method was invoked). Aliases created after the
+   * reset method is invoked are still permitted.
+   *
    * @param newDefs the local variables that have been defined in the current compilation unit (and
-   *     are therefore going to be checked later)
+   *     are therefore going to be checked later). This value is side-effected if it contains the
+   *     target of the reset method.
    * @param node a method invocation node, invoking a method with a ResetMustCall annotation
    */
   private void checkResetMustCallInvocation(
@@ -243,20 +249,33 @@ class MustCallInvokedChecker {
     for (JavaExpression target : targetExprs) {
       if (target instanceof LocalVariable) {
 
+        ImmutableSet<LocalVarWithTree> toRemoveSet = null;
+        ImmutableSet<LocalVarWithTree> toAddSet = null;
+        for (ImmutableSet<LocalVarWithTree> defAliasSet : newDefs) {
+          for (LocalVarWithTree localVarWithTree : defAliasSet) {
+            if (target.equals(localVarWithTree.localVar)) {
+              // satisfies case 2 above. Remove all its aliases, then return below.
+              if (toRemoveSet != null) {
+                throw new BugInCF(
+                    "tried to remove multiple sets containing a reset target at once");
+              }
+              toRemoveSet = defAliasSet;
+              toAddSet = ImmutableSet.of(localVarWithTree);
+            }
+          }
+        }
+
+        if (toRemoveSet != null) {
+          newDefs.remove(toRemoveSet);
+          newDefs.add(toAddSet);
+          return;
+        }
+
         Element elt = ((LocalVariable) target).getElement();
         if (!checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
             && typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
           // if the target is an Owning param, this satisfies case 1
           return;
-        }
-
-        for (ImmutableSet<LocalVarWithTree> defAliasSet : newDefs) {
-          for (LocalVarWithTree localVarWithTree : defAliasSet) {
-            if (target.equals(localVarWithTree.localVar)) {
-              // satisfies case 2 above
-              return;
-            }
-          }
         }
       }
       if (target instanceof FieldAccess) {

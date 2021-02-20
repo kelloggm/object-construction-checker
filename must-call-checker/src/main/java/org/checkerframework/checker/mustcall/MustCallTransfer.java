@@ -61,19 +61,38 @@ public class MustCallTransfer extends CFTransfer {
 
         if (result.containsTwoStores()) {
           CFStore thenStore = result.getThenStore();
-          thenStore.clearValue(targetExpr);
-          thenStore.insertValue(targetExpr, defaultType);
+          lubWithStoreValue(thenStore, targetExpr, defaultType);
+
           CFStore elseStore = result.getElseStore();
-          elseStore.clearValue(targetExpr);
-          elseStore.insertValue(targetExpr, defaultType);
+          lubWithStoreValue(elseStore, targetExpr, defaultType);
         } else {
           CFStore store = result.getRegularStore();
-          store.clearValue(targetExpr);
-          store.insertValue(targetExpr, defaultType);
+          lubWithStoreValue(store, targetExpr, defaultType);
         }
       }
     }
     return result;
+  }
+
+  /**
+   * Takes the LUB of the current value in the store for expr, if it exists, and defaultType.
+   * Inserts the result into the store as the new value for expr.
+   *
+   * @param store a CFStore
+   * @param expr an expression that might be in the store
+   * @param defaultType the default type of the expression's static type
+   */
+  private void lubWithStoreValue(CFStore store, JavaExpression expr, AnnotationMirror defaultType) {
+    CFValue value = store.getValue(expr);
+    CFValue defaultTypeAsValue = analysis.createSingleAnnotationValue(defaultType, expr.getType());
+    CFValue newValue;
+    if (value == null) {
+      newValue = defaultTypeAsValue;
+    } else {
+      newValue = value.leastUpperBound(defaultTypeAsValue);
+    }
+    store.clearValue(expr);
+    store.insertValue(expr, newValue);
   }
 
   @Override
