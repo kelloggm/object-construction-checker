@@ -17,7 +17,6 @@ import org.checkerframework.framework.source.SupportedOptions;
   "NoObligationStreams.astub",
   "Reflection.astub",
   "SocketAccumulationFrames.astub",
-  "hbase.astub"
 })
 @SupportedOptions({
   MustCallChecker.NO_ACCUMULATION_FRAMES,
