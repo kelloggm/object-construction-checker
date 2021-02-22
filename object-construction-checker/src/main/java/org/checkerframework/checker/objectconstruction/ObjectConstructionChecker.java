@@ -30,7 +30,8 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   "Stream.astub",
   "NoObligationStreams.astub",
   "IOUtils.astub",
-  "Reflection.astub"
+  "Reflection.astub",
+  "hbase.astub"
 })
 @SupportedOptions({
   CHECK_MUST_CALL,

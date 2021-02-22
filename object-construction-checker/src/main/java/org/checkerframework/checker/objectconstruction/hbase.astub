@@ -1,0 +1,227 @@
+package org.apache.hadoop.io.compress;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@org.apache.hadoop.classification.InterfaceAudience.Public
+@org.apache.hadoop.classification.InterfaceStability.Evolving
+interface CompressionCodec {
+    @MustCallChoice CompressionOutputStream createOutputStream(@MustCallChoice OutputStream arg0) throws IOException;
+    @MustCallChoice CompressionOutputStream createOutputStream(@MustCallChoice OutputStream arg0, Compressor arg1) throws IOException;
+    Class<? extends Compressor> getCompressorType();
+    Compressor createCompressor();
+    @MustCallChoice CompressionInputStream createInputStream(@MustCallChoice InputStream arg0) throws IOException;
+    @MustCallChoice CompressionInputStream createInputStream(@MustCallChoice InputStream arg0, Decompressor arg1) throws IOException;
+    Class<? extends Decompressor> getDecompressorType();
+    Decompressor createDecompressor();
+    String getDefaultExtension();
+}
+class CompressionCodec$Util {
+    Util();
+}
+
+package org.apache.hadoop.io.compress;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@org.apache.hadoop.classification.InterfaceAudience.Public
+@org.apache.hadoop.classification.InterfaceStability.Evolving
+class CompressionInputStream extends InputStream implements Seekable {
+    protected final InputStream in;
+    protected long maxAvailableData;
+    protected @MustCallChoice CompressionInputStream(@MustCallChoice InputStream arg0) throws IOException;
+    void close() throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
+    void resetState() throws IOException;
+    long getPos() throws IOException;
+    void seek(long arg0) throws UnsupportedOperationException;
+    boolean seekToNewSource(long arg0) throws UnsupportedOperationException;
+}
+
+package org.apache.hadoop.fs;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@org.apache.hadoop.classification.InterfaceAudience.Public
+@org.apache.hadoop.classification.InterfaceStability.Stable
+class FSDataInputStream extends DataInputStream implements Seekable, PositionedReadable, ByteBufferReadable, HasFileDescriptor, CanSetDropBehind, CanSetReadahead, HasEnhancedByteBufferAccess, CanUnbuffer, StreamCapabilities {
+    FSDataInputStream(@MustCallChoice InputStream arg0);
+    @MustCallChoice InputStream getWrappedStream();
+}
+
+package org.apache.hbase.thirdparty.com.google.protobuf;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+class ByteString implements Iterable<Byte>, Serializable {
+    @NotOwning InputStream newInput();
+}
+class ByteString$Output extends OutputStream {
+    void write(int arg0);
+    void write(byte[] arg0, int arg1, int arg2);
+    ByteString toByteString();
+    void writeTo(OutputStream arg0) throws IOException;
+    int size();
+    void reset();
+    String toString();
+}
+interface ByteString$ByteIterator extends Iterator<Byte> {
+    byte nextByte();
+}
+
+package org.apache.hadoop.io;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@org.apache.hadoop.classification.InterfaceAudience.Public
+@org.apache.hadoop.classification.InterfaceStability.Evolving
+class IOUtils {
+    static final Logger LOG;
+    IOUtils();
+    static void copyBytes(InputStream arg0, OutputStream arg1, int arg2, boolean arg3) throws IOException;
+    static void copyBytes(InputStream arg0, OutputStream arg1, int arg2) throws IOException;
+    static void copyBytes(@Owning InputStream arg0,@Owning OutputStream arg1, Configuration arg2) throws IOException;
+    static void copyBytes(InputStream arg0, OutputStream arg1, Configuration arg2, boolean arg3) throws IOException;
+    static void copyBytes(InputStream arg0, OutputStream arg1, long arg2, boolean arg3) throws IOException;
+    static int wrappedReadForCompressedData(InputStream arg0, byte[] arg1, int arg2, int arg3) throws IOException;
+    static void readFully(InputStream arg0, byte[] arg1, int arg2, int arg3) throws IOException;
+    static void skipFully(InputStream arg0, long arg1) throws IOException;
+    @java.lang.Deprecated
+    @SuppressWarnings("ensuresvarargs.unverified")
+    @EnsuresCalledMethodsVarArgs("close")
+static void cleanup(Log arg0, Closeable... arg1);
+    @SuppressWarnings("ensuresvarargs.unverified")
+    @EnsuresCalledMethodsVarArgs("close")
+    static void cleanupWithLogger(Logger arg0, Closeable... arg1);
+    @EnsuresCalledMethods(value = "#1", methods = "close")
+    static void closeStream(Closeable arg0);
+    @SuppressWarnings("ensuresvarargs.unverified")
+    @EnsuresCalledMethodsVarArgs("close")
+    static void closeStreams(Closeable... arg0);
+    @EnsuresCalledMethods(value = "#1", methods = "close")
+    static void closeSocket(Socket arg0);
+    static void writeFully(WritableByteChannel arg0, ByteBuffer arg1) throws IOException;
+    static void writeFully(FileChannel arg0, ByteBuffer arg1, long arg2) throws IOException;
+    static List<String> listDirectory(File arg0, FilenameFilter arg1) throws IOException;
+    static void fsync(File arg0) throws IaOException;
+    static void fsync(FileChannel arg0, boolean arg1) throws IOException;
+    static IOException wrapException(String arg0, String arg1, IOException arg2);
+    static byte[] readFullyToByteArray(DataInput arg0) throws IOException;
+}
+class IOUtils$NullOutputStream extends OutputStream {
+    NullOutputStream();
+    void write(byte[] arg0, int arg1, int arg2) throws IOException;
+    void write(int arg0) throws IOException;
+}
+
+package org.apache.hadoop.fs;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@org.apache.hadoop.classification.InterfaceAudience.Public
+@org.apache.hadoop.classification.InterfaceStability.Stable
+class FSDataOutputStream extends DataOutputStream implements Syncable, CanSetDropBehind, StreamCapabilities {
+    @MustCallChoice FSDataOutputStream(@MustCallChoice OutputStream arg0, Statistics arg1);
+    @MustCallChoice FSDataOutputStream(@MustCallChoice OutputStream arg0, Statistics arg1, long arg2);
+    long getPos();
+    void close() throws IOException;
+    String toString();
+    @org.apache.hadoop.classification.InterfaceAudience.LimitedPrivate({"HDFS"})
+@NotOwning OutputStream getWrappedStream();
+    boolean hasCapability(String arg0);
+    void hflush() throws IOException;
+    void hsync() throws IOException;
+    void setDropBehind(Boolean arg0) throws IOException;
+}
+
+package org.apache.hbase.thirdparty.com.google.common.io;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@org.apache.hbase.thirdparty.com.google.common.annotations.GwtIncompatible
+class ByteStreams {
+@MustCallChoice static InputStream limit(@MustCallChoice InputStream arg0, long arg1);
+}
+
+package org.apache.hadoop.security;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@org.apache.hadoop.classification.InterfaceAudience.LimitedPrivate({"HDFS", "MapReduce"})
+@org.apache.hadoop.classification.InterfaceStability.Evolving
+class SaslInputStream extends InputStream implements ReadableByteChannel {
+    static final Logger LOG;
+    @MustCallChoice SaslInputStream(@MustCallChoice InputStream arg0, SaslServer arg1);
+    @MustCallChoice SaslInputStream(@MustCallChoice InputStream arg0, SaslClient arg1);
+    int read() throws IOException;
+    int read(byte[] arg0) throws IOException;
+    int read(byte[] arg0, int arg1, int arg2) throws IOException;
+    long skip(long arg0) throws IOException;
+    int available() throws IOException;
+    void close() throws IOException;
+    boolean markSupported();
+    boolean isOpen();
+    int read(ByteBuffer arg0) throws IOException;
+}
+
+package org.apache.hadoop.net;
+
+import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.common.returnsreceiver.qual.*;
+
+@org.apache.hadoop.classification.InterfaceAudience.LimitedPrivate({"HDFS", "MapReduce"})
+@org.apache.hadoop.classification.InterfaceStability.Unstable
+class NetUtils {
+    static final String UNKNOWN_HOST;
+    static final String HADOOP_WIKI;
+    NetUtils();
+    static SocketFactory getSocketFactory(Configuration arg0, Class<?> arg1);
+    static SocketFactory getDefaultSocketFactory(Configuration arg0);
+    static SocketFactory getSocketFactoryFromProperty(Configuration arg0, String arg1);
+    static InetSocketAddress createSocketAddr(String arg0);
+    static InetSocketAddress createSocketAddr(String arg0, int arg1);
+    static InetSocketAddress createSocketAddr(String arg0, int arg1, String arg2);
+    static InetSocketAddress createSocketAddrForHost(String arg0, int arg1);
+    static URI getCanonicalUri(URI arg0, int arg1);
+    static void addStaticResolution(String arg0, String arg1);
+    static String getStaticResolution(String arg0);
+    static List<String[]> getAllStaticResolutions();
+    static InetSocketAddress getConnectAddress(Server arg0);
+    static InetSocketAddress getConnectAddress(InetSocketAddress arg0);
+    @MustCallChoice static SocketInputWrapper getInputStream(@MustCallChoice Socket arg0) throws IOException;
+    @MustCallChoice static SocketInputWrapper getInputStream(@MustCallChoice Socket arg0, long arg1) throws IOException;
+    @MustCallChoice static OutputStream getOutputStream(@MustCallChoice Socket arg0) throws IOException;
+    @MustCallChoice static OutputStream getOutputStream(@MustCallChoice Socket arg0, long arg1) throws IOException;
+    static void connect(Socket arg0, SocketAddress arg1, int arg2) throws IOException;
+    static void connect(Socket arg0, SocketAddress arg1, SocketAddress arg2, int arg3) throws IOException;
+    static String normalizeHostName(String arg0);
+    static List<String> normalizeHostNames(Collection<String> arg0);
+    static void verifyHostnames(String[] arg0) throws UnknownHostException;
+    static String getHostNameOfIP(String arg0);
+    static String getLocalHostname();
+    static String getHostname();
+    static String getHostPortString(InetSocketAddress arg0);
+    static InetAddress getLocalInetAddress(String arg0) throws SocketException;
+    static boolean isLocalAddress(InetAddress arg0);
+    static IOException wrapException(String arg0, int arg1, String arg2, int arg3, IOException arg4);
+    static boolean isValidSubnet(String arg0);
+    static List<InetAddress> getIPs(String arg0, boolean arg1);
+    static int getFreeSocketPort();
+    static InetAddress bindToLocalAddress(InetAddress arg0, boolean arg1);
+}
