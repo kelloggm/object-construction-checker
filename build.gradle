@@ -7,7 +7,7 @@ buildscript {
 }
 
 plugins {
-    id "com.diffplug.spotless" version "5.10.1" apply false
+    id "com.diffplug.spotless" version "5.10.2" apply false
 }
 
 
