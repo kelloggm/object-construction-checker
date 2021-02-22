@@ -21,13 +21,19 @@ import org.checkerframework.framework.source.SupportedOptions;
 })
 @SupportedOptions({
   MustCallChecker.NO_ACCUMULATION_FRAMES,
-  MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP
+  MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP,
+  MustCallChecker.NO_RESOURCE_ALIASES
 })
 public class MustCallChecker extends BaseTypeChecker {
 
+  /** disables @ResetMustCall support */
   public static final String NO_ACCUMULATION_FRAMES = "noAccumulationFrames";
 
+  /** disables @Owning/@NotOwning support */
   public static final String NO_LIGHTWEIGHT_OWNERSHIP = "noLightweightOwnership";
+
+  /** disables @MustCallChoice support */
+  public static final String NO_RESOURCE_ALIASES = "noResourceAliases";
 
   /**
    * Overridden because the messages.properties file isn't being loaded, for some reason. I think it

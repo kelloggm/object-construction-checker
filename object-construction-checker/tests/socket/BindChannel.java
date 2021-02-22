@@ -29,8 +29,8 @@ class BindChannel {
 
     static void test_lv(InetSocketAddress addr, boolean b) {
         try {
-            // :: error: required.method.not.called
             ServerSocketChannel httpChannel = ServerSocketChannel.open();
+            // :: error: required.method.not.called
             ServerSocket httpSock = httpChannel.socket();
             httpSock.bind(addr);
         } catch (IOException io) {

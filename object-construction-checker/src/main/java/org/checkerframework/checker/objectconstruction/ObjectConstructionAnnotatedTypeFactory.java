@@ -207,6 +207,9 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   }
 
   boolean hasMustCallChoice(Element elt) {
+    if (checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES)) {
+      return false;
+    }
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
     return mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallChoice.class)
