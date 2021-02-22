@@ -91,4 +91,11 @@ class CounterTest {
         }
     }
 
+    @MustCall("a") class Foo { }
+
+    // not counted
+    void test_non_java_star() {
+        // :: error: required.method.not.called
+        new Foo();
+    }
 }

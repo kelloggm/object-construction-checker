@@ -70,6 +70,7 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * Checks that all methods in {@link org.checkerframework.checker.mustcall.qual.MustCall} object
@@ -83,8 +84,6 @@ class MustCallInvokedChecker {
 
   /** {@code @MustCall} errors reported thus far, to avoid duplicates */
   private final Set<LocalVarWithTree> reportedMustCallErrors = new HashSet<>();
-
-  private final Set<Tree> mustCallObligations = new HashSet<>();
 
   private final ObjectConstructionAnnotatedTypeFactory typeFactory;
 
@@ -187,7 +186,7 @@ class MustCallInvokedChecker {
         && typeFactory.useAccumulationFrames()
         && typeFactory.hasResetMustCall((MethodInvocationNode) node)) {
       checkResetMustCallInvocation(defs, (MethodInvocationNode) node);
-      incrementNumMustCall(node.getTree());
+      incrementNumMustCall(node);
     }
 
     if (shouldSkipInvokeCheck(defs, node)) {
@@ -195,7 +194,7 @@ class MustCallInvokedChecker {
     }
 
     if (typeFactory.hasMustCall(node.getTree())) {
-      incrementNumMustCall(node.getTree());
+      incrementNumMustCall(node);
     }
     updateDefsWithTempVar(defs, node);
   }
@@ -1066,7 +1065,7 @@ class MustCallInvokedChecker {
           setOfLocals.add(new LocalVarWithTree(new LocalVariable(paramElement), param));
           init.add(ImmutableSet.copyOf(setOfLocals));
           // Increment numMustCall for each @Owning parameter tracked by the enclosing method
-          incrementNumMustCall(param);
+          incrementNumMustCall(paramElement);
         }
       }
     }
@@ -1178,13 +1177,42 @@ class MustCallInvokedChecker {
     }
   }
 
-  private void incrementNumMustCall(Tree tree) {
+  /**
+   * Increment the -AcountMustCall counter.
+   *
+   * @param node the node being counted, to extract the type
+   */
+  private void incrementNumMustCall(Node node) {
     if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
-      if (!mustCallObligations.contains(tree)) {
-        checker.numMustCall++;
-        mustCallObligations.add(tree);
-      }
+      TypeMirror type = node.getType();
+      incrementMustCallImpl(type);
     }
+  }
+
+  /**
+   * Increment the -AcountMustCall counter.
+   *
+   * @param elt the elt being counted, to extract the type
+   */
+  private void incrementNumMustCall(Element elt) {
+    if (checker.hasOption(ObjectConstructionChecker.COUNT_MUST_CALL)) {
+      TypeMirror type = elt.asType();
+      incrementMustCallImpl(type);
+    }
+  }
+
+  /**
+   * Shared implementation for the two version of countMustCall. Don't call this directly.
+   *
+   * @param type the type of the object that has a must call obligation
+   */
+  private void incrementMustCallImpl(TypeMirror type) {
+    // only count uses of JDK classes, since that's what we report on in the paper
+    String qualifiedName = TypesUtils.getTypeElement(type).getQualifiedName().toString();
+    if (!qualifiedName.startsWith("java")) {
+      return;
+    }
+    checker.numMustCall++;
   }
 
   /**
