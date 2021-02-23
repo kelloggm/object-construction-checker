@@ -12,6 +12,10 @@ set -o pipefail
 # benchmark $ATTEMPTS times. In the paper, we use the median (?) of the
 # results.
 
+# this script requires two variables to be set before it runs:
+# JAVA11_HOME must point towards a Java 11 JDK
+# JAVA8_HOME must point towards a Java 8 JDK
+
 # it is suggested that you create a new temporary directory before running
 # this script. It will place the results in the results/ subdirectory of the
 # directory from which it is run.
@@ -47,6 +51,20 @@ HBASE_CLEAN="mvn clean"
 
 # script starts
 
+if [ "x${JAVA8_HOME}" = "x" ]; then
+  echo "JAVA8_HOME not set"
+  exit 1
+fi
+
+# testing for JAVA11_HOME, not an unintentional reference to JAVA8_HOME
+# shellcheck disable=SC2153
+if [ "x${JAVA11_HOME}" = "x" ]; then
+  echo "JAVA11_HOME not set"
+  exit 1
+fi
+
+OLD_JAVA_HOME="${JAVA_HOME}"
+
 CURDIR=$(pwd)
 RESULTS="${CURDIR}/results"
 
@@ -55,6 +73,8 @@ if [ -d "${RESULTS}" ]; then
 fi
 
 mkdir "${RESULTS}"
+
+export JAVA_HOME="${JAVA11_HOME}"
 
 # clone + build the CF
 if [ ! -d checker-framework ]; then
@@ -77,6 +97,8 @@ git checkout "${OCC_BRANCH}"
 git pull
 ./gradlew install
 cd ..
+
+export JAVA_HOME="${JAVA8_HOME}"
 
 # download Zookeeper
 if [ ! -d zookeeper ]; then
@@ -130,3 +152,5 @@ done
 cd ..
 
 zip -r results.zip "${RESULTS}"
+
+export JAVA_HOME="${OLD_JAVA_HOME}"
