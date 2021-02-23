@@ -4,7 +4,28 @@ set -e
 set -u
 set -o pipefail
 
-# this script builds the Checker Framework and our system at the appropriate
+# This script computes the time taken to type-check benchmark programs.
+# The output of this script is a set of files, each of which contains timing
+# information for a single run. these results will be zipped into a single
+# file called results.zip that will appear in the original directory.
+
+# This script requires two variables to be set before it runs:
+# JAVA11_HOME must point towards a Java 11 JDK
+# JAVA8_HOME must point towards a Java 8 JDK
+
+# It is suggested that you create a new temporary directory before running
+# this script. It will place the results in the results/ subdirectory of the
+# directory from which it is run.
+# For example:
+#   DIR=$HOME/tmp/build-all-and-collect-timing-info-$(hostname)
+#   rm -rf $DIR
+#   mkdir -p $DIR
+#   cd $DIR
+#   ln -s $t/object-construction-checker-branch-always-call-checker/experimental-machinery/case-studies/build-all-and-collect-timing-info.sh .
+#   ./build-all-and-collect-timing-info.sh 2>&1 | tee out.txt
+
+
+# Internally, this script builds the Checker Framework and our system at the appropriate
 # commit hashes, installs them, and then downloads and analyzes each
 # benchmark, printing out the time taken. The time taken is computed
 # using the time command, so this script might not work without
@@ -12,17 +33,6 @@ set -o pipefail
 # benchmark $ATTEMPTS times. In the paper, we use the median (?) of the
 # results.
 
-# this script requires two variables to be set before it runs:
-# JAVA11_HOME must point towards a Java 11 JDK
-# JAVA8_HOME must point towards a Java 8 JDK
-
-# it is suggested that you create a new temporary directory before running
-# this script. It will place the results in the results/ subdirectory of the
-# directory from which it is run.
-
-# the output of this script is a set of files, each of which contains timing
-# information for a single run. these results will be zipped into a single
-# file called results.zip that will appear in the original directory.
 
 # configuration
 
@@ -51,6 +61,8 @@ HBASE_CLEAN="mvn clean"
 
 # script starts
 
+# testing for JAVA8_HOME, not an unintentional reference to JAVA8_HOME
+# shellcheck disable=SC2153
 if [ "x${JAVA8_HOME}" = "x" ]; then
   echo "JAVA8_HOME not set"
   exit 1
