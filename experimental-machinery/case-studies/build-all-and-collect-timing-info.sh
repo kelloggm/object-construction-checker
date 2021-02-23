@@ -120,7 +120,7 @@ git pull
 # This is necessary, or the build command will fail. This command takes nearly
 # 30 minutes to run, but I don't know how to avoid executing it.
 # I think it sets up the dependencies, but I'm not all that confident.
-mvn --projects hbase-server --also-make clean install -DskipTests &> hbase.install.log
+mvn --projects hbase-server --also-make clean install -DskipTests &> hbase.install.log || echo "Could not build hbase-server"
 # do $ATTEMPTS trials on HBase
 for i in $(seq "${ATTEMPTS}"); do
     ${HBASE_CLEAN} &> /dev/null
