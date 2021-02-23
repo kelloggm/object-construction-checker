@@ -107,7 +107,11 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
   @Override
   public void reportError(Object source, @CompilerMessageKey String messageKey, Object... args) {
     if (messageKey.equals("required.method.not.called")) {
-      numMustCallFailed++;
+      // This looks crazy but it's safe because of the warning key.
+      String qualifiedTypeName = (String) args[1];
+      if (qualifiedTypeName.startsWith("java")) {
+        numMustCallFailed++;
+      }
     }
     super.reportError(source, messageKey, args);
   }
