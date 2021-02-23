@@ -1,0 +1,33 @@
+The basic idea is that we only want to count changes that are actually
+to the program text. The results on Zookeeper should make it clear
+why: using this method, there are actually only 12 lines of the
+original Zookeeper program that we changed in any meaningful way
+(compared to the naive estimate of 192 lines).
+
+We also want to collect the reasons for each code change, since we might
+want to report that rather than the raw numbers. These should be collected
+in a similar manner to false positive reasons; as an example, here are
+the reasons that changes were made to Zookeeper (5 total changes):
+
+* reorder try and null check to allow @EnsuresCalledMethods to verify: 2
+* add final to a field: 2
+* create a new local variable so that the store can track multiple uses of socket.get(): 1
+
+Here's how to compute these:
+1. from the target project's directory corresponding to the module of interest (e.g. zookeeper/zookeeper-server for me), run a command like this:
+
+> git diff origin/with-checker -- '*.java'
+
+2. Look through the results and count (I used some scratch paper - the
+numbers should be pretty small) how many added (in green) lines there
+are that do NOT match one of the following conditions (i.e. discard
+any lines like the following):
+
+* lines that are blank
+* lines that are import statements for annotations
+* lines that are comments
+* lines that contain only a warning suppression
+* lines which changed only to add one or more annotations
+
+For each group of changes, record the reason that the change was made
+as a comment in the benchmark repository, for reproducibility.
