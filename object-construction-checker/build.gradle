@@ -88,8 +88,6 @@ clean.doFirst {
     delete "${rootDir}/object-construction-checker/tests/build/"
 }
 
-apply from: rootProject.file("gradle-mvn-push.gradle")
-
 task printClasspath {
     doLast {
         println sourceSets.main.runtimeClasspath.asPath
