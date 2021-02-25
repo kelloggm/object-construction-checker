@@ -26,8 +26,7 @@ There are six interesting branches for zookeeper, hbase, and hadoop:
                            study in section 8.2. no-lo is set up to run without lightweight ownership (section 4),
                            no-ra without resource aliasing (section 5), and no-af without ownership creation annotations
                            (section 6).
-                           
-                           
+             
 There are a few differences in terminology between Plumber's implementation and the paper:
 * @MustCallAlias is called @MustCallChoice
 * @CreateObligation is called @ResetMustCall, and obligation creation is referred to throughout as "accumulation frames"
