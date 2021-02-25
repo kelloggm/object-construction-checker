@@ -18,7 +18,7 @@ the other repositories owned by this user, without compromising double-blind
 
 There are six interesting branches for zookeeper, hbase, and hadoop:
 * master: the original master branch, before we made any modifications. These are fixed at the point
-          when we started making edits.
+          when we started making edits (i.e. at the commit we analyzed).
 * with-checker: master modified with its build system modified to run Plumber.
 * with-annotations: with-checker modified by adding annotations. These versions are the ones we used to collect
                     the results in table 1 (except LoC, which used master).
