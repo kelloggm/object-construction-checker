@@ -1,4 +1,3 @@
-// A test for code encountered by Narges.
 
 import java.nio.channels.*;
 import java.io.*;

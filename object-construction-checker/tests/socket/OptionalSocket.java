@@ -1,7 +1,7 @@
 // A test case for some false positives that came up in Zookeeper.
 // These are sort-of a must call choice situation, but it's not as clear.
 // I suspect our MCC implementation won't actually handle these cases, in
-// which case it's fine with me to skip this test for now. - Martin
+// which case it's fine with me to skip this test for now.
 // @skip-test
 
 import java.util.*;

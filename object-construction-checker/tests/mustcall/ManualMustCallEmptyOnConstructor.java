@@ -1,5 +1,3 @@
-// test for https://github.com/kelloggm/object-construction-checker/issues/326
-
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;

@@ -1,6 +1,5 @@
 // A test that non-owning method parameters are really treated as @MustCall({})
-// wrt polymorphic types. Based on some false positives in Zookeeper and an example
-// written by Manu.
+// wrt polymorphic types. Based on some false positives in Zookeeper.
 
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;

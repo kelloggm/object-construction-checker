@@ -1,4 +1,4 @@
-// Test case based on a false positive reported by Narges that was
+// Test case based on a false positive that was
 // caused by not respecting ownership transfer rules for constructor params.
 
 import java.io.*;

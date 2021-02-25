@@ -21,7 +21,7 @@ set -o pipefail
 #   rm -rf $DIR
 #   mkdir -p $DIR
 #   cd $DIR
-#   ln -s $t/object-construction-checker-branch-always-call-checker/experimental-machinery/case-studies/build-all-and-collect-timing-info.sh .
+#   ln -s $t/plumber/experimental-machinery/case-studies/build-all-and-collect-timing-info.sh .
 #   ./build-all-and-collect-timing-info.sh 2>&1 | tee out.txt
 
 
@@ -30,7 +30,7 @@ set -o pipefail
 # benchmark, printing out the time taken. The time taken is computed
 # using the time command, so this script might not work without
 # modification on a Mac. The script then cleans and re-analyzes each
-# benchmark $ATTEMPTS times. In the paper, we use the median (?) of the
+# benchmark $ATTEMPTS times. In the paper, we used the median of the
 # results.
 
 
@@ -38,24 +38,24 @@ set -o pipefail
 
 ATTEMPTS=5
 
-CF_BRANCH=current-occ-version
-CF_REPO=https://github.com/msridhar/checker-framework.git
+CF_BRANCH=master
+CF_REPO=https://github.com/fse-main-307/checker-framework.git
 
-OCC_BRANCH=always-call-checker
-OCC_REPO=https://github.com/kelloggm/object-construction-checker.git
+PLUMBER_BRANCH=master
+PLUMBER_REPO=https://github.com/fse-main-307/plumber.git
 
 ZK_BRANCH=with-annotations
-ZK_REPO=https://github.com/kelloggm/zookeeper.git
+ZK_REPO=https://github.com/fse-main-307/zookeeper.git
 ZK_CMD="mvn --projects zookeeper-server --also-make clean install -DskipTests"
 ZK_CLEAN="mvn clean"
 
 HADOOP_BRANCH=with-annotations
-HADOOP_REPO=https://github.com/Nargeshdb/hadoop
+HADOOP_REPO=https://github.com/fse-main-307/hadoop
 HADOOP_CMD="mvn --projects hadoop-hdfs-project/hadoop-hdfs --also-make clean compile -DskipTests"
 HADOOP_CLEAN="mvn clean"
 
 HBASE_BRANCH=with-annotations
-HBASE_REPO=https://github.com/Nargeshdb/hbase
+HBASE_REPO=https://github.com/fse-main-307/hbase
 HBASE_CMD="mvn --projects hbase-server --also-make clean compile -DskipTests"
 HBASE_CLEAN="mvn clean"
 
@@ -99,13 +99,13 @@ git pull
 ./gradlew publishToMavenLocal
 cd ..
 
-# clone + build OCC
-if [ ! -d object-construction-checker ]; then
-    git clone "${OCC_REPO}"
+# clone + build plumber
+if [ ! -d plumber ]; then
+    git clone "${PLUMBER_REPO}"
 fi
 
-cd object-construction-checker
-git checkout "${OCC_BRANCH}"
+cd plumber
+git checkout "${PLUMBER_BRANCH}"
 git pull
 ./gradlew install
 cd ..

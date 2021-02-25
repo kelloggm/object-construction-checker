@@ -5,7 +5,7 @@ original Zookeeper program that we changed in any meaningful way
 (compared to the naive estimate of 192 lines).
 
 We also want to collect the reasons for each code change, since we might
-want to report that rather than the raw numbers. These should be collected
+want to report that rather than the raw numbers (spoiler: we did that instead). These should be collected
 in a similar manner to false positive reasons; as an example, here are
 the reasons that changes were made to Zookeeper (5 total changes):
 

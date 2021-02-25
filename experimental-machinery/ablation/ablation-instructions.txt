@@ -38,7 +38,7 @@ the checker).
 2. create three new branch for each case study, each of which should
 be based on the `with-annotations` branch. I ran commands like this:
 
-git checkout -b no-lo kelloggm/with-annotations
+git checkout -b no-lo origin/with-annotations
 
 On each branch, add the appropriate argument to the checker. For
 no-lo, here's the diff:

@@ -1,253 +1,43 @@
-# Object Construction Checker
+## Plumber
 
-The builder pattern is a flexible and readable way to construct objects, but
-it is error-prone.  For example, failing to provide a required argument causes
-a run-time error that manifests during testing or in the field, instead of
-at compile time as for regular Java constructors.
+This is the anonymized repository containing the Plumber tool described in the
+paper "Lightweight and Modular Resource Leak Verification", which was submitted
+to FSE 2021.
 
-The Object Construction Checker verifies at compile time that your code
-correctly uses the builder pattern, never omitting a required argument.
-The checker has built-in support for [Lombok](https://projectlombok.org/)
-and
-[AutoValue](https://github.com/google/auto/blob/master/value/userguide/index.md).
-Programmers can extend it to other builders by writing method
-specifications.
+As a reviewer, you should be able to inspect anything in this repository and
+the other repositories owned by this user, without compromising double-blind
+(we hope!). The repositories are:
+* plumber (this one!): the tool itself, its test suite, and our experimental machinery
+* checker-framework: a hard fork of the Checker Framework, fixed at the commit on their master branch that we used
+                     for our experiments. We didn't make any modifications to this; you could diff it against
+                     github.com/typetools/checker-framework/ at commit id 12fb7e65015015bbba541bf0cfee6270d4d25913,
+                     but we included it here so these repos are self-contained
+* zookeeper: our copy of apache/zookeeper
+* hbase: our copy of apache/hbase
+* hadoop: our copy of apache/hadoop
 
-The checker performs *verification* rather than *bug-finding*.  The checker
-might yield a false positive warning when your code is too tricky for it to
-verify (please submit an
-[issue](https://github.com/kelloggm/object-construction-checker/issues) if
-you discover this).  However, if the checker issues no warnings, then you
-have a guarantee that your code supplies all the required information to
-the builder.
+There are six interesting branches for zookeeper, hbase, and hadoop:
+* master: the original master branch, before we made any modifications. These are fixed at the point
+          when we started making edits.
+* with-checker: master modified with its build system modified to run Plumber.
+* with-annotations: with-checker modified by adding annotations. These versions are the ones we used to collect
+                    the results in table 1 (except LoC, which used master).
+* no-lo, no-ra, and no-af: these are the branches that run Plumber in the three conditions for the ablation
+                           study in section 8.2. no-lo is set up to run without lightweight ownership (section 4),
+                           no-ra without resource aliasing (section 5), and no-af without ownership creation annotations
+                           (section 6).
+                           
+                           
+There are a few differences in terminology between Plumber's implementation and the paper:
+* @MustCallAlias is called @MustCallChoice
+* @CreateObligation is called @ResetMustCall, and obligation creation is referred to throughout as "accumulation frames"
 
+The three parts of section 3 correspond to three different parts of this repository:
+* section 3.1 corresponds to the must-call-checker subproject.
+* section 3.2 corresponds to the object-construction-checker (this repo was originally hard fork of the original
+object-construction-checker in Kellogg et al. ICSE 20, which we built off of), with the exception of the file
+MustCallInvokedChecker.java.
+* section 3.3 corresponds to MustCallInvokedChecker.java.
 
-## Requirements
-
-You can use any build system supported by the 
-[Checker Framework](https://checkerframework.org/manual/#external-tools).
-
-If you are checking code that uses Lombok, there are [additional requirements](#for-lombok-users).
-Lombok support is only maintained for Gradle projects.
-
-For Gradle, you must use version 4.6 or later.
-Using 4.5 or earlier will result in an error `Could not find method
-annotationProcessor() ...`.
-
-
-## Using the checker
-
-The following example uses Gradle.
-
-1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file:
-
-    ```groovy
-    plugins {
-        ...
-        id "org.checkerframework" version "0.5.1"
-    }
-    ```
-
-2. For a vanilla Gradle project, add the following to your `build.gradle` file (adding the entries to the extant `repositories` and `dependencies` blocks if present).
-If your project has subprojects or you need other customizations, see the documentation for the
-[org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) plugin.
-
-    ```groovy
-    repositories {
-        mavenCentral()
-    }
-    checkerFramework {
-        checkers = ['org.checkerframework.checker.objectconstruction.ObjectConstructionChecker']
-        extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
-    }
-    dependencies {
-        checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.9'
-        implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.9'
-    }
-    ```
-
-3. Build your project normally, such as by running `./gradlew build`.  The checker will report an error if any required properties have not been set.
-
-### For Lombok users
-
-The Object Construction Checker supports projects that use Lombok via the [io.freefair.lombok](https://plugins.gradle.org/plugin/io.freefair.lombok) Gradle plugin.
-However, note that the checker's error messages refer to Lombok's output, which is a variant of your source code that appears in a `delombok` directory.
-To fix issues, you should edit your original source code, **not** the files in the checker's error messages.  
-
-If you use Lombok with a build system other than Gradle, you must configure it to do two tasks.
-If either of these are not done, the checker will not issue any errors on Lombok code.
-* set Lombok configuration option `lombok.addLombokGeneratedAnnotation = true`
-* delombok the code before passing it to the checker
-
-
-## Specifying your code
-
-The Object Construction Checker reads method specifications or contracts:  what a method requires when it is called.
-It warns if method arguments do not satisfy the method's specification.
-
-If you use AutoValue or Lombok, most specifications are automatically
-inferred by the Object Construction Checker, from field annotations such as
-`@Nullable` and field types such as `Optional`. See the
- [section on defaulting rules for Lombok and AutoValue for more details](#default-handling-for-lombok-and-autovalue).
-
-In some cases, you may need to specify your code.  You do so by writing
-*type annotations*.  A type annotation is written before a type.  For
-example, in `@NonEmpty List<@Regex String>`, `@NonEmpty` is a type
-annotation on `List`, and `@Regex` is a type annotation on `String`.
-
-### Type annotations
-
-The most important type annotations are:
-<dl>
-<dt><code>@CalledMethods(<em>methodName1, methodName2...</em>)</code></dt>
-<dd>the annotated type represents values, on which all the given methods were definitely called.
-(Other methods might also have been called.)
-
-Suppose that method `build` is annotated as
-```
-class MyBuilder {
-  MyObject build(@CalledMethods({"setX", "setY"}) MyBuilder this) { ... }
-}
-```
-Then the receiver for any call to `build()` must have had `setX()` and `setY()` called on it.
-</dd>
-
-<dt><code>@CalledMethodsPredicate(<em>logical-expression</em>)</code></dt>
-<dd>specifies the required method calls using <a href="https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html">Java boolean syntax</a>.
-
-For example, the annotation `@CalledMethodsPredicate("x && y || z")` on a type represents
-objects such that:
-* both the `x()` and `y()` methods have been called on the object, **or**
-* the `z()` method has been called on the object.
-</dd>
-
-<dt><code>@EnsureCalledMethods(<em>expression, method-list</em>)</code></dt>
-<dd>specifies a post-condition on a method, indicating the methods it guarantees to be called on some
-input expression.  The expression is specified <a href="https://checkerframework.org/manual/#java-expressions-as-arguments">as documented in the Checker Framework manual</a>.
-
-This specification:
-```
-@EnsuresCalledMethods(value = "#1", methods = {"x","y"})
-void m(Param p) { ... }
-```
-guarantees that `p.x()` and `p.y()` will always be called before `m` returns.
-The body of `m` must satisfy that property, and clients of `m` can depend on the property.
-</dd>
-
-<dt><code><a href="https://checkerframework.org/api/org/checkerframework/common/returnsreceiver/qual/This.html">@This</a></code></dt>
-<dd>may only be written on a method return type, and means that the method returns its receiver.
-This is helpful when type-checking fluent APIs. This annotation is defined by the
-<a href="https://checkerframework.org/manual/#returns-receiver-checker">Returns Receiver Checker</a>.
-</dd>
-</dl>
-
-The fully-qualified names of the annotations are:\
-`org.checkerframework.checker.objectconstruction.qual.CalledMethods`\
-`org.checkerframework.checker.objectconstruction.qual.CalledMethodsPredicate`\
-`org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethods`
-
-
-### Type hierarchy (subtyping)
-
-The top element in the hierarchy is `@CalledMethods({})`.
-In `@CalledMethods` annotations, larger arguments induce types that are
-lower in the type hierarchy.  More formally, let &#8849; represent
-subtyping.  Then
-
-`@CalledMethods(`*set1*`) T1` &#8849; `@CalledMethods(`*set2*`) T2` iff  *set1 &supe; set2* and T1 &#8849; T2.
-
-Subtyping between two `@CalledMethodsPredicate` annotations is determined by
-checking whether the proposed subtype implies the proposed supertype. In
-particular:
-
-`CalledMethodsPredicate(`P`) T1` &#8849; `CalledMethodsPredicate(`Q`) T2` iff T1 &#8849; T2
-and "not (P &rArr; Q)" is unsatisfiable. Subtyping will not be checked.
-
-If either P or Q contains operators other than `&&`, `||`, or `!`, the checker will 
-report an error indicating the offending formula.
-
-To determine whether `@CalledMethodsPredicate(`*P*`)` &#8849; `@CalledMethods(`*M*`)`,
-use the above procedure for checking subtyping between `@CalledMethodsPredicate`
-annotations, but replace Q with the conjunctions of the literals in M.
-
-To determine whether `@CalledMethods(`*M*`)` &#8849; `@CalledMethodsPredicate(`*P*`)`,
-use the following procedure:
-
-1. For each *m* in *M*, replace all instances of *m* in *P* with *true*.
-2. Replace every other literal in *P* with *false*.
-3. Evaluate *P* and use its result.
-
-### The NOT operator (`!`) in `@CalledMethodsPredicate`
-
-The boolean syntax accepted by `@CalledMethodsPredicate` includes a NOT operator (`!`).
-The annotation `@CalledMethodsPredicate("!x")` means: "it is not true x was
-definitely called", equivalently "there is some path on which x was not called".
-The annotation `@CalledMethodsPredicate("!x")` does *not* mean "x was not called".
-
-The Object Construction Checker does not have a way of expressing that a
-method must not be called.  You can do unsound bug-finding for such a
-property by using the `!` operator.  The Object Construction Checker will
-detect if the method was always called, but will silently approve the code
-if the method is called on some but not all paths.
-
-For example:
-
-```
-Object never, oneBranch, bothBranches;
-
-if (somePredicate) {
-  oneBranch.methodA();
-  bothBranches.methodA();
-} else {
-  bothBranches.methodA();
-}
-
-@CalledMethodsPredicate("! methodA") Object x;
-x = never;        // no warning (methodA was never called)
-x = oneBranch;    // no warning (even though methodA might have been called)
-x = bothBranches; // warning (methodA was definitely called)
-```
-
-Suppose that exactly one (but not both) of two methods should be called.
-You can specify that via the type annotation
-`@CalledMethodsPredicate("(a && !b) || (!a && b)")`.
-The Object Construction Checker will find some errors.
-It will soundly verify that at least one method is called.
-It will warn if both methods are definitely called.
-However, if will not warn if there are some paths on which both methods are called, and some paths on which only one method is called.
-
-### Default handling for Lombok and AutoValue
-
-The Object Construction Checker automatically assumes default annotations for code that uses builders generated
-by Lombok and AutoValue. There are three places annotations are usually assumed:
-* A `@CalledMethods` annotation is placed on the receiver of the `build()` method, capturing the
-setter methods that must be invoked on the builder before calling `build()`. For Lombok,
-this annotation's argument is the set of `@lombok.NonNull` fields that do not have default values.
-For AutoValue, it is the set of fields that are not `@Nullable`, `Optional`, or a Guava Immutable
-Collection.
-* If the object has a `toBuilder()` method (for example, if the `toBuilder = true` option is
-passed to Lombok's `@Builder` annotation), then the return type of that method is annotated with
-the same `@CalledMethods` annotation as the receiver of `build()`, using the same rules as above.
-* A `@This` annotation is placed on the return type of each setter in the builder's implementation.
-
-You can disable the framework supports by specifying them in a comma-separated list to the 
-command-line flag `disableFrameworkSupports`.  For example, to disable both Lombok and AutoValue supports,
-use `-AdisableFrameworkSupports=AutoValue,Lombok` . 
- 
-If you overwrite the definition of any of these methods (for example, by adding your own setters to
-a Lombok builder), you may need to write the annotations manually.
-
-Minor notes/caveats on these rules:
-* Lombok fields annotated with `@Singular` will be treated as defaulted (i.e. not required), because
-Lombok will set them to empty collections if the appropriate setter is not called.
-* If you manually provide defaults to a Lombok builder (for example, by defining the builder yourself
-and assigning a default value to the builder's field), the checker will treat that field as defaulted
-*most of the time*. In particular, it will not treat it as defaulted if it is defined in bytecode rather
-than in source code.
-
-## More information
-
-The Object Construction Checker is built upon the [Checker
-Framework](https://checkerframework.org/).  The [Checker Framework
-Manual](https://checkerframework.org/manual/) gives more information about
-using pluggable type-checkers.
+The implementations of the features described in sections 4-6 are scattered throughout the 3 places listed above,
+as appropriate.

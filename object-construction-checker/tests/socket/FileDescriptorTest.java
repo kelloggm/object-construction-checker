@@ -40,7 +40,6 @@ public class FileDescriptorTest
         }
     }
 
-    // This version, written by Narges, does not issue a false positive.
     public static void readPropertiesFile_noFP(File from) throws IOException {
         RandomAccessFile file = new RandomAccessFile(from, "rws");
         FileInputStream in = null;

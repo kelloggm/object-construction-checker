@@ -1,4 +1,4 @@
-// A test case for a crash that Narges encountered while checking hfds.
+// A test case for a crash encountered while checking hfds.
 
 import java.io.DataOutputStream;
         import java.io.OutputStream;
