@@ -14,6 +14,7 @@ import org.checkerframework.framework.source.SupportedOptions;
   "Socket.astub",
   "NotOwning.astub",
   "Stream.astub",
+  "NoObligationGenerics.astub",
   "NoObligationStreams.astub",
   "Reflection.astub",
   "SocketAccumulationFrames.astub",
