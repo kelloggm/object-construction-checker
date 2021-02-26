@@ -216,6 +216,11 @@ class Writer {
     @NotOwning Writer append(char arg0) throws IOException;
 }
 
+class LineNumberReader {
+    @MustCallChoice LineNumberReader(@MustCallChoice Reader in);
+    @MustCallChoice LineNumberReader(@MustCallChoice Reader in);
+}
+
 package java.security;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
@@ -267,4 +272,11 @@ class CheckedInputStream extends FilterInputStream {
 class GZIPInputStream extends InflaterInputStream {
     @MustCallChoice GZIPInputStream​(@MustCallChoice InputStream in);
     @MustCallChoice GZIPInputStream​(@MustCallChoice InputStream in, int size);
+}
+
+class GZIPOutputStream extends DeflaterOutputStream {
+    @MustCallChoice GZIPOutputStream​(@MustCallChoice OutputStream in);
+    @MustCallChoice GZIPOutputStream​(@MustCallChoice OutputStream in, boolean syncFlush);
+    @MustCallChoice GZIPOutputStream​(@MustCallChoice OutputStream in, int size);
+    @MustCallChoice GZIPOutputStream​(@MustCallChoice OutputStream in, int size, boolean syncFlush);
 }
