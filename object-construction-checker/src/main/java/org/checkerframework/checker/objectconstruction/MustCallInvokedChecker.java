@@ -296,7 +296,7 @@ class MustCallInvokedChecker {
               AnnotationUtils.getElementValue(enclosingResetMustCall, "value", String.class, true);
           JavaExpressionContext enclosingContext =
               JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
-                  enclosingMethod, currentPath, checker);
+                  enclosingMethod, checker);
           String enclosingTargetStr =
               MustCallTransfer.standardizeAndViewpointAdapt(
                   enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
@@ -773,7 +773,7 @@ class MustCallInvokedChecker {
     }
     JavaExpressionContext context =
         JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
-            enclosingMethod, currentPath, checker);
+            enclosingMethod, checker);
     String checked = "";
     for (String targetStrWithoutAdaptation : targetStrsWithoutAdaptation) {
       String targetStr =
