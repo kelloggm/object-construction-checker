@@ -263,3 +263,8 @@ package java.util.zip;
 class CheckedInputStream extends FilterInputStream {
     @MustCallChoice CheckedInputStream(@MustCallChoice InputStream arg0, Checksum arg1);
 }
+
+class GZIPInputStream extends InflaterInputStream {
+    @MustCallChoice GZIPInputStream​(@MustCallChoice InputStream in);
+    @MustCallChoice GZIPInputStream​(@MustCallChoice InputStream in, int size);
+}
