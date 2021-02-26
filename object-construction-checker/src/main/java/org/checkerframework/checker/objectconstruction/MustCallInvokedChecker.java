@@ -1279,7 +1279,11 @@ class MustCallInvokedChecker {
    */
   /* package-private */
   static String formatMissingMustCallMethods(List<String> mustCallVal) {
-    return mustCallVal.stream().reduce("", (s, acc) -> "".equals(acc) ? s : acc + ", " + s);
+    if (mustCallVal.size() == 1) {
+      return "method " + mustCallVal.get(0);
+    } else {
+      return "methods " + String.join(", ", mustCallVal);
+    }
   }
 
   /**
