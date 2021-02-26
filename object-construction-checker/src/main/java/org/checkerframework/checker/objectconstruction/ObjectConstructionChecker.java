@@ -29,6 +29,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
   "Socket.astub",
   "NotOwning.astub",
   "Stream.astub",
+  "NoObligationGenerics.astub",
   "NoObligationStreams.astub",
   "IOUtils.astub",
   "Reflection.astub",
