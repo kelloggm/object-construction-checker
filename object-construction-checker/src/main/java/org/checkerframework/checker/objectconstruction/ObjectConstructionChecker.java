@@ -87,7 +87,7 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
         "@EnsuresCalledMethodsVarArgs cannot be verified yet.  Please check that the implementation of the method actually does call the given methods on the varargs parameters by hand, and then suppress the warning.");
     messages.setProperty(
         "required.method.not.called",
-        "@MustCall method(s) %s for variable/expression not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
+        "@MustCall %s not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
     messages.setProperty(
         "missing.reset.mustcall",
         "This method re-assigns the non-final, owning field %s.%s, but does not have a corresponding @ResetMustCall annotation.\n");
