@@ -5,6 +5,8 @@ import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.AmazonEC2AsyncClient;
 
+// @skip-test until stubs in CF proper are fixed.
+
 // https://nvd.nist.gov/vuln/detail/CVE-2018-15869
 public class Cve {
     private static final String IMG_NAME = "some_linux_img";
@@ -70,6 +72,26 @@ public class Cve {
 
     public static void correct2(AmazonEC2AsyncClient client) {
         DescribeImagesResult result = client.describeImages(new DescribeImagesRequest()
+                .withImageIds("myImageId"));
+    }
+
+    // Using async methods
+    public static void onlyNames(AmazonEC2AsyncClient client) {
+        // Should not be allowed unless .withOwner is also used
+        Object result = client.describeImagesAsync(new DescribeImagesRequest()
+                // :: error: argument.type.incompatible
+                .withFilters(new Filter("name").withValues(IMG_NAME)));
+
+    }
+
+    public static void correct1(AmazonEC2AsyncClient client) {
+        Object result = client.describeImagesAsync(new DescribeImagesRequest()
+                .withFilters(new Filter("name").withValues(IMG_NAME))
+                .withOwners("martin"));
+    }
+
+    public static void correct2(AmazonEC2AsyncClient client) {
+        Object result = client.describeImagesAsync(new DescribeImagesRequest()
                 .withImageIds("myImageId"));
     }
 }
