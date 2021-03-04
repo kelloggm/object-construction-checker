@@ -6,6 +6,7 @@ import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.AmazonEC2AsyncClient;
 
 // @skip-test until stubs in CF proper are fixed.
+// See https://github.com/typetools/checker-framework/pull/4353
 
 // https://nvd.nist.gov/vuln/detail/CVE-2018-15869
 public class Cve {
