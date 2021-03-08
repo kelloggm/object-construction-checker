@@ -296,7 +296,7 @@ class MustCallInvokedChecker {
               AnnotationUtils.getElementValue(enclosingResetMustCall, "value", String.class, true);
           JavaExpressionContext enclosingContext =
               JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
-                  enclosingMethod, currentPath, checker);
+                  enclosingMethod, checker);
           String enclosingTargetStr =
               MustCallTransfer.standardizeAndViewpointAdapt(
                   enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
@@ -773,7 +773,7 @@ class MustCallInvokedChecker {
     }
     JavaExpressionContext context =
         JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
-            enclosingMethod, currentPath, checker);
+            enclosingMethod, checker);
     String checked = "";
     for (String targetStrWithoutAdaptation : targetStrsWithoutAdaptation) {
       String targetStr =
@@ -937,15 +937,6 @@ class MustCallInvokedChecker {
       Deque<BlockWithLocals> worklist,
       Set<ImmutableSet<LocalVarWithTree>> defs,
       Block block) {
-    String outOfScopeReason;
-    if (block instanceof ExceptionBlock) {
-      outOfScopeReason =
-          "possible exceptional exit due to " + ((ExceptionBlock) block).getNode().getTree();
-    } else {
-      // technically the variable may be going out of scope before the method exit, but that
-      // doesn't seem to provide additional helpful information
-      outOfScopeReason = "regular method exit";
-    }
     List<Node> nodes = block.getNodes();
     for (Pair<Block, @Nullable TypeMirror> succAndExcType : getRelevantSuccessors(block)) {
       Set<ImmutableSet<LocalVarWithTree>> defsCopy = new LinkedHashSet<>(defs);
@@ -954,8 +945,14 @@ class MustCallInvokedChecker {
       TypeMirror exceptionType = succAndExcType.second;
       String reasonForSucc =
           exceptionType == null
-              ? outOfScopeReason
-              : outOfScopeReason + " with exception type " + exceptionType.toString();
+              ?
+              // technically the variable may be going out of scope before the method exit, but that
+              // doesn't seem to provide additional helpful information
+              "regular method exit"
+              : "possible exceptional exit due to "
+                  + ((ExceptionBlock) block).getNode().getTree()
+                  + " with exception type "
+                  + exceptionType.toString();
       CFStore succRegularStore = analysis.getInput(succ).getRegularStore();
       for (ImmutableSet<LocalVarWithTree> setAssign : defs) {
         // If the successor block is the exit block or if the variable is going out of scope
@@ -1279,7 +1276,11 @@ class MustCallInvokedChecker {
    */
   /* package-private */
   static String formatMissingMustCallMethods(List<String> mustCallVal) {
-    return mustCallVal.stream().reduce("", (s, acc) -> "".equals(acc) ? s : acc + ", " + s);
+    if (mustCallVal.size() == 1) {
+      return "method " + mustCallVal.get(0);
+    } else {
+      return "methods " + String.join(", ", mustCallVal);
+    }
   }
 
   /**
