@@ -32,7 +32,7 @@ public class MustCallChecker extends BaseTypeChecker {
   /** disables @Owning/@NotOwning support */
   public static final String NO_LIGHTWEIGHT_OWNERSHIP = "noLightweightOwnership";
 
-  /** disables @MustCallChoice support */
+  /** disables @MustCallAlias support */
   public static final String NO_RESOURCE_ALIASES = "noResourceAliases";
 
   /**

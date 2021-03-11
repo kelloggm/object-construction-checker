@@ -1,5 +1,5 @@
-// Simple tests of @MustCallChoice functionality on wrapper streams.
-// This version has been modified to expect that @MustCallChoice annotations
+// Simple tests of @MustCallAlias functionality on wrapper streams.
+// This version has been modified to expect that @MustCallAlias annotations
 // are always ignored, as if running with -AnoResourceAliases.
 
 import java.io.*;
@@ -8,7 +8,7 @@ import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.IOException;
 import org.checkerframework.checker.calledmethods.qual.*;
 
-class MustCallChoiceExamples {
+class MustCallAliasExamples {
 
     void test_two_locals(String address) {
         Socket socket = null;

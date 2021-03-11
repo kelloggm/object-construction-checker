@@ -7,9 +7,9 @@ import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-class MustCallChoicePassthroughWrong1 extends FilterInputStream {
+class MustCallAliasPassthroughWrong1 extends FilterInputStream {
     // :: error: required.method.not.called
-    @MustCallChoice MustCallChoicePassthroughWrong1(@MustCallChoice InputStream is) {
+    @MustCallAlias MustCallAliasPassthroughWrong1(@MustCallAlias InputStream is) {
         super(null);
     }
 }

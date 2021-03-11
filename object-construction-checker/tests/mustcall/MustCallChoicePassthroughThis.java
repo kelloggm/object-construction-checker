@@ -5,12 +5,12 @@ import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-class MustCallChoicePassthroughThis extends FilterInputStream {
-    @MustCallChoice MustCallChoicePassthroughThis(@MustCallChoice InputStream is) {
+class MustCallAliasPassthroughThis extends FilterInputStream {
+    @MustCallAlias MustCallAliasPassthroughThis(@MustCallAlias InputStream is) {
         super(is);
     }
 
-    @MustCallChoice MustCallChoicePassthroughThis(@MustCallChoice InputStream is, int x) {
+    @MustCallAlias MustCallAliasPassthroughThis(@MustCallAlias InputStream is, int x) {
         this(is);
     }
 }

@@ -3,7 +3,7 @@
 import java.io.*;
 import java.net.*;
 
-class MustCallChoiceSocketException {
+class MustCallAliasSocketException {
 
     public boolean quorumRequireSasl;
 

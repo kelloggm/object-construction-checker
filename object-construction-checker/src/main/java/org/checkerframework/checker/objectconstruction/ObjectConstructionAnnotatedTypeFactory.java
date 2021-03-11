@@ -21,7 +21,7 @@ import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallNoAccumulationFramesChecker;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.MustCallInvokedChecker.LocalVarWithTree;
@@ -201,18 +201,18 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     return !getMustCallValue(t).isEmpty();
   }
 
-  boolean hasMustCallChoice(Tree tree) {
+  boolean hasMustCallAlias(Tree tree) {
     Element elt = TreeUtils.elementFromTree(tree);
-    return hasMustCallChoice(elt);
+    return hasMustCallAlias(elt);
   }
 
-  boolean hasMustCallChoice(Element elt) {
+  boolean hasMustCallAlias(Element elt) {
     if (checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES)) {
       return false;
     }
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
-    return mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallChoice.class)
+    return mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallAlias.class)
         != null;
   }
 

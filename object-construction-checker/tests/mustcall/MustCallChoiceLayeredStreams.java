@@ -4,7 +4,7 @@ import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 import java.io.*;
 
-class MustCallChoiceLayeredStreams {
+class MustCallAliasLayeredStreams {
     InputStream cache;
     public InputStream createInputStream(String filename) throws FileNotFoundException {
         if (cache == null) {

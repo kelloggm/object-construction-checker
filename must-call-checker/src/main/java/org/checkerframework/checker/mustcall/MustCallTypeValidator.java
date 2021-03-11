@@ -2,7 +2,7 @@ package org.checkerframework.checker.mustcall;
 
 import com.sun.source.tree.Tree;
 import javax.lang.model.element.Element;
-import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeValidator;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -13,7 +13,7 @@ import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * This type validator is identical to BaseTypeValidator, except that it always permits the use of
- * {@link org.checkerframework.checker.mustcall.qual.MustCallChoice} annotations on type uses,
+ * {@link MustCallAlias} annotations on type uses,
  * because these will be validated by the Object Construction Checker's -AcheckMustCall algorithm.
  */
 public class MustCallTypeValidator extends BaseTypeValidator {
@@ -25,7 +25,7 @@ public class MustCallTypeValidator extends BaseTypeValidator {
   @Override
   protected void reportInvalidAnnotationsOnUse(AnnotatedTypeMirror type, Tree p) {
     Element elt = TreeUtils.elementFromTree(p);
-    if (AnnotationUtils.containsSameByClass(elt.getAnnotationMirrors(), MustCallChoice.class)) {
+    if (AnnotationUtils.containsSameByClass(elt.getAnnotationMirrors(), MustCallAlias.class)) {
       return;
     }
     super.reportInvalidAnnotationsOnUse(type, p);

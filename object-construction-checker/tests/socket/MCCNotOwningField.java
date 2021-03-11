@@ -1,4 +1,4 @@
-// A test case that a MustCallChoice value with a non-owning field with a must-call obligation
+// A test case that a MustCallAlias value with a non-owning field with a must-call obligation
 // does not lead to a false positive.
 
 import java.net.Socket;

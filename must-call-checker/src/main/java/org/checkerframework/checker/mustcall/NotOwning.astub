@@ -29,7 +29,7 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
     SocketChannel bind(SocketAddress arg0) throws IOException;
     @NotOwning SocketChannel shutdownInput() throws IOException;
     @NotOwning SocketChannel shutdownOutput() throws IOException;
-    @MustCallChoice Socket socket(@MustCallChoice SocketChannel this);
+    @MustCallAlias Socket socket(@MustCallAlias SocketChannel this);
 
     @EnsuresCalledMethodsIf(expression="this", result=false, methods={"close"})
     boolean isOpen();
@@ -40,19 +40,19 @@ class ServerSocketChannel extends AbstractSelectableChannel implements NetworkCh
     // static @MustCall({}) ServerSocketChannel open() throws IOException;
     int validOps();
     @ResetMustCall("this")
-    @MustCallChoice ServerSocketChannel bind(@MustCallChoice ServerSocketChannel this, SocketAddress arg0) throws IOException;
+    @MustCallAlias ServerSocketChannel bind(@MustCallAlias ServerSocketChannel this, SocketAddress arg0) throws IOException;
     @ResetMustCall("this")
-    @MustCallChoice ServerSocketChannel bind(@MustCallChoice ServerSocketChannel this, SocketAddress arg0, int arg1) throws IOException;
+    @MustCallAlias ServerSocketChannel bind(@MustCallAlias ServerSocketChannel this, SocketAddress arg0, int arg1) throws IOException;
     <T> ServerSocketChannel setOption(SocketOption<T> arg0, T arg1) throws IOException;
-    @MustCallChoice ServerSocket socket(@MustCallChoice ServerSocketChannel this);
-    @MustCallChoice SocketChannel accept(@MustCallChoice ServerSocketChannel this) throws IOException;
+    @MustCallAlias ServerSocket socket(@MustCallAlias ServerSocketChannel this);
+    @MustCallAlias SocketChannel accept(@MustCallAlias ServerSocketChannel this) throws IOException;
     SocketAddress getLocalAddress() throws IOException;
 }
 
 package java.nio.channels.spi;
 
 class AbstractSelectableChannel {
-    @MustCallChoice @This SelectableChannel configureBlocking(@MustCallChoice AbstractSelectableChannel this, boolean b);
+    @MustCallAlias @This SelectableChannel configureBlocking(@MustCallAlias AbstractSelectableChannel this, boolean b);
 }
 
 class AbstractInterruptibleChannel {

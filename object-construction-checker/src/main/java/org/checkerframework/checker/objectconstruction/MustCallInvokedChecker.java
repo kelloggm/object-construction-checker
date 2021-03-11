@@ -207,16 +207,16 @@ class MustCallInvokedChecker {
    * @param defs current defs
    * @param node a super or this constructor invocation
    */
-  private void handleThisOrSuperConstructorMustCallChoice(
+  private void handleThisOrSuperConstructorMustCallAlias(
       Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
-    Node mccParam = getVarOrTempVarPassedAsMustCallChoiceParam(node);
+    Node mccParam = getVarOrTempVarPassedAsMustCallAliasParam(node);
     // If the MCC param is also in the def set, then remove it -
     // its obligation has been fulfilled by being passed on to the MCC constructor (because we must
     // be in a constructor body if we've encountered a this/super constructor call).
     if (mccParam instanceof LocalVariableNode && isVarInDefs(defs, (LocalVariableNode) mccParam)) {
-      ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
+      ImmutableSet<LocalVarWithTree> setContainingMustCallAliasParamLocal =
           getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) mccParam);
-      defs.remove(setContainingMustCallChoiceParamLocal);
+      defs.remove(setContainingMustCallAliasParamLocal);
     }
   }
 
@@ -331,7 +331,7 @@ class MustCallInvokedChecker {
       Node sameResource = null;
       // Set sameResource to the MCC parameter if any exists, otherwise it remains null
       if (node instanceof ObjectCreationNode || node instanceof MethodInvocationNode) {
-        sameResource = getVarOrTempVarPassedAsMustCallChoiceParam(node);
+        sameResource = getVarOrTempVarPassedAsMustCallAliasParam(node);
       }
 
       // If sameResource is still null and node returns @This, set sameResource to the receiver
@@ -352,14 +352,14 @@ class MustCallInvokedChecker {
       // containing sameResource. Otherwise, add it to a new set
       if (sameResource instanceof LocalVariableNode
           && isVarInDefs(defs, (LocalVariableNode) sameResource)) {
-        ImmutableSet<LocalVarWithTree> setContainingMustCallChoiceParamLocal =
+        ImmutableSet<LocalVarWithTree> setContainingMustCallAliasParamLocal =
             getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) sameResource);
-        ImmutableSet<LocalVarWithTree> newSetContainingMustCallChoiceParamLocal =
-            FluentIterable.from(setContainingMustCallChoiceParamLocal)
+        ImmutableSet<LocalVarWithTree> newSetContainingMustCallAliasParamLocal =
+            FluentIterable.from(setContainingMustCallAliasParamLocal)
                 .append(lhsLocalVarWithTreeNew)
                 .toSet();
-        defs.remove(setContainingMustCallChoiceParamLocal);
-        defs.add(newSetContainingMustCallChoiceParamLocal);
+        defs.remove(setContainingMustCallAliasParamLocal);
+        defs.add(newSetContainingMustCallAliasParamLocal);
       } else if (!(sameResource instanceof LocalVariableNode)) {
         defs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
       }
@@ -369,7 +369,7 @@ class MustCallInvokedChecker {
   /**
    * Checks for cases where we do not need to track a method. We can skip the check when the method
    * invocation is a call to "this" or a super constructor call, when the method's return type is
-   * annotated with MustCallChoice and the argument in the corresponding position is an owning
+   * annotated with MustCallAlias and the argument in the corresponding position is an owning
    * field, or when the method's return type is non-owning, which can either be because the method
    * has no return type or because it is annotated with {@link NotOwning}.
    */
@@ -380,10 +380,10 @@ class MustCallInvokedChecker {
 
       if (TreeUtils.isSuperConstructorCall(methodInvokeTree)
           || TreeUtils.isThisConstructorCall(methodInvokeTree)) {
-        handleThisOrSuperConstructorMustCallChoice(defs, node);
+        handleThisOrSuperConstructorMustCallAlias(defs, node);
         return true;
       }
-      return returnTypeIsMustCallChoiceWithIgnorable((MethodInvocationNode) node)
+      return returnTypeIsMustCallAliasWithIgnorable((MethodInvocationNode) node)
           || hasNotOwningReturnType((MethodInvocationNode) node);
     }
     return false;
@@ -398,8 +398,8 @@ class MustCallInvokedChecker {
    * @return if this is the invocation of a method whose return type is MCC with an owning field or
    *     a non-owning pointer
    */
-  private boolean returnTypeIsMustCallChoiceWithIgnorable(MethodInvocationNode node) {
-    Node mccParam = getVarOrTempVarPassedAsMustCallChoiceParam(node);
+  private boolean returnTypeIsMustCallAliasWithIgnorable(MethodInvocationNode node) {
+    Node mccParam = getVarOrTempVarPassedAsMustCallAliasParam(node);
     return mccParam instanceof FieldAccessNode || mccParam instanceof ThisNode;
   }
 
@@ -812,21 +812,21 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * This method tries to find a local variable passed as a @MustCallChoice parameter. In the base
+   * This method tries to find a local variable passed as a @MustCallAlias parameter. In the base
    * case, if {@code node} is a local variable, it just gets returned. Otherwise, if node is a call
-   * (or a call wrapped in a cast), the code finds the parameter passed in the @MustCallChoice
+   * (or a call wrapped in a cast), the code finds the parameter passed in the @MustCallAlias
    * position, and recurses on that parameter.
    *
    * @param node
    * @return {@code node} iff {@code node} represents a local variable that is passed as
-   *     a @MustCallChoice parameter, otherwise null
+   *     a @MustCallAlias parameter, otherwise null
    */
-  private @Nullable Node getVarOrTempVarPassedAsMustCallChoiceParam(Node node) {
+  private @Nullable Node getVarOrTempVarPassedAsMustCallAliasParam(Node node) {
     node = removeCasts(node);
     Node n = null;
     if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
 
-      if (!typeFactory.hasMustCallChoice(node.getTree())) {
+      if (!typeFactory.hasMustCallAlias(node.getTree())) {
         return null;
       }
 
@@ -834,7 +834,7 @@ class MustCallInvokedChecker {
       List<? extends VariableElement> formals = getFormalsOfMethodOrConstructor(node);
 
       for (int i = 0; i < arguments.size(); i++) {
-        if (typeFactory.hasMustCallChoice(formals.get(i))) {
+        if (typeFactory.hasMustCallAlias(formals.get(i))) {
           n = arguments.get(i);
           if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
             n = typeFactory.getTempVarForTree(n);
@@ -843,7 +843,7 @@ class MustCallInvokedChecker {
         }
       }
 
-      // If node does't have @MustCallChoice parameter then it checks the receiver parameter
+      // If node does't have @MustCallAlias parameter then it checks the receiver parameter
       if (n == null && node instanceof MethodInvocationNode) {
         n = ((MethodInvocationNode) node).getTarget().getReceiver();
         if (n instanceof MethodInvocationNode || n instanceof ObjectCreationNode) {
@@ -1053,8 +1053,8 @@ class MustCallInvokedChecker {
       MethodTree method = ((UnderlyingAST.CFGMethod) underlyingAST).getMethod();
       for (VariableTree param : method.getParameters()) {
         Element paramElement = TreeUtils.elementFromDeclaration(param);
-        boolean isMustCallChoice = typeFactory.hasMustCallChoice(paramElement);
-        if (isMustCallChoice
+        boolean isMustCallAlias = typeFactory.hasMustCallAlias(paramElement);
+        if (isMustCallAlias
             || (typeFactory.hasMustCall(param)
                 && !checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
                 && paramElement.getAnnotation(Owning.class) != null)) {

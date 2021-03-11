@@ -1,15 +1,15 @@
-// Based on a MustCallChoice scenario in Zookeeper.
+// Based on a MustCallAlias scenario in Zookeeper.
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 import java.io.*;
 
-public @MustCall("shutdown") class MustCallChoiceOwningField {
+public @MustCall("shutdown") class MustCallAliasOwningField {
 
     private final @Owning BufferedInputStream input;
 
-    public MustCallChoiceOwningField(@Owning BufferedInputStream input, boolean b) {
+    public MustCallAliasOwningField(@Owning BufferedInputStream input, boolean b) {
         this.input = input;
         if (b) {
             DataInputStream d = new DataInputStream(input);

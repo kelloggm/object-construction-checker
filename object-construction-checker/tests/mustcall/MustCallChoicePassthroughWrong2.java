@@ -10,8 +10,8 @@ import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-class MustCallChoicePassthroughWrong2 extends FilterInputStream {
-    @MustCallChoice MustCallChoicePassthroughWrong2(@MustCallChoice InputStream is) throws Exception {
+class MustCallAliasPassthroughWrong2 extends FilterInputStream {
+    @MustCallAlias MustCallAliasPassthroughWrong2(@MustCallAlias InputStream is) throws Exception {
         super(null);
         closeIS(is);
     }

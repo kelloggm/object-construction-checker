@@ -1,4 +1,4 @@
-// A test that when a must-call class with MustCallChoice methods
+// A test that when a must-call class with MustCallAlias methods
 // is extended, those methods can be used without false positives.
 
 import java.net.Socket;

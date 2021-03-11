@@ -7,10 +7,10 @@ import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-class MustCallChoicePassthroughWrong4 extends FilterInputStream {
+class MustCallAliasPassthroughWrong4 extends FilterInputStream {
     // I mean I guess this return type is technically okay - it's too conservative (@Owning on the
     // param would be better) but I see no reason not to verify it.
-    @MustCallChoice MustCallChoicePassthroughWrong4(@MustCallChoice InputStream is) throws Exception {
+    @MustCallAlias MustCallAliasPassthroughWrong4(@MustCallAlias InputStream is) throws Exception {
         super(null);
         is.close();
     }

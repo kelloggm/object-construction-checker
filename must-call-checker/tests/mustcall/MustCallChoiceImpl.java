@@ -1,4 +1,4 @@
-// A simple test that the extra obligations that MustCallChoice imposes are
+// A simple test that the extra obligations that MustCallAlias imposes are
 // respected.
 
 // @skip-test until the checks are implemented
@@ -7,11 +7,11 @@ import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-public class MustCallChoiceImpl implements Closeable {
+public class MustCallAliasImpl implements Closeable {
 
     @Owning final Closeable foo;
 
-    public @MustCallChoice MustCallChoiceImpl(@MustCallChoice Closeable foo) {
+    public @MustCallAlias MustCallAliasImpl(@MustCallAlias Closeable foo) {
         this.foo = foo;
     }
 

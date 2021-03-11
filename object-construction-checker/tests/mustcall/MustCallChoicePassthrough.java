@@ -6,8 +6,8 @@ import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-class MustCallChoicePassthrough extends FilterInputStream {
-    @MustCallChoice MustCallChoicePassthrough(@MustCallChoice InputStream is) {
+class MustCallAliasPassthrough extends FilterInputStream {
+    @MustCallAlias MustCallAliasPassthrough(@MustCallAlias InputStream is) {
         super(is);
     }
 }

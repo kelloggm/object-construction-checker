@@ -18,9 +18,9 @@ import java.lang.annotation.Target;
  * {@literal @}MustCall("close")}). Calling the {@code getOutputStream} on the Socket creates a new
  * {@code OutputStream} object that wraps the Socket. Calling its "close" method will close the
  * underlying socket, but the Socket may also be closed directly. Calling close on either object is
- * permitted - thus, {@code {@literal @}MustCallChoice}.
+ * permitted - thus, {@code {@literal @}MustCallAlias}.
  *
- * <p>When a programmer writes {@code {@literal @}MustCallChoice} on a parameter p and the return of
+ * <p>When a programmer writes {@code {@literal @}MustCallAlias} on a parameter p and the return of
  * a constructor C, verification of the annotation necessitates the following additional checks:
  *
  * <ul>
@@ -29,13 +29,13 @@ import java.lang.annotation.Target;
  *       resolves's f's must-call obligations).
  * </ul>
  *
- * When a programmer writes {@code {@literal @}MustCallChoice} on the receiver parameter p and the
+ * When a programmer writes {@code {@literal @}MustCallAlias} on the receiver parameter p and the
  * return of a method M, then all return sites in M must be calls to other methods with equivalent
- * {@code {@literal @}MustCallChoice} annotations, or calls to constructors that satisfy the rules
+ * {@code {@literal @}MustCallAlias} annotations, or calls to constructors that satisfy the rules
  * described in the preceding paragraph and are also annotated as {@code
- * {@literal @}MustCallChoice}.
+ * {@literal @}MustCallAlias}.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.PARAMETER, ElementType.CONSTRUCTOR, ElementType.METHOD})
-public @interface MustCallChoice {}
+public @interface MustCallAlias {}

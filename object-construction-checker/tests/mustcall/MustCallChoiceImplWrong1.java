@@ -1,4 +1,4 @@
-// A simple test that the extra obligations that MustCallChoice imposes are
+// A simple test that the extra obligations that MustCallAlias imposes are
 // respected. This version gets it wrong by not assigning the MCC param
 // to a field.
 
@@ -7,12 +7,12 @@ import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-public class MustCallChoiceImplWrong1 implements Closeable {
+public class MustCallAliasImplWrong1 implements Closeable {
 
     final @Owning Closeable foo;
 
     // :: error: required.method.not.called
-    public @MustCallChoice MustCallChoiceImplWrong1(@MustCallChoice Closeable foo) {
+    public @MustCallAlias MustCallAliasImplWrong1(@MustCallAlias Closeable foo) {
         this.foo = null;
     }
 

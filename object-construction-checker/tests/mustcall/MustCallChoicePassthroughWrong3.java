@@ -5,14 +5,14 @@ import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-class MustCallChoicePassthroughWrong3 {
+class MustCallAliasPassthroughWrong3 {
     // Both of these verify - it's okay to leave off the MCC param, because the return type is
     // owning - but the first one leads to imprecision at call sites.
-    static InputStream missingMCC(@MustCallChoice InputStream is) {
+    static InputStream missingMCC(@MustCallAlias InputStream is) {
         return is;
     }
 
-    static @MustCallChoice InputStream withMCC(@MustCallChoice InputStream is) {
+    static @MustCallAlias InputStream withMCC(@MustCallAlias InputStream is) {
         return is;
     }
 

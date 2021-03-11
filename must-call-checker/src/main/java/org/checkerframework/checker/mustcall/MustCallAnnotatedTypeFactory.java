@@ -23,7 +23,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.mustcall.qual.MustCallChoice;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.mustcall.qual.PolyMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -91,7 +91,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     addAliasedTypeAnnotation(InheritableMustCall.class, MustCall.class, true);
     if (!checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES)) {
       // in NO_RESOURCE_ALIASES mode, all MCC annotations are simply ignored
-      addAliasedTypeAnnotation(MustCallChoice.class, POLY);
+      addAliasedTypeAnnotation(MustCallAlias.class, POLY);
     }
     this.postInit();
   }
@@ -109,9 +109,9 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @Override
   protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
-    // Because MustCallChoice is in the qual directory, the qualifiers have to be explicitly named
+    // Because MustCallAlias is in the qual directory, the qualifiers have to be explicitly named
     // or
-    // MustCallChoice will be reflectively loaded - making it unavailable as an alias for
+    // MustCallAlias will be reflectively loaded - making it unavailable as an alias for
     // @PolyMustCall.
     return new LinkedHashSet<>(
         Arrays.asList(MustCall.class, MustCallUnknown.class, PolyMustCall.class));
