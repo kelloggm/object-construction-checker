@@ -8,11 +8,11 @@ import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.calledmethods.qual.*;
 
 @MustCall("stop")
-class MCCOwningField {
+class MCAOwningField {
 
     @Owning final Socket s;
 
-    MCCOwningField() throws Exception {
+    MCAOwningField() throws Exception {
         s = new Socket();
     }
 

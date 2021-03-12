@@ -3,11 +3,11 @@
 
 import java.net.Socket;
 
-class MCCNotOwningField {
+class MCANotOwningField {
 
     final Socket s;
 
-    MCCNotOwningField(Socket s) throws Exception {
+    MCANotOwningField(Socket s) throws Exception {
         this.s = s;
     }
 

@@ -200,7 +200,7 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * If node is an invocation of a this or super constructor that has a MCC return type and an MCC
+   * If node is an invocation of a this or super constructor that has a MCA return type and an MCA
    * parameter, check if any variable in defs is being passed to the other constructor. If so,
    * remove it from defs.
    *
@@ -209,13 +209,13 @@ class MustCallInvokedChecker {
    */
   private void handleThisOrSuperConstructorMustCallAlias(
       Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
-    Node mccParam = getVarOrTempVarPassedAsMustCallAliasParam(node);
-    // If the MCC param is also in the def set, then remove it -
-    // its obligation has been fulfilled by being passed on to the MCC constructor (because we must
+    Node mcaParam = getVarOrTempVarPassedAsMustCallAliasParam(node);
+    // If the MCA param is also in the def set, then remove it -
+    // its obligation has been fulfilled by being passed on to the MCA constructor (because we must
     // be in a constructor body if we've encountered a this/super constructor call).
-    if (mccParam instanceof LocalVariableNode && isVarInDefs(defs, (LocalVariableNode) mccParam)) {
+    if (mcaParam instanceof LocalVariableNode && isVarInDefs(defs, (LocalVariableNode) mcaParam)) {
       ImmutableSet<LocalVarWithTree> setContainingMustCallAliasParamLocal =
-          getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) mccParam);
+          getSetContainingAssignmentTreeOfVar(defs, (LocalVariableNode) mcaParam);
       defs.remove(setContainingMustCallAliasParamLocal);
     }
   }
@@ -329,7 +329,7 @@ class MustCallInvokedChecker {
           new LocalVarWithTree(new LocalVariable(temporaryLocal), tree);
 
       Node sameResource = null;
-      // Set sameResource to the MCC parameter if any exists, otherwise it remains null
+      // Set sameResource to the MCA parameter if any exists, otherwise it remains null
       if (node instanceof ObjectCreationNode || node instanceof MethodInvocationNode) {
         sameResource = getVarOrTempVarPassedAsMustCallAliasParam(node);
       }
@@ -395,12 +395,12 @@ class MustCallInvokedChecker {
    * is guaranteed to be non-owning, such as this or a non-owning field.
    *
    * @param node a method invocation node
-   * @return if this is the invocation of a method whose return type is MCC with an owning field or
+   * @return if this is the invocation of a method whose return type is MCA with an owning field or
    *     a non-owning pointer
    */
   private boolean returnTypeIsMustCallAliasWithIgnorable(MethodInvocationNode node) {
-    Node mccParam = getVarOrTempVarPassedAsMustCallAliasParam(node);
-    return mccParam instanceof FieldAccessNode || mccParam instanceof ThisNode;
+    Node mcaParam = getVarOrTempVarPassedAsMustCallAliasParam(node);
+    return mcaParam instanceof FieldAccessNode || mcaParam instanceof ThisNode;
   }
 
   /**
@@ -567,7 +567,7 @@ class MustCallInvokedChecker {
             getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
         LocalVarWithTree latestAssignmentPair =
             getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-        // If the rhs is not MCC with the lhs, we will remove the latest assignment pair of lhs
+        // If the rhs is not MCA with the lhs, we will remove the latest assignment pair of lhs
         // from the newDefs. If the lhs is the only pointer to the previous resource then we will
         // do MustCall checks for that resource
         if (setContainingLhs.size() > 1) {
@@ -580,7 +580,7 @@ class MustCallInvokedChecker {
           newDefs.remove(setContainingLhs);
           newDefs.add(newSetContainingLhs);
         } else {
-          // If the setContainingLatestAssignmentPair size is one and the rhs is not MCC with the
+          // If the setContainingLatestAssignmentPair size is one and the rhs is not MCA with the
           // lhs
           MustCallAnnotatedTypeFactory mcAtf =
               typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);

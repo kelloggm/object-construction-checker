@@ -1,4 +1,4 @@
-// A test that passing a local to an MCC super constructor is allowed.
+// A test that passing a local to an MCA super constructor is allowed.
 
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
@@ -7,7 +7,7 @@ import java.io.*;
 
 class MustCallAliasPassthroughLocal extends FilterInputStream {
     MustCallAliasPassthroughLocal(File f) throws Exception {
-        // This is safe - this MCC constructor of FilterInputStream means that the result of this
+        // This is safe - this MCA constructor of FilterInputStream means that the result of this
         // constructor - i.e. the caller - is taking ownership of this newly-created output stream.
         super(new FileInputStream(f));
     }

@@ -1,4 +1,4 @@
-// A MustCallAlias test wrt sockets. Also coincidentally tests that MCC sets can be larger than two.
+// A MustCallAlias test wrt sockets. Also coincidentally tests that MCA sets can be larger than two.
 
 import java.io.*;
 import java.net.*;

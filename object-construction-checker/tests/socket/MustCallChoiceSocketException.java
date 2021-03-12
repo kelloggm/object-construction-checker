@@ -17,7 +17,7 @@ class MustCallAliasSocketException {
         }
         try {
             DataOutputStream dout = new DataOutputStream(sock.getOutputStream());
-            // Before MCC was implemented, the call to getInputStream() below triggered
+            // Before MCA was implemented, the call to getInputStream() below triggered
             // a false positive warning that dout had not been closed.
             DataInputStream din = new DataInputStream(sock.getInputStream());
             // ~30 lines omitted...

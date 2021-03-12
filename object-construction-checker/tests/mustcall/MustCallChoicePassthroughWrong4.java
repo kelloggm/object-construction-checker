@@ -1,6 +1,6 @@
-// A test that a class can extend another class with an MCC constructor,
-// and have its own constructor be MCC as well.
-// This version just closes the MCC parameter, which isn't wrong so much as weird but I wanted a test for it.
+// A test that a class can extend another class with an MCA constructor,
+// and have its own constructor be MCA as well.
+// This version just closes the MCA parameter, which isn't wrong so much as weird but I wanted a test for it.
 
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;

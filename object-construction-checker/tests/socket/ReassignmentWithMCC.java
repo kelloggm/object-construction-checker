@@ -3,7 +3,7 @@ import java.security.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 
-public class ReassignmentWithMCC
+public class ReassignmentWithMCA
 {
     void testReassignment(File newFile, MessageDigest digester) throws IOException {
         FileOutputStream fout = new FileOutputStream(newFile);
@@ -17,7 +17,7 @@ public class ReassignmentWithMCC
         }
     }
 
-    void testReassignmentWithoutMCC(@Owning FileOutputStream fout1, @Owning FileOutputStream fout2, MessageDigest digester) throws IOException {
+    void testReassignmentWithoutMCA(@Owning FileOutputStream fout1, @Owning FileOutputStream fout2, MessageDigest digester) throws IOException {
         DigestOutputStream fos1 = new DigestOutputStream(fout1, digester);
         DataOutputStream out = new DataOutputStream(fos1);
         try {

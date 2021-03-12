@@ -1,4 +1,4 @@
-// Test case based on an MCC situation in Zookeeper.
+// Test case based on an MCA situation in Zookeeper.
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;

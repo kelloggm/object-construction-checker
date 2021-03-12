@@ -90,7 +90,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     POLY = AnnotationBuilder.fromClass(elements, PolyMustCall.class);
     addAliasedTypeAnnotation(InheritableMustCall.class, MustCall.class, true);
     if (!checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES)) {
-      // in NO_RESOURCE_ALIASES mode, all MCC annotations are simply ignored
+      // in NO_RESOURCE_ALIASES mode, all MCA annotations are simply ignored
       addAliasedTypeAnnotation(MustCallAlias.class, POLY);
     }
     this.postInit();
@@ -102,7 +102,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     elementsIssuedInconsistentMustCallSubtypeErrors.clear();
     // TODO: this should probably be guarded by isSafeToClearSharedCFG from
     // GenericAnnotatedTypeFactory,
-    // but this works here because we know the MCC is always the first subchecker that's sharing
+    // but this works here because we know the MCA is always the first subchecker that's sharing
     // tempvars.
     tempVars.clear();
   }

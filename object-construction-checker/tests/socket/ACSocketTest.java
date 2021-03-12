@@ -465,12 +465,12 @@ public class ACSocketTest
         return s;
     }
 
-    private ServerSocket testMCCParamInReturn() throws IOException{
+    private ServerSocket testMCAParamInReturn() throws IOException{
         ServerSocketChannel chan = ServerSocketChannel.open();
         return chan.socket();
     }
 
-    private void testMCCParamInReturn2() throws IOException{
+    private void testMCAParamInReturn2() throws IOException{
         ServerSocket chan = ServerSocketChannel.open().socket();
     }
 

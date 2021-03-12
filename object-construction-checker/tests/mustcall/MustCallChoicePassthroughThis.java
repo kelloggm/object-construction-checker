@@ -1,4 +1,4 @@
-// A test that a class can have multiple MCC constructors.
+// A test that a class can have multiple MCA constructors.
 
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;

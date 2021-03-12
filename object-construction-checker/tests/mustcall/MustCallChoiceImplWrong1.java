@@ -1,5 +1,5 @@
 // A simple test that the extra obligations that MustCallAlias imposes are
-// respected. This version gets it wrong by not assigning the MCC param
+// respected. This version gets it wrong by not assigning the MCA param
 // to a field.
 
 import org.checkerframework.checker.mustcall.qual.*;

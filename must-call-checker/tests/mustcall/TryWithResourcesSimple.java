@@ -38,7 +38,7 @@ public class TryWithResourcesSimple {
         }
     }
 
-    static void test_two_mcc_variables(String address, int port) {
+    static void test_two_mca_variables(String address, int port) {
         try (Socket socket = new Socket(address, port);
              InputStream in = socket.getInputStream()) {
             @MustCall({}) Object s = in;
