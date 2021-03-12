@@ -369,9 +369,9 @@ class MustCallInvokedChecker {
   /**
    * Checks for cases where we do not need to track a method. We can skip the check when the method
    * invocation is a call to "this" or a super constructor call, when the method's return type is
-   * annotated with MustCallAlias and the argument in the corresponding position is an owning
-   * field, or when the method's return type is non-owning, which can either be because the method
-   * has no return type or because it is annotated with {@link NotOwning}.
+   * annotated with MustCallAlias and the argument in the corresponding position is an owning field,
+   * or when the method's return type is non-owning, which can either be because the method has no
+   * return type or because it is annotated with {@link NotOwning}.
    */
   private boolean shouldSkipInvokeCheck(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     Tree callTree = node.getTree();

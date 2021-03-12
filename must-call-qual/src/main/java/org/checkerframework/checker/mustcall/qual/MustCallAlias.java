@@ -32,8 +32,7 @@ import java.lang.annotation.Target;
  * When a programmer writes {@code {@literal @}MustCallAlias} on the receiver parameter p and the
  * return of a method M, then all return sites in M must be calls to other methods with equivalent
  * {@code {@literal @}MustCallAlias} annotations, or calls to constructors that satisfy the rules
- * described in the preceding paragraph and are also annotated as {@code
- * {@literal @}MustCallAlias}.
+ * described in the preceding paragraph and are also annotated as {@code {@literal @}MustCallAlias}.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

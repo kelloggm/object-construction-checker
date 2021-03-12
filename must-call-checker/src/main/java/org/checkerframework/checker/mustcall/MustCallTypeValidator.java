@@ -13,8 +13,8 @@ import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * This type validator is identical to BaseTypeValidator, except that it always permits the use of
- * {@link MustCallAlias} annotations on type uses,
- * because these will be validated by the Object Construction Checker's -AcheckMustCall algorithm.
+ * {@link MustCallAlias} annotations on type uses, because these will be validated by the Object
+ * Construction Checker's -AcheckMustCall algorithm.
  */
 public class MustCallTypeValidator extends BaseTypeValidator {
   public MustCallTypeValidator(
