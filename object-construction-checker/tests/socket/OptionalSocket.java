@@ -1,5 +1,5 @@
 // A test case for some false positives that came up in Zookeeper.
-// These are sort-of a must call choice situation, but it's not as clear.
+// These are sort-of a must call alias situation, but it's not as clear.
 // I suspect our MCA implementation won't actually handle these cases, in
 // which case it's fine with me to skip this test for now. - Martin
 // @skip-test

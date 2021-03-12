@@ -29,8 +29,8 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallTransfer;
+import org.checkerframework.checker.mustcall.qual.CreateObligation;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.mustcall.qual.ResetMustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
@@ -181,11 +181,11 @@ class MustCallInvokedChecker {
 
   private void handleInvocation(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     doOwnershipTransferToParameters(defs, node);
-    // Count calls to @ResetMustCall methods as creating new resources, for now.
+    // Count calls to @CreateObligation methods as creating new resources, for now.
     if (node instanceof MethodInvocationNode
         && typeFactory.useAccumulationFrames()
-        && typeFactory.hasResetMustCall((MethodInvocationNode) node)) {
-      checkResetMustCallInvocation(defs, (MethodInvocationNode) node);
+        && typeFactory.hasCreateObligation((MethodInvocationNode) node)) {
+      checkCreateObligationInvocation(defs, (MethodInvocationNode) node);
       incrementNumMustCall(node);
     }
 
@@ -221,9 +221,9 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Checks that an invocation of a ResetMustCall method is valid. Such an invocation is valid if
+   * Checks that an invocation of a CreateObligation method is valid. Such an invocation is valid if
    * one of the following conditions is true: 1) the target is an owning pointer 2) the target is
-   * tracked in newdefs 3) the method in which the invocation occurs also has an @ResetMustCall
+   * tracked in newdefs 3) the method in which the invocation occurs also has an @CreateObligation
    * annotation, with the same target
    *
    * <p>If none of the above are true, this method issues a reset.not.owning error.
@@ -236,14 +236,14 @@ class MustCallInvokedChecker {
    * @param newDefs the local variables that have been defined in the current compilation unit (and
    *     are therefore going to be checked later). This value is side-effected if it contains the
    *     target of the reset method.
-   * @param node a method invocation node, invoking a method with a ResetMustCall annotation
+   * @param node a method invocation node, invoking a method with a CreateObligation annotation
    */
-  private void checkResetMustCallInvocation(
+  private void checkCreateObligationInvocation(
       Set<ImmutableSet<LocalVarWithTree>> newDefs, MethodInvocationNode node) {
 
     TreePath currentPath = typeFactory.getPath(node.getTree());
     Set<JavaExpression> targetExprs =
-        MustCallTransfer.getResetMustCallExpressions(node, typeFactory, currentPath);
+        MustCallTransfer.getCreateObligationExpressions(node, typeFactory, currentPath);
     Set<JavaExpression> missing = new HashSet<>();
     for (JavaExpression target : targetExprs) {
       if (target instanceof LocalVariable) {
@@ -289,11 +289,12 @@ class MustCallInvokedChecker {
       MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
       if (enclosingMethod != null) {
         ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
-        AnnotationMirror enclosingResetMustCall =
-            typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.class);
-        if (enclosingResetMustCall != null) {
+        AnnotationMirror enclosingCreateObligation =
+            typeFactory.getDeclAnnotation(enclosingElt, CreateObligation.class);
+        if (enclosingCreateObligation != null) {
           String enclosingTargetStrWithoutAdaptation =
-              AnnotationUtils.getElementValue(enclosingResetMustCall, "value", String.class, true);
+              AnnotationUtils.getElementValue(
+                  enclosingCreateObligation, "value", String.class, true);
           JavaExpressionContext enclosingContext =
               JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
                   enclosingMethod, checker);
@@ -301,7 +302,7 @@ class MustCallInvokedChecker {
               MustCallTransfer.standardizeAndViewpointAdapt(
                   enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
           if (enclosingTargetStr.equals(target.toString())) {
-            // The enclosing method also has a corresponding ResetMustCall annotation, so this
+            // The enclosing method also has a corresponding CreateObligation annotation, so this
             // satisfies case 3.
             return;
           }
@@ -390,9 +391,9 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Returns true if this node represents a method invocation of a must-call choice method, where
-   * the other must call choice is some ignorable pointer, such as an owning field or a pointer that
-   * is guaranteed to be non-owning, such as this or a non-owning field.
+   * Returns true if this node represents a method invocation of a must-call alias method, where the
+   * other must call alias is some ignorable pointer, such as an owning field or a pointer that is
+   * guaranteed to be non-owning, such as this or a non-owning field.
    *
    * @param node a method invocation node
    * @return if this is the invocation of a method whose return type is MCA with an owning field or
@@ -665,7 +666,7 @@ class MustCallInvokedChecker {
     Node receiver = lhs.getReceiver();
 
     // TODO: it would be better to defer getting the path until after we check
-    // for a ResetMustCall annotation, because getting the path can be expensive.
+    // for a CreateObligation annotation, because getting the path can be expensive.
     // It might be possible to exploit the CFG structure to find the containing
     // method (rather than using the path, as below), because if a method is being
     // analyzed then it should be the root of the CFG (I think).
@@ -678,13 +679,13 @@ class MustCallInvokedChecker {
       return;
     }
 
-    // Check that there is a corresponding resetMustCall annotation, unless this is
+    // Check that there is a corresponding createObligation annotation, unless this is
     // 1) an assignment to a field of a newly-declared local variable that can't be in scope
     // for the containing method, 2) the rhs is a null literal (so there's nothing to reset).
     if (!(receiver instanceof LocalVariableNode
             && isVarInDefs(newDefs, (LocalVariableNode) receiver))
         && !(node.getExpression() instanceof NullLiteralNode)) {
-      checkEnclosingMethodIsResetMC(node, enclosingMethod, currentPath);
+      checkEnclosingMethodIsCreateObligation(node, enclosingMethod, currentPath);
     }
 
     MustCallAnnotatedTypeFactory mcTypeFactory =
@@ -722,14 +723,14 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Checks that the method that encloses an assignment is marked with @ResetMustCall annotation
+   * Checks that the method that encloses an assignment is marked with @CreateObligation annotation
    * whose target is the object whose field is being re-assigned.
    *
    * @param node an assignment node whose lhs is a non-final, owning field
    * @param enclosingMethod the MethodTree in which the re-assignment takes place
    * @param currentPath the currentPath
    */
-  private void checkEnclosingMethodIsResetMC(
+  private void checkEnclosingMethodIsCreateObligation(
       AssignmentNode node, MethodTree enclosingMethod, TreePath currentPath) {
     Node lhs = node.getTarget();
     if (!(lhs instanceof FieldAccessNode)) {
@@ -742,33 +743,33 @@ class MustCallInvokedChecker {
       return;
     }
     ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
-    AnnotationMirror resetMustCall =
-        typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.class);
-    AnnotationMirror resetMustCalls =
-        typeFactory.getDeclAnnotation(enclosingElt, ResetMustCall.List.class);
-    if (resetMustCall == null && resetMustCalls == null) {
+    AnnotationMirror createObligation =
+        typeFactory.getDeclAnnotation(enclosingElt, CreateObligation.class);
+    AnnotationMirror createObligations =
+        typeFactory.getDeclAnnotation(enclosingElt, CreateObligation.List.class);
+    if (createObligation == null && createObligations == null) {
       checker.reportError(
           enclosingMethod,
-          "missing.reset.mustcall",
+          "missing.create.obligation",
           receiverString,
           ((FieldAccessNode) lhs).getFieldName());
       return;
     }
 
     Set<String> targetStrsWithoutAdaptation;
-    if (resetMustCall != null) {
+    if (createObligation != null) {
       targetStrsWithoutAdaptation =
           Collections.singleton(
-              AnnotationUtils.getElementValue(resetMustCall, "value", String.class, true));
+              AnnotationUtils.getElementValue(createObligation, "value", String.class, true));
     } else {
-      // multiple reset must calls
-      List<AnnotationMirror> resetMustCallAnnos =
+      // multiple create obligations
+      List<AnnotationMirror> createObligationAnnos =
           AnnotationUtils.getElementValueArray(
-              resetMustCalls, "value", AnnotationMirror.class, false);
+              createObligations, "value", AnnotationMirror.class, false);
       targetStrsWithoutAdaptation = new HashSet<>();
-      for (AnnotationMirror rmc : resetMustCallAnnos) {
+      for (AnnotationMirror co : createObligationAnnos) {
         targetStrsWithoutAdaptation.add(
-            AnnotationUtils.getElementValue(rmc, "value", String.class, true));
+            AnnotationUtils.getElementValue(co, "value", String.class, true));
       }
     }
     JavaExpressionContext context =
@@ -780,7 +781,7 @@ class MustCallInvokedChecker {
           MustCallTransfer.standardizeAndViewpointAdapt(
               targetStrWithoutAdaptation, currentPath, context);
       if (targetStr.equals(receiverString)) {
-        // This reset must call annotation matches.
+        // This create obligation annotation matches.
         return;
       }
       if ("".equals(checked)) {
@@ -791,7 +792,7 @@ class MustCallInvokedChecker {
     }
     checker.reportError(
         enclosingMethod,
-        "incompatible.reset.mustcall",
+        "incompatible.create.obligation",
         receiverString,
         ((FieldAccessNode) lhs).getFieldName(),
         checked);
@@ -999,10 +1000,10 @@ class MustCallInvokedChecker {
             Node last = nodes.get(nodes.size() - 1);
             CFStore cmStoreAfter = typeFactory.getStoreAfter(last);
             // If this is an exceptional block, check the MC store beforehand to avoid
-            // issuing an error about a call to a ResetMustCall method that might throw
+            // issuing an error about a call to a CreateObligation method that might throw
             // an exception. Otherwise, use the store after.
             CFStore mcStore;
-            if (exceptionType != null && isInvocationOfRMCMethod(last)) {
+            if (exceptionType != null && isInvocationOfCOMethod(last)) {
               mcStore = mcAtf.getStoreBefore(last);
             } else {
               mcStore = mcAtf.getStoreAfter(last);
@@ -1026,17 +1027,17 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * returns true if node is a MethodInvocationNode of a method with a ResetMustCall annotation.
+   * returns true if node is a MethodInvocationNode of a method with a CreateObligation annotation.
    *
    * @param node a node
-   * @return true if node is a MethodInvocationNode of a method with a ResetMustCall annotation
+   * @return true if node is a MethodInvocationNode of a method with a CreateObligation annotation
    */
-  private boolean isInvocationOfRMCMethod(Node node) {
+  private boolean isInvocationOfCOMethod(Node node) {
     if (!(node instanceof MethodInvocationNode)) {
       return false;
     }
     MethodInvocationNode miNode = (MethodInvocationNode) node;
-    return typeFactory.hasResetMustCall(miNode);
+    return typeFactory.hasCreateObligation(miNode);
   }
 
   /**

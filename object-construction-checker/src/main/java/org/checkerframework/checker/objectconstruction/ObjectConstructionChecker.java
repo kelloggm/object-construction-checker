@@ -89,14 +89,14 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
         "required.method.not.called",
         "@MustCall %s not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
     messages.setProperty(
-        "missing.reset.mustcall",
-        "This method re-assigns the non-final, owning field %s.%s, but does not have a corresponding @ResetMustCall annotation.\n");
+        "missing.create.obligation",
+        "This method re-assigns the non-final, owning field %s.%s, but does not have a corresponding @CreateObligation annotation.\n");
     messages.setProperty(
-        "incompatible.reset.mustcall",
-        "This method re-assigns the non-final, owning field %s.%s, but its @ResetMustCall annotation targets %s.\n");
+        "incompatible.create.obligation",
+        "This method re-assigns the non-final, owning field %s.%s, but its @CreateObligation annotation targets %s.\n");
     messages.setProperty(
         "reset.not.owning",
-        "Calling this method resets the must-call obligations of the expression %s, which is non-owning. Either annotate its declaration with an @Owning annotation or write a corresponding @ResetMustCall annotation on the method that encloses this statement.\n");
+        "Calling this method resets the must-call obligations of the expression %s, which is non-owning. Either annotate its declaration with an @Owning annotation or write a corresponding @CreateObligation annotation on the method that encloses this statement.\n");
     return messages;
   }
 

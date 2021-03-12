@@ -11,7 +11,7 @@ public class MustCallAliasImplNoOwning implements Closeable {
 
     final Closeable foo;
 
-    // :: error: mustcall.choice.invalid
+    // :: error: mustcall.alias.invalid
     public @MustCallAlias MustCallAliasImplNoOwning(@MustCallAlias Closeable foo) {
         this.foo = foo;
     }

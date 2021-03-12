@@ -1,61 +1,61 @@
-// A test that methods containing calls to other @ResetMustCall methods work as intended.
+// A test that methods containing calls to other @CreateObligation methods work as intended.
 
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 
 @MustCall("a")
-class ResetMustCallIndirect {
+class CreateObligationIndirect {
 
-    @ResetMustCall
+    @CreateObligation
     void reset() { }
 
     void a() { }
 
-    static @MustCall({}) ResetMustCallSimple makeNoMC() {
+    static @MustCall({}) CreateObligationSimple makeNoMC() {
         return null;
     }
 
-    public static void resetIndirect_no_anno(ResetMustCallIndirect r) {
+    public static void resetIndirect_no_anno(CreateObligationIndirect r) {
         // :: error: reset.not.owning
         r.reset();
     }
 
-    @ResetMustCall("#1")
-    public static void resetIndirect_anno(ResetMustCallIndirect r) {
+    @CreateObligation("#1")
+    public static void resetIndirect_anno(CreateObligationIndirect r) {
         r.reset();
     }
 
     public static void reset_local() {
         // :: error: required.method.not.called
-        ResetMustCallIndirect r = new ResetMustCallIndirect();
+        CreateObligationIndirect r = new CreateObligationIndirect();
         r.reset();
     }
 
     public static void reset_local2() {
-        ResetMustCallIndirect r = new ResetMustCallIndirect();
+        CreateObligationIndirect r = new CreateObligationIndirect();
         r.reset();
         r.a();
     }
 
     public static void reset_local3() {
         // :: error: required.method.not.called
-        ResetMustCallIndirect r = new ResetMustCallIndirect();
+        CreateObligationIndirect r = new CreateObligationIndirect();
         // :: error: mustcall.not.parseable :: error: reset.not.owning
-        ((ResetMustCallIndirect) r).reset();
+        ((CreateObligationIndirect) r).reset();
     }
 
     // :: error: required.method.not.called
-    public static void test(@Owning ResetMustCallIndirect r) {
+    public static void test(@Owning CreateObligationIndirect r) {
         resetIndirect_anno(r);
     }
 
-    public static void test2(ResetMustCallIndirect r) {
+    public static void test2(CreateObligationIndirect r) {
         // :: error: reset.not.owning
         resetIndirect_anno(r);
     }
 
-    public static void test3(@Owning ResetMustCallIndirect r) {
+    public static void test3(@Owning CreateObligationIndirect r) {
         resetIndirect_anno(r);
         r.a();
     }

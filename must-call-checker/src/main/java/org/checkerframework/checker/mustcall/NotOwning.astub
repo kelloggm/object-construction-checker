@@ -1,7 +1,7 @@
 // DO NOT INCLUDE ANNOTATIONS THAT RELY ON ACCUMULATION FRAMES IN THIS FILE.
 // This file is loaded regardless of the -AnoAccumulationFrames option. All
 // assumptions that rely on the presence of accumulation frames (such as @MustCall({})
-// on unconnected sockets) MUST go in SocketAccumulationFrames.astub. ResetMustCall
+// on unconnected sockets) MUST go in SocketAccumulationFrames.astub. CreateObligation
 // okay, because the OCC turns that off anyway.
 
 package java.net;
@@ -25,7 +25,7 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
     protected SocketChannel(SelectorProvider arg0);
     // static @MustCall({}) SocketChannel open() throws IOException;
     static SocketChannel open(SocketAddress arg0) throws IOException;
-    @ResetMustCall("this")
+    @CreateObligation("this")
     SocketChannel bind(SocketAddress arg0) throws IOException;
     @NotOwning SocketChannel shutdownInput() throws IOException;
     @NotOwning SocketChannel shutdownOutput() throws IOException;
@@ -39,9 +39,9 @@ class ServerSocketChannel extends AbstractSelectableChannel implements NetworkCh
     protected ServerSocketChannel(SelectorProvider arg0);
     // static @MustCall({}) ServerSocketChannel open() throws IOException;
     int validOps();
-    @ResetMustCall("this")
+    @CreateObligation("this")
     @MustCallAlias ServerSocketChannel bind(@MustCallAlias ServerSocketChannel this, SocketAddress arg0) throws IOException;
-    @ResetMustCall("this")
+    @CreateObligation("this")
     @MustCallAlias ServerSocketChannel bind(@MustCallAlias ServerSocketChannel this, SocketAddress arg0, int arg1) throws IOException;
     <T> ServerSocketChannel setOption(SocketOption<T> arg0, T arg1) throws IOException;
     @MustCallAlias ServerSocket socket(@MustCallAlias ServerSocketChannel this);

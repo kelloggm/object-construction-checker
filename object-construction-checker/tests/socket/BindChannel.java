@@ -18,7 +18,7 @@ class BindChannel {
             // limited to issuing the reset.not.owning error below,
             // instead of the preferable required.method.not.called error on this line - as in
             // the method below, which extracts the socket into a local variable, which can be
-            // parsed as an RMC target.
+            // parsed as an CO target.
             ServerSocketChannel httpChannel = ServerSocketChannel.open();
             // :: error: reset.not.owning
             httpChannel.socket().bind(addr);

@@ -1,4 +1,4 @@
-// A test case for a common pattern in Zookeeper: something is must-call-choice
+// A test case for a common pattern in Zookeeper: something is must-call-alias
 // with an owning field, and therefore a false positive was issued.
 
 import java.net.Socket;

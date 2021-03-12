@@ -1,14 +1,14 @@
-// A test for a bad interaction between RMC and subtyping
-// that could happen if RMC was unsound.
+// A test for a bad interaction between CO and subtyping
+// that could happen if CO was unsound.
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.mustcall.qual.*;
 
-class RMCInSubtype {
+class COInSubtype {
     static class Foo {
 
-        @ResetMustCall("this")
+        @CreateObligation("this")
         void resetFoo() { }
     }
 
