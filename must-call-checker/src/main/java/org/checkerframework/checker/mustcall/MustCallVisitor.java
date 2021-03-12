@@ -185,9 +185,9 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
     if (checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES)) {
       return super.createTypeValidator();
     } else {
-      // This validator's only function is to allow @MustCallChoice in
+      // This validator's only function is to allow @MustCallAlias in
       // places it otherwise wouldn't be permitted, because the OCC can
-      // prove their safety later. When @MustCallChoice
+      // prove their safety later. When @MustCallAlias
       // is disabled, there's no reason to use it.
       return new MustCallTypeValidator(checker, this, atypeFactory);
     }

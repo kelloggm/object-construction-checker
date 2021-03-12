@@ -1,7 +1,7 @@
 // DO NOT INCLUDE ANNOTATIONS THAT RELY ON ACCUMULATION FRAMES IN THIS FILE.
 // This file is loaded regardless of the -AnoAccumulationFrames option. All
 // assumptions that rely on the presence of accumulation frames (such as @MustCall({})
-// on unconnected sockets) MUST go in SocketAccumulationFrames.astub. ResetMustCall
+// on unconnected sockets) MUST go in SocketAccumulationFrames.astub. CreateObligation
 // okay, because the OCC turns that off anyway.
 
 package java.net;
@@ -23,11 +23,11 @@ class Socket implements Closeable {
 Socket(String arg0, int arg1, boolean arg2) throws IOException;
     @java.lang.Deprecated
 Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
-    @ResetMustCall
+    @CreateObligation
     void connect(SocketAddress arg0) throws IOException;
-    @ResetMustCall
+    @CreateObligation
     void connect(SocketAddress arg0, int arg1) throws IOException;
-    @ResetMustCall
+    @CreateObligation
     void bind(SocketAddress arg0) throws IOException;
     InetAddress getInetAddress();
     InetAddress getLocalAddress();
@@ -35,9 +35,9 @@ Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
     int getLocalPort();
     SocketAddress getRemoteSocketAddress();
     SocketAddress getLocalSocketAddress();
-    @MustCallChoice SocketChannel getChannel(@MustCallChoice Socket this);
-    @MustCallChoice InputStream getInputStream(@MustCallChoice Socket this) throws IOException;
-    @MustCallChoice OutputStream getOutputStream(@MustCallChoice Socket this) throws IOException;
+    @MustCallAlias SocketChannel getChannel(@MustCallAlias Socket this);
+    @MustCallAlias InputStream getInputStream(@MustCallAlias Socket this) throws IOException;
+    @MustCallAlias OutputStream getOutputStream(@MustCallAlias Socket this) throws IOException;
     void setTcpNoDelay(boolean arg0) throws SocketException;
     boolean getTcpNoDelay() throws SocketException;
     void setSoLinger(boolean arg0, int arg1) throws SocketException;
@@ -81,9 +81,9 @@ class ServerSocket implements Closeable {
     ServerSocket(int arg0) throws IOException;
     ServerSocket(int arg0, int arg1) throws IOException;
     ServerSocket(int arg0, int arg1, InetAddress arg2) throws IOException;
-    @ResetMustCall
+    @CreateObligation
     void bind(SocketAddress arg0) throws IOException;
-    @ResetMustCall
+    @CreateObligation
     void bind(SocketAddress arg0, int arg1) throws IOException;
     InetAddress getInetAddress();
     int getLocalPort();
@@ -91,7 +91,7 @@ class ServerSocket implements Closeable {
     Socket accept() throws IOException;
     protected void implAccept(Socket arg0) throws IOException;
     void close() throws IOException;
-    @MustCallChoice ServerSocketChannel getChannel(@MustCallChoice ServerSocket this);
+    @MustCallAlias ServerSocketChannel getChannel(@MustCallAlias ServerSocket this);
     boolean isBound();
 
     @EnsuresCalledMethodsIf(expression="this", result=true, methods={"close"})
@@ -118,8 +118,8 @@ import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.common.returnsreceiver.qual.*;
 
 class SSLSocketFactory extends SocketFactory {
-    @MustCallChoice Socket createSocket(@MustCallChoice Socket arg0, String arg1, int arg2, boolean arg3) throws IOException;
-    @MustCallChoice Socket createSocket(@MustCallChoice Socket arg0, InputStream arg1, boolean arg2) throws IOException;
+    @MustCallAlias Socket createSocket(@MustCallAlias Socket arg0, String arg1, int arg2, boolean arg3) throws IOException;
+    @MustCallAlias Socket createSocket(@MustCallAlias Socket arg0, InputStream arg1, boolean arg2) throws IOException;
 }
 
 class SSLSocket { }

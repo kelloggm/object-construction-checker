@@ -6,7 +6,7 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 
 class DataOutputStream extends FilterOutputStream implements DataOutput {
     protected int written;
-    @MustCallChoice DataOutputStream(@MustCallChoice OutputStream arg0);
+    @MustCallAlias DataOutputStream(@MustCallAlias OutputStream arg0);
     void write(int arg0) throws IOException;
     void write(byte[] arg0, int arg1, int arg2) throws IOException;
     void flush() throws IOException;
@@ -25,8 +25,8 @@ class DataOutputStream extends FilterOutputStream implements DataOutput {
 }
 
 class RandomAccessFile {
-    @MustCallChoice FileChannel getChannel(@MustCallChoice RandomAccessFile this);
-    @MustCallChoice FileDescriptor getFD(@MustCallChoice RandomAccessFile this) throws IOException;
+    @MustCallAlias FileChannel getChannel(@MustCallAlias RandomAccessFile this);
+    @MustCallAlias FileDescriptor getFD(@MustCallAlias RandomAccessFile this) throws IOException;
 }
 
 class OutputStream { }
@@ -35,7 +35,7 @@ class InputStream { }
 
 class FilterOutputStream extends OutputStream {
     protected OutputStream out;
-    @MustCallChoice FilterOutputStream(@MustCallChoice OutputStream arg0);
+    @MustCallAlias FilterOutputStream(@MustCallAlias OutputStream arg0);
     void write(int arg0) throws IOException;
     void write(byte[] arg0) throws IOException;
     void write(byte[] arg0, int arg1, int arg2) throws IOException;
@@ -44,10 +44,10 @@ class FilterOutputStream extends OutputStream {
 }
 
 class PrintStream extends FilterOutputStream implements Appendable, Closeable {
-    @MustCallChoice PrintStream(@MustCallChoice OutputStream arg0);
-    @MustCallChoice PrintStream(@MustCallChoice OutputStream arg0, boolean arg1);
-    @MustCallChoice PrintStream(@MustCallChoice OutputStream arg0, boolean arg1, String arg2) throws UnsupportedEncodingException;
-    @MustCallChoice PrintStream(@MustCallChoice OutputStream arg0, boolean arg1, Charset arg2);
+    @MustCallAlias PrintStream(@MustCallAlias OutputStream arg0);
+    @MustCallAlias PrintStream(@MustCallAlias OutputStream arg0, boolean arg1);
+    @MustCallAlias PrintStream(@MustCallAlias OutputStream arg0, boolean arg1, String arg2) throws UnsupportedEncodingException;
+    @MustCallAlias PrintStream(@MustCallAlias OutputStream arg0, boolean arg1, Charset arg2);
     @NotOwning PrintStream printf(String arg0, Object[] arg1);
     @NotOwning PrintStream printf(Locale arg0, String arg1, Object[] arg2);
     @NotOwning PrintStream format(String arg0, Object[] arg1);
@@ -58,13 +58,13 @@ class PrintStream extends FilterOutputStream implements Appendable, Closeable {
 }
 
 class PushbackInputStream {
-    @MustCallChoice PushbackInputStream(@MustCallChoice InputStream in);
-    @MustCallChoice PushbackInputStream(@MustCallChoice InputStream in, int size);
+    @MustCallAlias PushbackInputStream(@MustCallAlias InputStream in);
+    @MustCallAlias PushbackInputStream(@MustCallAlias InputStream in, int size);
 }
 
 class BufferedReader extends Reader {
-    @MustCallChoice BufferedReader(@MustCallChoice Reader arg0, int arg1);
-    @MustCallChoice BufferedReader(@MustCallChoice Reader arg0);
+    @MustCallAlias BufferedReader(@MustCallAlias Reader arg0, int arg1);
+    @MustCallAlias BufferedReader(@MustCallAlias Reader arg0);
     int read() throws IOException;
     int read(char[] arg0, int arg1, int arg2) throws IOException;
     String readLine() throws IOException;
@@ -80,20 +80,20 @@ class BufferedReader extends Reader {
 class BufferedOutputStream extends FilterOutputStream {
     protected byte[] buf;
     protected int count;
-    @MustCallChoice BufferedOutputStream(@MustCallChoice OutputStream arg0);
-    @MustCallChoice BufferedOutputStream(@MustCallChoice OutputStream arg0, int arg1);
+    @MustCallAlias BufferedOutputStream(@MustCallAlias OutputStream arg0);
+    @MustCallAlias BufferedOutputStream(@MustCallAlias OutputStream arg0, int arg1);
     void write(int arg0) throws IOException;
     void write(byte[] arg0, int arg1, int arg2) throws IOException;
     void flush() throws IOException;
 }
 
 class DataInputStream extends FilterInputStream implements DataInput {
-    @MustCallChoice DataInputStream(@MustCallChoice InputStream arg0);
+    @MustCallAlias DataInputStream(@MustCallAlias InputStream arg0);
 }
 
 class FilterInputStream extends InputStream {
     protected InputStream in;
-    protected @MustCallChoice FilterInputStream(@MustCallChoice InputStream arg0);
+    protected @MustCallAlias FilterInputStream(@MustCallAlias InputStream arg0);
     int read() throws IOException;
     int read(byte[] arg0) throws IOException;
     int read(byte[] arg0, int arg1, int arg2) throws IOException;
@@ -111,8 +111,8 @@ class BufferedInputStream extends FilterInputStream {
     protected int pos;
     protected int markpos;
     protected int marklimit;
-    @MustCallChoice BufferedInputStream(@MustCallChoice InputStream arg0);
-    @MustCallChoice BufferedInputStream(@MustCallChoice InputStream arg0, int arg1);
+    @MustCallAlias BufferedInputStream(@MustCallAlias InputStream arg0);
+    @MustCallAlias BufferedInputStream(@MustCallAlias InputStream arg0, int arg1);
     int read() throws IOException;
     int read(byte[] arg0, int arg1, int arg2) throws IOException;
     long skip(long arg0) throws IOException;
@@ -132,9 +132,9 @@ class FileOutputStream extends OutputStream {
     FileOutputStream(File arg0, boolean arg1) throws FileNotFoundException;
 
     // These do not - they create aliases to an existing, open file.
-    @MustCallChoice FileOutputStream(@MustCallChoice FileDescriptor arg0);
-    @MustCallChoice FileDescriptor getFD(@MustCallChoice FileOutputStream this) throws IOException;
-    @MustCallChoice FileChannel getChannel(@MustCallChoice FileOutputStream this);
+    @MustCallAlias FileOutputStream(@MustCallAlias FileDescriptor arg0);
+    @MustCallAlias FileDescriptor getFD(@MustCallAlias FileOutputStream this) throws IOException;
+    @MustCallAlias FileChannel getChannel(@MustCallAlias FileOutputStream this);
 }
 
 class FileInputStream extends InputStream {
@@ -144,16 +144,16 @@ class FileInputStream extends InputStream {
     FileInputStream(File arg0) throws FileNotFoundException;
 
     // These do not - they create aliases to an existing, open file.
-    @MustCallChoice FileInputStream(@MustCallChoice FileDescriptor arg0);
-    @MustCallChoice FileDescriptor getFD(@MustCallChoice FileInputStream this) throws IOException;
-    @MustCallChoice FileChannel getChannel(@MustCallChoice FileInputStream this);
+    @MustCallAlias FileInputStream(@MustCallAlias FileDescriptor arg0);
+    @MustCallAlias FileDescriptor getFD(@MustCallAlias FileInputStream this) throws IOException;
+    @MustCallAlias FileChannel getChannel(@MustCallAlias FileInputStream this);
 }
 
 class InputStreamReader extends Reader {
-    @MustCallChoice InputStreamReader(@MustCallChoice InputStream arg0);
-    @MustCallChoice InputStreamReader(@MustCallChoice InputStream arg0, String arg1) throws UnsupportedEncodingException;
-    @MustCallChoice InputStreamReader(@MustCallChoice InputStream arg0, Charset arg1);
-    @MustCallChoice InputStreamReader(@MustCallChoice InputStream arg0, CharsetDecoder arg1);
+    @MustCallAlias InputStreamReader(@MustCallAlias InputStream arg0);
+    @MustCallAlias InputStreamReader(@MustCallAlias InputStream arg0, String arg1) throws UnsupportedEncodingException;
+    @MustCallAlias InputStreamReader(@MustCallAlias InputStream arg0, Charset arg1);
+    @MustCallAlias InputStreamReader(@MustCallAlias InputStream arg0, CharsetDecoder arg1);
     String getEncoding();
     int read() throws IOException;
     int read(char[] arg0, int arg1, int arg2) throws IOException;
@@ -162,8 +162,8 @@ class InputStreamReader extends Reader {
 }
 
 class BufferedWriter extends Writer {
-    @MustCallChoice BufferedWriter(@MustCallChoice Writer arg0);
-    @MustCallChoice BufferedWriter(@MustCallChoice Writer arg0, int arg1);
+    @MustCallAlias BufferedWriter(@MustCallAlias Writer arg0);
+    @MustCallAlias BufferedWriter(@MustCallAlias Writer arg0, int arg1);
     void write(int arg0) throws IOException;
     void write(char[] arg0, int arg1, int arg2) throws IOException;
     void write(String arg0, int arg1, int arg2) throws IOException;
@@ -173,17 +173,17 @@ class BufferedWriter extends Writer {
 }
 
 class PrintWriter extends Writer {
-    @MustCallChoice PrintWriter(@MustCallChoice Writer arg0);
-    @MustCallChoice PrintWriter(@MustCallChoice Writer arg0, boolean arg1);
-    @MustCallChoice PrintWriter(@MustCallChoice OutputStream arg0);
-    @MustCallChoice PrintWriter(@MustCallChoice OutputStream arg0, boolean arg1);
-    @MustCallChoice PrintWriter(@MustCallChoice OutputStream arg0, boolean arg1, Charset arg2);
+    @MustCallAlias PrintWriter(@MustCallAlias Writer arg0);
+    @MustCallAlias PrintWriter(@MustCallAlias Writer arg0, boolean arg1);
+    @MustCallAlias PrintWriter(@MustCallAlias OutputStream arg0);
+    @MustCallAlias PrintWriter(@MustCallAlias OutputStream arg0, boolean arg1);
+    @MustCallAlias PrintWriter(@MustCallAlias OutputStream arg0, boolean arg1, Charset arg2);
     PrintWriter(String arg0) throws FileNotFoundException;
     PrintWriter(String arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
     PrintWriter(String arg0, Charset arg1) throws IOException;
-    @MustCallChoice PrintWriter(@MustCallChoice File arg0) throws FileNotFoundException;
-    @MustCallChoice PrintWriter(@MustCallChoice File arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
-    @MustCallChoice PrintWriter(@MustCallChoice File arg0, Charset arg1) throws IOException;
+    @MustCallAlias PrintWriter(@MustCallAlias File arg0) throws FileNotFoundException;
+    @MustCallAlias PrintWriter(@MustCallAlias File arg0, String arg1) throws FileNotFoundException, UnsupportedEncodingException;
+    @MustCallAlias PrintWriter(@MustCallAlias File arg0, Charset arg1) throws IOException;
     @NotOwning PrintWriter printf(String arg0, Object[] arg1);
     @NotOwning PrintWriter printf(Locale arg0, String arg1, Object[] arg2);
     @NotOwning PrintWriter format(String arg0, Object[] arg1);
@@ -194,10 +194,10 @@ class PrintWriter extends Writer {
 }
 
 class OutputStreamWriter extends Writer {
-    @MustCallChoice OutputStreamWriter(@MustCallChoice OutputStream arg0, String arg1) throws UnsupportedEncodingException;
-    @MustCallChoice OutputStreamWriter(@MustCallChoice OutputStream arg0);
-    @MustCallChoice OutputStreamWriter(@MustCallChoice OutputStream arg0, Charset arg1);
-    @MustCallChoice OutputStreamWriter(@MustCallChoice OutputStream arg0, CharsetEncoder arg1);
+    @MustCallAlias OutputStreamWriter(@MustCallAlias OutputStream arg0, String arg1) throws UnsupportedEncodingException;
+    @MustCallAlias OutputStreamWriter(@MustCallAlias OutputStream arg0);
+    @MustCallAlias OutputStreamWriter(@MustCallAlias OutputStream arg0, Charset arg1);
+    @MustCallAlias OutputStreamWriter(@MustCallAlias OutputStream arg0, CharsetEncoder arg1);
     String getEncoding();
     void write(int arg0) throws IOException;
     void write(char[] arg0, int arg1, int arg2) throws IOException;
@@ -217,8 +217,8 @@ class Writer {
 }
 
 class LineNumberReader {
-    @MustCallChoice LineNumberReader(@MustCallChoice Reader in);
-    @MustCallChoice LineNumberReader(@MustCallChoice Reader in);
+    @MustCallAlias LineNumberReader(@MustCallAlias Reader in);
+    @MustCallAlias LineNumberReader(@MustCallAlias Reader in);
 }
 
 package java.security;
@@ -228,7 +228,7 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 
 class DigestOutputStream extends FilterOutputStream {
     protected MessageDigest digest;
-    @MustCallChoice DigestOutputStream(@MustCallChoice OutputStream arg0, MessageDigest arg1);
+    @MustCallAlias DigestOutputStream(@MustCallAlias OutputStream arg0, MessageDigest arg1);
     MessageDigest getMessageDigest();
     void setMessageDigest(MessageDigest arg0);
     void write(int arg0) throws IOException;
@@ -238,21 +238,21 @@ class DigestOutputStream extends FilterOutputStream {
 }
 
 class DigestInputStream extends FilterInputStream {
-    @MustCallChoice DigestInputStream(@MustCallChoice InputStream arg0, MessageDigest arg1);
+    @MustCallAlias DigestInputStream(@MustCallAlias InputStream arg0, MessageDigest arg1);
 }
 
 package java.util;
 
 class Scanner {
-    @MustCallChoice Scanner(@MustCallChoice File source);
-    @MustCallChoice Scanner(@MustCallChoice File source, String charsetName);
-    @MustCallChoice Scanner(@MustCallChoice InputStream in);
-    @MustCallChoice Scanner(@MustCallChoice InputStream source, String charsetName);
-    @MustCallChoice Scanner(@MustCallChoice Path source);
-    @MustCallChoice Scanner(@MustCallChoice Path source, String charsetName);
-    @MustCallChoice Scanner(@MustCallChoice Readable source);
-    @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source);
-    @MustCallChoice Scanner(@MustCallChoice ReadableByteChannel source, String charsetName);
+    @MustCallAlias Scanner(@MustCallAlias File source);
+    @MustCallAlias Scanner(@MustCallAlias File source, String charsetName);
+    @MustCallAlias Scanner(@MustCallAlias InputStream in);
+    @MustCallAlias Scanner(@MustCallAlias InputStream source, String charsetName);
+    @MustCallAlias Scanner(@MustCallAlias Path source);
+    @MustCallAlias Scanner(@MustCallAlias Path source, String charsetName);
+    @MustCallAlias Scanner(@MustCallAlias Readable source);
+    @MustCallAlias Scanner(@MustCallAlias ReadableByteChannel source);
+    @MustCallAlias Scanner(@MustCallAlias ReadableByteChannel source, String charsetName);
     @MustCall({}) Scanner(String source);
 }
 
@@ -266,17 +266,17 @@ class Formatter implements Closeable, Flushable {
 package java.util.zip;
 
 class CheckedInputStream extends FilterInputStream {
-    @MustCallChoice CheckedInputStream(@MustCallChoice InputStream arg0, Checksum arg1);
+    @MustCallAlias CheckedInputStream(@MustCallAlias InputStream arg0, Checksum arg1);
 }
 
 class GZIPInputStream extends InflaterInputStream {
-    @MustCallChoice GZIPInputStream​(@MustCallChoice InputStream in);
-    @MustCallChoice GZIPInputStream​(@MustCallChoice InputStream in, int size);
+    @MustCallAlias GZIPInputStream​(@MustCallAlias InputStream in);
+    @MustCallAlias GZIPInputStream​(@MustCallAlias InputStream in, int size);
 }
 
 class GZIPOutputStream extends DeflaterOutputStream {
-    @MustCallChoice GZIPOutputStream​(@MustCallChoice OutputStream in);
-    @MustCallChoice GZIPOutputStream​(@MustCallChoice OutputStream in, boolean syncFlush);
-    @MustCallChoice GZIPOutputStream​(@MustCallChoice OutputStream in, int size);
-    @MustCallChoice GZIPOutputStream​(@MustCallChoice OutputStream in, int size, boolean syncFlush);
+    @MustCallAlias GZIPOutputStream​(@MustCallAlias OutputStream in);
+    @MustCallAlias GZIPOutputStream​(@MustCallAlias OutputStream in, boolean syncFlush);
+    @MustCallAlias GZIPOutputStream​(@MustCallAlias OutputStream in, int size);
+    @MustCallAlias GZIPOutputStream​(@MustCallAlias OutputStream in, int size, boolean syncFlush);
 }
