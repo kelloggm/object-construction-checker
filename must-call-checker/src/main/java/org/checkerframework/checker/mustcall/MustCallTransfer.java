@@ -125,15 +125,15 @@ public class MustCallTransfer extends CFTransfer {
   }
 
   /**
-   * If the given method invocation node is a CreatesObligation method, then gets the JavaExpressions
-   * corresponding to the targets. If any expression is unparseable, this method uses the type
-   * factory's error reporting inferface to throw an error and returns the empty set. Also return
-   * the empty set if the given method is not a CreatesObligation method.
+   * If the given method invocation node is a CreatesObligation method, then gets the
+   * JavaExpressions corresponding to the targets. If any expression is unparseable, this method
+   * uses the type factory's error reporting inferface to throw an error and returns the empty set.
+   * Also return the empty set if the given method is not a CreatesObligation method.
    *
    * @param n a method invocation
    * @param atypeFactory the type factory to report errors and parse the expression string
-   * @return a list of JavaExpressions representing the targets, if the method is a CreatesObligation
-   *     method and the targets are parseable; the empty set otherwise.
+   * @return a list of JavaExpressions representing the targets, if the method is a
+   *     CreatesObligation method and the targets are parseable; the empty set otherwise.
    */
   public static Set<JavaExpression> getCreatesObligationExpressions(
       MethodInvocationNode n, GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory) {
@@ -141,17 +141,17 @@ public class MustCallTransfer extends CFTransfer {
   }
 
   /**
-   * If the given method invocation node is a CreatesObligation method, then gets the JavaExpressions
-   * corresponding to the targets. If any expression is unparseable, this method uses the type
-   * factory's error reporting inferface to throw an error and returns the empty set. Also return
-   * the empty set if the given method is not a CreatesObligation method.
+   * If the given method invocation node is a CreatesObligation method, then gets the
+   * JavaExpressions corresponding to the targets. If any expression is unparseable, this method
+   * uses the type factory's error reporting inferface to throw an error and returns the empty set.
+   * Also return the empty set if the given method is not a CreatesObligation method.
    *
    * @param n a method invocation
    * @param atypeFactory the type factory to report errors and parse the expression string
    * @param currentPath the path to n, if it is already available, to avoid potentially-expensive
    *     recomputation. If null, the path will be computed.
-   * @return a list of JavaExpressions representing the targets, if the method is a CreatesObligation
-   *     method and the targets are parseable; the empty set otherwise.
+   * @return a list of JavaExpressions representing the targets, if the method is a
+   *     CreatesObligation method and the targets are parseable; the empty set otherwise.
    */
   public static Set<JavaExpression> getCreatesObligationExpressions(
       MethodInvocationNode n,

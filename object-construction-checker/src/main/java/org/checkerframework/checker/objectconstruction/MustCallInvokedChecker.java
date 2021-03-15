@@ -221,8 +221,8 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Checks that an invocation of a CreatesObligation method is valid. Such an invocation is valid if
-   * one of the following conditions is true: 1) the target is an owning pointer 2) the target is
+   * Checks that an invocation of a CreatesObligation method is valid. Such an invocation is valid
+   * if one of the following conditions is true: 1) the target is an owning pointer 2) the target is
    * tracked in newdefs 3) the method in which the invocation occurs also has an @CreatesObligation
    * annotation, with the same target
    *
