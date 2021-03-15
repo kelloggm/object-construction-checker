@@ -26,14 +26,14 @@ import org.checkerframework.framework.qual.JavaExpression;
  * <p>This annotation is trusted, not checked (though it can only add obligations, so is still
  * conservative).
  *
- * <p>This annotation is repeatable: a programmer may write more than one {@code CreateObligation}
+ * <p>This annotation is repeatable: a programmer may write more than one {@code CreatesObligation}
  * annotation on a single method. If so, the annotations should have different targets.
  */
 @Target({ElementType.METHOD})
 @InheritedAnnotation
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(CreateObligation.List.class)
-public @interface CreateObligation {
+@Repeatable(CreatesObligation.List.class)
+public @interface CreatesObligation {
 
   /**
    * @return the object to which must-call obligations are added when the annotated method is
@@ -43,10 +43,10 @@ public @interface CreateObligation {
   String value() default "this";
 
   /**
-   * A wrapper annotation that makes the {@link CreateObligation} annotation repeatable.
+   * A wrapper annotation that makes the {@link CreatesObligation} annotation repeatable.
    *
    * <p>Programmers generally do not need to write this. It is created by Java when a programmer
-   * writes more than one {@link CreateObligation} annotation at the same location.
+   * writes more than one {@link CreatesObligation} annotation at the same location.
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
@@ -58,6 +58,6 @@ public @interface CreateObligation {
      *
      * @return the repeatable annotations
      */
-    CreateObligation[] value();
+    CreatesObligation[] value();
   }
 }

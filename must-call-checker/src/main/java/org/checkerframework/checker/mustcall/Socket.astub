@@ -1,7 +1,7 @@
 // DO NOT INCLUDE ANNOTATIONS THAT RELY ON ACCUMULATION FRAMES IN THIS FILE.
 // This file is loaded regardless of the -AnoAccumulationFrames option. All
 // assumptions that rely on the presence of accumulation frames (such as @MustCall({})
-// on unconnected sockets) MUST go in SocketAccumulationFrames.astub. CreateObligation
+// on unconnected sockets) MUST go in SocketAccumulationFrames.astub. CreatesObligation
 // okay, because the OCC turns that off anyway.
 
 package java.net;
@@ -23,11 +23,11 @@ class Socket implements Closeable {
 Socket(String arg0, int arg1, boolean arg2) throws IOException;
     @java.lang.Deprecated
 Socket(InetAddress arg0, int arg1, boolean arg2) throws IOException;
-    @CreateObligation
+    @CreatesObligation
     void connect(SocketAddress arg0) throws IOException;
-    @CreateObligation
+    @CreatesObligation
     void connect(SocketAddress arg0, int arg1) throws IOException;
-    @CreateObligation
+    @CreatesObligation
     void bind(SocketAddress arg0) throws IOException;
     InetAddress getInetAddress();
     InetAddress getLocalAddress();
@@ -81,9 +81,9 @@ class ServerSocket implements Closeable {
     ServerSocket(int arg0) throws IOException;
     ServerSocket(int arg0, int arg1) throws IOException;
     ServerSocket(int arg0, int arg1, InetAddress arg2) throws IOException;
-    @CreateObligation
+    @CreatesObligation
     void bind(SocketAddress arg0) throws IOException;
-    @CreateObligation
+    @CreatesObligation
     void bind(SocketAddress arg0, int arg1) throws IOException;
     InetAddress getInetAddress();
     int getLocalPort();

@@ -1,7 +1,7 @@
 // a set of test cases that demonstrate that errors are actually insued in appropriate
 // places when ServerSockets are connected
 
-// This version of the test expects that the accumulation frames support (i.e. the @CreateObligation annotation
+// This version of the test expects that the accumulation frames support (i.e. the @CreatesObligation annotation
 // and its accompanying logic) has been disabled.
 
 import java.net.*;

@@ -7,57 +7,57 @@ import org.checkerframework.checker.calledmethods.qual.*;
 import java.io.*;
 
 @MustCall("a")
-class CreateObligationTargets {
+class CreatesObligationTargets {
     @Owning InputStream is1;
 
-    @CreateObligation
-    // :: error: incompatible.create.obligation
-    static void resetObj1(CreateObligationTargets r) throws Exception {
+    @CreatesObligation
+    // :: error: incompatible.creates.obligation
+    static void resetObj1(CreatesObligationTargets r) throws Exception {
         if (r.is1 == null) {
             r.is1 = new FileInputStream("foo.txt");
         }
     }
 
-    @CreateObligation("#2")
-    // :: error: incompatible.create.obligation
-    static void resetObj2(CreateObligationTargets r, CreateObligationTargets other) throws Exception {
+    @CreatesObligation("#2")
+    // :: error: incompatible.creates.obligation
+    static void resetObj2(CreatesObligationTargets r, CreatesObligationTargets other) throws Exception {
         if (r.is1 == null) {
             r.is1 = new FileInputStream("foo.txt");
         }
     }
 
-    @CreateObligation("#1")
-    static void resetObj3(CreateObligationTargets r, CreateObligationTargets other) throws Exception {
+    @CreatesObligation("#1")
+    static void resetObj3(CreatesObligationTargets r, CreatesObligationTargets other) throws Exception {
         if (r.is1 == null) {
             r.is1 = new FileInputStream("foo.txt");
         }
     }
 
-    @CreateObligation
-    void resetObj4(CreateObligationTargets this, CreateObligationTargets other) throws Exception {
+    @CreatesObligation
+    void resetObj4(CreatesObligationTargets this, CreatesObligationTargets other) throws Exception {
         if (is1 == null) {
             is1 = new FileInputStream("foo.txt");
         }
     }
 
-    @CreateObligation
-    // :: error: incompatible.create.obligation
-    void resetObj5(CreateObligationTargets this, CreateObligationTargets other) throws Exception {
+    @CreatesObligation
+    // :: error: incompatible.creates.obligation
+    void resetObj5(CreatesObligationTargets this, CreatesObligationTargets other) throws Exception {
         if (other.is1 == null) {
             other.is1 = new FileInputStream("foo.txt");
         }
     }
 
-    @CreateObligation("#2")
-    // :: error: incompatible.create.obligation
-    void resetObj6(CreateObligationTargets this, CreateObligationTargets other) throws Exception {
+    @CreatesObligation("#2")
+    // :: error: incompatible.creates.obligation
+    void resetObj6(CreatesObligationTargets this, CreatesObligationTargets other) throws Exception {
         if (other.is1 == null) {
             other.is1 = new FileInputStream("foo.txt");
         }
     }
 
-    @CreateObligation("#1")
-    void resetObj7(CreateObligationTargets this, CreateObligationTargets other) throws Exception {
+    @CreatesObligation("#1")
+    void resetObj7(CreatesObligationTargets this, CreatesObligationTargets other) throws Exception {
         if (other.is1 == null) {
             other.is1 = new FileInputStream("foo.txt");
         }

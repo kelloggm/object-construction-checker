@@ -33,20 +33,20 @@ class CheckFields {
             this.finalNotOwningFoo = new Foo();
         }
 
-        @CreateObligation
+        @CreatesObligation
         void assingToOwningFieldWrong() {
             Foo f = new Foo();
             // :: error: required.method.not.called
             this.owningFoo = f;
         }
 
-        @CreateObligation
+        @CreatesObligation
         void assignToOwningFieldWrong2(){
             // :: error: required.method.not.called
             this.owningFoo = new Foo();
         }
 
-        @CreateObligation
+        @CreatesObligation
         void assingToOwningField() {
             // this is a safe re-assignment.
             if (this.owningFoo == null) {
@@ -107,14 +107,14 @@ class CheckFields {
 
     }
 
-    @CreateObligation("#1")
+    @CreatesObligation("#1")
     void testAccessField_param(FooField fooField) {
         // :: error: required.method.not.called
         fooField.owningFoo = new Foo();
         fooField.b();
     }
 
-    // :: error: missing.create.obligation
+    // :: error: missing.creates.obligation
     void testAccessField_param_no_co(FooField fooField) {
         // :: error: required.method.not.called
         fooField.owningFoo = new Foo();

@@ -26,7 +26,7 @@ import org.checkerframework.framework.source.SupportedOptions;
 })
 public class MustCallChecker extends BaseTypeChecker {
 
-  /** disables @CreateObligation support */
+  /** disables @CreatesObligation support */
   public static final String NO_ACCUMULATION_FRAMES = "noAccumulationFrames";
 
   /** disables @Owning/@NotOwning support */
@@ -48,7 +48,7 @@ public class MustCallChecker extends BaseTypeChecker {
         "%s is annotated as %s, but one of its supertypes has an %s annotation, which is inconsistent.");
     messages.setProperty(
         "mustcall.not.parseable",
-        "The method %s is annotated as @CreateObligation, but the target (%s) was unparseable in the current context. "
+        "The method %s is annotated as @CreatesObligation, but the target (%s) was unparseable in the current context. "
             + "Rewrite your code so that the relevant expression is a local variable.");
     return messages;
   }

@@ -86,7 +86,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     exceptionalStores = makeExceptionalStores(node, input);
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(node, input);
     handleEnsuresCalledMethodVarArgs(node, result);
-    handleCreateObligation(node, result);
+    handleCreatesObligation(node, result);
     TransferResult<CFValue, CFStore> finalResult =
         new ConditionalTransferResult<>(
             result.getResultValue(),
@@ -118,13 +118,13 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     return finalResult;
   }
 
-  void handleCreateObligation(MethodInvocationNode n, TransferResult<CFValue, CFStore> result) {
+  void handleCreatesObligation(MethodInvocationNode n, TransferResult<CFValue, CFStore> result) {
     if (!atypeFactory.useAccumulationFrames()) {
       return;
     }
 
     Set<JavaExpression> targetExprs =
-        MustCallTransfer.getCreateObligationExpressions(n, atypeFactory);
+        MustCallTransfer.getCreatesObligationExpressions(n, atypeFactory);
     for (JavaExpression targetExpr : targetExprs) {
       AnnotationMirror defaultType = atypeFactory.top;
       if (result.containsTwoStores()) {
