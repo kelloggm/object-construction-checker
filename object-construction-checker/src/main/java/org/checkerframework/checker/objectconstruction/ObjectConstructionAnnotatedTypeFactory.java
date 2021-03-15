@@ -20,7 +20,7 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallNoAccumulationFramesChecker;
-import org.checkerframework.checker.mustcall.qual.CreateObligation;
+import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -104,7 +104,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
 
-    // Need to get the LUB of the MC values, because if a CreateObligation method was
+    // Need to get the LUB of the MC values, because if a CreatesObligation method was
     // called on just one of the locals then they all need to be treated as if
     // they need to call the relevant methods.
     AnnotationMirror mcLub = mustCallAnnotatedTypeFactory.BOTTOM;
@@ -218,16 +218,16 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
 
   /**
    * Returns true if the declaration of the method being invoked has one or more {@link
-   * CreateObligation} annotations.
+   * CreatesObligation} annotations.
    *
    * @param node a method invocation node
    * @return true iff there is one or more create obligation annotations on the declaration of the
    *     invoked method
    */
-  public boolean hasCreateObligation(MethodInvocationNode node) {
+  public boolean hasCreatesObligation(MethodInvocationNode node) {
     ExecutableElement decl = TreeUtils.elementFromUse(node.getTree());
-    return getDeclAnnotation(decl, CreateObligation.class) != null
-        || getDeclAnnotation(decl, CreateObligation.List.class) != null;
+    return getDeclAnnotation(decl, CreatesObligation.class) != null
+        || getDeclAnnotation(decl, CreatesObligation.List.class) != null;
   }
 
   public boolean useAccumulationFrames() {

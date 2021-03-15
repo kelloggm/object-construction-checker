@@ -1,66 +1,66 @@
-// A simple test that @CreateObligation works as intended wrt the Object Construction Checker.
+// A simple test that @CreatesObligation works as intended wrt the Object Construction Checker.
 
 import org.checkerframework.checker.mustcall.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 
 @MustCall("a")
-class CreateObligationSimple {
+class CreatesObligationSimple {
 
-    @CreateObligation
+    @CreatesObligation
     void reset() { }
 
-    @CreateObligation("this")
+    @CreatesObligation("this")
     void resetThis() { }
 
     void a() { }
 
-    static @MustCall({}) CreateObligationSimple makeNoMC() {
+    static @MustCall({}) CreatesObligationSimple makeNoMC() {
         return null;
     }
 
     static void test1() {
         // :: error: required.method.not.called
-        CreateObligationSimple cos = makeNoMC();
-        @MustCall({}) CreateObligationSimple a = cos;
+        CreatesObligationSimple cos = makeNoMC();
+        @MustCall({}) CreatesObligationSimple a = cos;
         cos.reset();
         // :: error: assignment.type.incompatible
-        @CalledMethods({"reset"}) CreateObligationSimple b = cos;
-        @CalledMethods({}) CreateObligationSimple c = cos;
+        @CalledMethods({"reset"}) CreatesObligationSimple b = cos;
+        @CalledMethods({}) CreatesObligationSimple c = cos;
     }
 
     static void test2() {
         // :: error: required.method.not.called
-        CreateObligationSimple cos = makeNoMC();
-        @MustCall({}) CreateObligationSimple a = cos;
+        CreatesObligationSimple cos = makeNoMC();
+        @MustCall({}) CreatesObligationSimple a = cos;
         cos.resetThis();
         // :: error: assignment.type.incompatible
-        @CalledMethods({"resetThis"}) CreateObligationSimple b = cos;
-        @CalledMethods({}) CreateObligationSimple c = cos;
+        @CalledMethods({"resetThis"}) CreatesObligationSimple b = cos;
+        @CalledMethods({}) CreatesObligationSimple c = cos;
     }
 
     static void test3() {
         // :: error: required.method.not.called
-        CreateObligationSimple cos = new CreateObligationSimple();
+        CreatesObligationSimple cos = new CreatesObligationSimple();
         cos.a();
         cos.resetThis();
     }
 
     static void test4() {
-        CreateObligationSimple cos = new CreateObligationSimple();
+        CreatesObligationSimple cos = new CreatesObligationSimple();
         cos.a();
         cos.resetThis();
         cos.a();
     }
 
     static void test5() {
-        CreateObligationSimple cos = new CreateObligationSimple();
+        CreatesObligationSimple cos = new CreatesObligationSimple();
         cos.resetThis();
         cos.a();
     }
 
     static void test6(boolean b) {
-        CreateObligationSimple cos = new CreateObligationSimple();
+        CreatesObligationSimple cos = new CreatesObligationSimple();
         if (b) {
             cos.resetThis();
         }
@@ -69,7 +69,7 @@ class CreateObligationSimple {
 
     static void test7(boolean b) {
         // :: error: required.method.not.called
-        CreateObligationSimple cos = new CreateObligationSimple();
+        CreatesObligationSimple cos = new CreatesObligationSimple();
         cos.a();
         if (b) {
             cos.resetThis();

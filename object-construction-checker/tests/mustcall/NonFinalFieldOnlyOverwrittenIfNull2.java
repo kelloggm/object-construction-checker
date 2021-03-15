@@ -5,7 +5,7 @@ import java.io.*;
 
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.mustcall.qual.CreateObligation;
+import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -15,14 +15,14 @@ class NonFinalFieldOnlyOverwrittenIfNull2 {
     @Owning
     @MonotonicNonNull InputStream is;
 
-    @CreateObligation
+    @CreatesObligation
     void set(String fn) throws FileNotFoundException {
         if (is == null) {
             is = new FileInputStream(fn);
         }
     }
 
-    @CreateObligation
+    @CreatesObligation
     void set_after_close(String fn, boolean b) throws IOException {
         if (b) {
             is.close();
@@ -30,7 +30,7 @@ class NonFinalFieldOnlyOverwrittenIfNull2 {
         }
     }
 
-    @CreateObligation
+    @CreatesObligation
     void set_error(String fn, boolean b) throws FileNotFoundException {
         if (b) {
             // :: error: required.method.not.called
@@ -52,7 +52,7 @@ class NonFinalFieldOnlyOverwrittenIfNull2 {
     } */
 
     @EnsuresCalledMethods(value="this.is", methods="close")
-    @CreateObligation
+    @CreatesObligation
     void close() throws Exception {
         if (is != null) {
             is.close();

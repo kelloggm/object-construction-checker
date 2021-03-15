@@ -1,43 +1,43 @@
-// A simple test that @CreateObligation works as intended wrt the Must Call Checker.
+// A simple test that @CreatesObligation works as intended wrt the Must Call Checker.
 
 import org.checkerframework.checker.mustcall.qual.*;
 
 @MustCall("a")
-class CreateObligationSimple {
+class CreatesObligationSimple {
 
-    @CreateObligation
+    @CreatesObligation
     void reset() { }
 
-    @CreateObligation("this")
+    @CreatesObligation("this")
     void resetThis() { }
 
-    static @MustCall({}) CreateObligationSimple makeNoMC() {
+    static @MustCall({}) CreatesObligationSimple makeNoMC() {
         return null;
     }
 
     static void test1() {
-        CreateObligationSimple cos = makeNoMC();
-        @MustCall({}) CreateObligationSimple a = cos;
+        CreatesObligationSimple cos = makeNoMC();
+        @MustCall({}) CreatesObligationSimple a = cos;
         cos.reset();
         // :: error: assignment.type.incompatible
-        @MustCall({}) CreateObligationSimple b = cos;
-        @MustCall("a") CreateObligationSimple c = cos;
+        @MustCall({}) CreatesObligationSimple b = cos;
+        @MustCall("a") CreatesObligationSimple c = cos;
     }
 
     static void test2() {
-        CreateObligationSimple cos = makeNoMC();
-        @MustCall({}) CreateObligationSimple a = cos;
+        CreatesObligationSimple cos = makeNoMC();
+        @MustCall({}) CreatesObligationSimple a = cos;
         cos.resetThis();
         // :: error: assignment.type.incompatible
-        @MustCall({}) CreateObligationSimple b = cos;
-        @MustCall("a") CreateObligationSimple c = cos;
+        @MustCall({}) CreatesObligationSimple b = cos;
+        @MustCall("a") CreatesObligationSimple c = cos;
     }
 
     static void test3() {
         Object cos = makeNoMC();
         @MustCall({}) Object a = cos;
         // :: error: mustcall.not.parseable
-        ((CreateObligationSimple) cos).reset();
+        ((CreatesObligationSimple) cos).reset();
         // It would be better to issue an assignment incompatible error here, but the
         // error above is okay too.
         @MustCall({}) Object b = cos;
@@ -48,7 +48,7 @@ class CreateObligationSimple {
     static void test4() {
         Object cos = makeNoMC();
         @MustCall({}) Object a = cos;
-        CreateObligationSimple r = ((CreateObligationSimple) cos);
+        CreatesObligationSimple r = ((CreatesObligationSimple) cos);
         r.reset();
         // :: error: assignment.type.incompatible
         @MustCall({}) Object b = r;

@@ -29,7 +29,7 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallTransfer;
-import org.checkerframework.checker.mustcall.qual.CreateObligation;
+import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
@@ -181,11 +181,11 @@ class MustCallInvokedChecker {
 
   private void handleInvocation(Set<ImmutableSet<LocalVarWithTree>> defs, Node node) {
     doOwnershipTransferToParameters(defs, node);
-    // Count calls to @CreateObligation methods as creating new resources, for now.
+    // Count calls to @CreatesObligation methods as creating new resources, for now.
     if (node instanceof MethodInvocationNode
         && typeFactory.useAccumulationFrames()
-        && typeFactory.hasCreateObligation((MethodInvocationNode) node)) {
-      checkCreateObligationInvocation(defs, (MethodInvocationNode) node);
+        && typeFactory.hasCreatesObligation((MethodInvocationNode) node)) {
+      checkCreatesObligationInvocation(defs, (MethodInvocationNode) node);
       incrementNumMustCall(node);
     }
 
@@ -221,9 +221,9 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Checks that an invocation of a CreateObligation method is valid. Such an invocation is valid if
+   * Checks that an invocation of a CreatesObligation method is valid. Such an invocation is valid if
    * one of the following conditions is true: 1) the target is an owning pointer 2) the target is
-   * tracked in newdefs 3) the method in which the invocation occurs also has an @CreateObligation
+   * tracked in newdefs 3) the method in which the invocation occurs also has an @CreatesObligation
    * annotation, with the same target
    *
    * <p>If none of the above are true, this method issues a reset.not.owning error.
@@ -236,14 +236,14 @@ class MustCallInvokedChecker {
    * @param newDefs the local variables that have been defined in the current compilation unit (and
    *     are therefore going to be checked later). This value is side-effected if it contains the
    *     target of the reset method.
-   * @param node a method invocation node, invoking a method with a CreateObligation annotation
+   * @param node a method invocation node, invoking a method with a CreatesObligation annotation
    */
-  private void checkCreateObligationInvocation(
+  private void checkCreatesObligationInvocation(
       Set<ImmutableSet<LocalVarWithTree>> newDefs, MethodInvocationNode node) {
 
     TreePath currentPath = typeFactory.getPath(node.getTree());
     Set<JavaExpression> targetExprs =
-        MustCallTransfer.getCreateObligationExpressions(node, typeFactory, currentPath);
+        MustCallTransfer.getCreatesObligationExpressions(node, typeFactory, currentPath);
     Set<JavaExpression> missing = new HashSet<>();
     for (JavaExpression target : targetExprs) {
       if (target instanceof LocalVariable) {
@@ -289,12 +289,12 @@ class MustCallInvokedChecker {
       MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
       if (enclosingMethod != null) {
         ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
-        AnnotationMirror enclosingCreateObligation =
-            typeFactory.getDeclAnnotation(enclosingElt, CreateObligation.class);
-        if (enclosingCreateObligation != null) {
+        AnnotationMirror enclosingCreatesObligation =
+            typeFactory.getDeclAnnotation(enclosingElt, CreatesObligation.class);
+        if (enclosingCreatesObligation != null) {
           String enclosingTargetStrWithoutAdaptation =
               AnnotationUtils.getElementValue(
-                  enclosingCreateObligation, "value", String.class, true);
+                  enclosingCreatesObligation, "value", String.class, true);
           JavaExpressionContext enclosingContext =
               JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
                   enclosingMethod, checker);
@@ -302,7 +302,7 @@ class MustCallInvokedChecker {
               MustCallTransfer.standardizeAndViewpointAdapt(
                   enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
           if (enclosingTargetStr.equals(target.toString())) {
-            // The enclosing method also has a corresponding CreateObligation annotation, so this
+            // The enclosing method also has a corresponding CreatesObligation annotation, so this
             // satisfies case 3.
             return;
           }
@@ -666,7 +666,7 @@ class MustCallInvokedChecker {
     Node receiver = lhs.getReceiver();
 
     // TODO: it would be better to defer getting the path until after we check
-    // for a CreateObligation annotation, because getting the path can be expensive.
+    // for a CreatesObligation annotation, because getting the path can be expensive.
     // It might be possible to exploit the CFG structure to find the containing
     // method (rather than using the path, as below), because if a method is being
     // analyzed then it should be the root of the CFG (I think).
@@ -679,13 +679,13 @@ class MustCallInvokedChecker {
       return;
     }
 
-    // Check that there is a corresponding createObligation annotation, unless this is
+    // Check that there is a corresponding createsObligation annotation, unless this is
     // 1) an assignment to a field of a newly-declared local variable that can't be in scope
     // for the containing method, 2) the rhs is a null literal (so there's nothing to reset).
     if (!(receiver instanceof LocalVariableNode
             && isVarInDefs(newDefs, (LocalVariableNode) receiver))
         && !(node.getExpression() instanceof NullLiteralNode)) {
-      checkEnclosingMethodIsCreateObligation(node, enclosingMethod, currentPath);
+      checkEnclosingMethodIsCreatesObligation(node, enclosingMethod, currentPath);
     }
 
     MustCallAnnotatedTypeFactory mcTypeFactory =
@@ -723,14 +723,14 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * Checks that the method that encloses an assignment is marked with @CreateObligation annotation
+   * Checks that the method that encloses an assignment is marked with @CreatesObligation annotation
    * whose target is the object whose field is being re-assigned.
    *
    * @param node an assignment node whose lhs is a non-final, owning field
    * @param enclosingMethod the MethodTree in which the re-assignment takes place
    * @param currentPath the currentPath
    */
-  private void checkEnclosingMethodIsCreateObligation(
+  private void checkEnclosingMethodIsCreatesObligation(
       AssignmentNode node, MethodTree enclosingMethod, TreePath currentPath) {
     Node lhs = node.getTarget();
     if (!(lhs instanceof FieldAccessNode)) {
@@ -743,31 +743,31 @@ class MustCallInvokedChecker {
       return;
     }
     ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
-    AnnotationMirror createObligation =
-        typeFactory.getDeclAnnotation(enclosingElt, CreateObligation.class);
-    AnnotationMirror createObligations =
-        typeFactory.getDeclAnnotation(enclosingElt, CreateObligation.List.class);
-    if (createObligation == null && createObligations == null) {
+    AnnotationMirror createsObligation =
+        typeFactory.getDeclAnnotation(enclosingElt, CreatesObligation.class);
+    AnnotationMirror createsObligations =
+        typeFactory.getDeclAnnotation(enclosingElt, CreatesObligation.List.class);
+    if (createsObligation == null && createsObligations == null) {
       checker.reportError(
           enclosingMethod,
-          "missing.create.obligation",
+          "missing.creates.obligation",
           receiverString,
           ((FieldAccessNode) lhs).getFieldName());
       return;
     }
 
     Set<String> targetStrsWithoutAdaptation;
-    if (createObligation != null) {
+    if (createsObligation != null) {
       targetStrsWithoutAdaptation =
           Collections.singleton(
-              AnnotationUtils.getElementValue(createObligation, "value", String.class, true));
+              AnnotationUtils.getElementValue(createsObligation, "value", String.class, true));
     } else {
       // multiple create obligations
-      List<AnnotationMirror> createObligationAnnos =
+      List<AnnotationMirror> createsObligationAnnos =
           AnnotationUtils.getElementValueArray(
-              createObligations, "value", AnnotationMirror.class, false);
+              createsObligations, "value", AnnotationMirror.class, false);
       targetStrsWithoutAdaptation = new HashSet<>();
-      for (AnnotationMirror co : createObligationAnnos) {
+      for (AnnotationMirror co : createsObligationAnnos) {
         targetStrsWithoutAdaptation.add(
             AnnotationUtils.getElementValue(co, "value", String.class, true));
       }
@@ -792,7 +792,7 @@ class MustCallInvokedChecker {
     }
     checker.reportError(
         enclosingMethod,
-        "incompatible.create.obligation",
+        "incompatible.creates.obligation",
         receiverString,
         ((FieldAccessNode) lhs).getFieldName(),
         checked);
@@ -1000,7 +1000,7 @@ class MustCallInvokedChecker {
             Node last = nodes.get(nodes.size() - 1);
             CFStore cmStoreAfter = typeFactory.getStoreAfter(last);
             // If this is an exceptional block, check the MC store beforehand to avoid
-            // issuing an error about a call to a CreateObligation method that might throw
+            // issuing an error about a call to a CreatesObligation method that might throw
             // an exception. Otherwise, use the store after.
             CFStore mcStore;
             if (exceptionType != null && isInvocationOfCOMethod(last)) {
@@ -1027,17 +1027,17 @@ class MustCallInvokedChecker {
   }
 
   /**
-   * returns true if node is a MethodInvocationNode of a method with a CreateObligation annotation.
+   * returns true if node is a MethodInvocationNode of a method with a CreatesObligation annotation.
    *
    * @param node a node
-   * @return true if node is a MethodInvocationNode of a method with a CreateObligation annotation
+   * @return true if node is a MethodInvocationNode of a method with a CreatesObligation annotation
    */
   private boolean isInvocationOfCOMethod(Node node) {
     if (!(node instanceof MethodInvocationNode)) {
       return false;
     }
     MethodInvocationNode miNode = (MethodInvocationNode) node;
-    return typeFactory.hasCreateObligation(miNode);
+    return typeFactory.hasCreatesObligation(miNode);
   }
 
   /**

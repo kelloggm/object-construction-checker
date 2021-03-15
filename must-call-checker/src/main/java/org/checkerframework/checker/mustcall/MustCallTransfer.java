@@ -10,7 +10,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.mustcall.qual.CreateObligation;
+import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.analysis.RegularTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
@@ -52,7 +52,7 @@ public class MustCallTransfer extends CFTransfer {
 
     updateStoreWithTempVar(result, n);
     if (!atypeFactory.getChecker().hasOption(MustCallChecker.NO_ACCUMULATION_FRAMES)) {
-      Set<JavaExpression> targetExprs = getCreateObligationExpressions(n, atypeFactory);
+      Set<JavaExpression> targetExprs = getCreatesObligationExpressions(n, atypeFactory);
       for (JavaExpression targetExpr : targetExprs) {
         AnnotationMirror defaultType =
             atypeFactory
@@ -125,56 +125,56 @@ public class MustCallTransfer extends CFTransfer {
   }
 
   /**
-   * If the given method invocation node is a CreateObligation method, then gets the JavaExpressions
+   * If the given method invocation node is a CreatesObligation method, then gets the JavaExpressions
    * corresponding to the targets. If any expression is unparseable, this method uses the type
    * factory's error reporting inferface to throw an error and returns the empty set. Also return
-   * the empty set if the given method is not a CreateObligation method.
+   * the empty set if the given method is not a CreatesObligation method.
    *
    * @param n a method invocation
    * @param atypeFactory the type factory to report errors and parse the expression string
-   * @return a list of JavaExpressions representing the targets, if the method is a CreateObligation
+   * @return a list of JavaExpressions representing the targets, if the method is a CreatesObligation
    *     method and the targets are parseable; the empty set otherwise.
    */
-  public static Set<JavaExpression> getCreateObligationExpressions(
+  public static Set<JavaExpression> getCreatesObligationExpressions(
       MethodInvocationNode n, GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory) {
-    return getCreateObligationExpressions(n, atypeFactory, null);
+    return getCreatesObligationExpressions(n, atypeFactory, null);
   }
 
   /**
-   * If the given method invocation node is a CreateObligation method, then gets the JavaExpressions
+   * If the given method invocation node is a CreatesObligation method, then gets the JavaExpressions
    * corresponding to the targets. If any expression is unparseable, this method uses the type
    * factory's error reporting inferface to throw an error and returns the empty set. Also return
-   * the empty set if the given method is not a CreateObligation method.
+   * the empty set if the given method is not a CreatesObligation method.
    *
    * @param n a method invocation
    * @param atypeFactory the type factory to report errors and parse the expression string
    * @param currentPath the path to n, if it is already available, to avoid potentially-expensive
    *     recomputation. If null, the path will be computed.
-   * @return a list of JavaExpressions representing the targets, if the method is a CreateObligation
+   * @return a list of JavaExpressions representing the targets, if the method is a CreatesObligation
    *     method and the targets are parseable; the empty set otherwise.
    */
-  public static Set<JavaExpression> getCreateObligationExpressions(
+  public static Set<JavaExpression> getCreatesObligationExpressions(
       MethodInvocationNode n,
       GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
       @Nullable TreePath currentPath) {
-    AnnotationMirror createObligation =
-        atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreateObligation.class);
-    if (createObligation == null) {
-      AnnotationMirror createObligationList =
-          atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreateObligation.List.class);
-      if (createObligationList == null) {
+    AnnotationMirror createsObligation =
+        atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.class);
+    if (createsObligation == null) {
+      AnnotationMirror createsObligationList =
+          atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.List.class);
+      if (createsObligationList == null) {
         return Collections.emptySet();
       }
       // Handle a set of create obligation annotations.
-      List<AnnotationMirror> createObligations =
+      List<AnnotationMirror> createsObligations =
           AnnotationUtils.getElementValueArray(
-              createObligationList, "value", AnnotationMirror.class, false);
+              createsObligationList, "value", AnnotationMirror.class, false);
       Set<JavaExpression> results = new HashSet<>();
       if (currentPath == null) {
         currentPath = atypeFactory.getPath(n.getTree());
       }
-      for (AnnotationMirror co : createObligations) {
-        JavaExpression expr = getCreateObligationExpressionsImpl(co, n, atypeFactory, currentPath);
+      for (AnnotationMirror co : createsObligations) {
+        JavaExpression expr = getCreatesObligationExpressionsImpl(co, n, atypeFactory, currentPath);
         if (expr != null) {
           results.add(expr);
         }
@@ -186,26 +186,26 @@ public class MustCallTransfer extends CFTransfer {
       currentPath = atypeFactory.getPath(n.getTree());
     }
     JavaExpression expr =
-        getCreateObligationExpressionsImpl(createObligation, n, atypeFactory, currentPath);
+        getCreatesObligationExpressionsImpl(createsObligation, n, atypeFactory, currentPath);
     return expr != null ? Collections.singleton(expr) : Collections.emptySet();
   }
 
   /**
-   * Implementation of parsing a single CreateObligation annotation. See {@link
-   * #getCreateObligationExpressions(MethodInvocationNode, GenericAnnotatedTypeFactory)}.
+   * Implementation of parsing a single CreatesObligation annotation. See {@link
+   * #getCreatesObligationExpressions(MethodInvocationNode, GenericAnnotatedTypeFactory)}.
    *
-   * @param createObligation a create obligation annotation
+   * @param createsObligation a create obligation annotation
    * @param n the method invocation of a reset method
    * @param atypeFactory the type factory
    * @return the java expression representing the target, or null if the target is unparseable
    */
-  private static @Nullable JavaExpression getCreateObligationExpressionsImpl(
-      AnnotationMirror createObligation,
+  private static @Nullable JavaExpression getCreatesObligationExpressionsImpl(
+      AnnotationMirror createsObligation,
       MethodInvocationNode n,
       GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
       TreePath currentPath) {
     String targetStrWithoutAdaptation =
-        AnnotationUtils.getElementValue(createObligation, "value", String.class, true);
+        AnnotationUtils.getElementValue(createsObligation, "value", String.class, true);
     JavaExpressionContext context =
         JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(
             n, atypeFactory.getChecker());
