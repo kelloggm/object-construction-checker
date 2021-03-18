@@ -216,20 +216,11 @@ class Writer {
     @NotOwning Writer append(char arg0) throws IOException;
 }
 
-<<<<<<< HEAD
 class LineNumberReader {
     @MustCallAlias LineNumberReader(@MustCallAlias Reader in);
     @MustCallAlias LineNumberReader(@MustCallAlias Reader in);
 }
 
-||||||| 0f3d79f
-=======
-class LineNumberReader {
-    @MustCallAlias LineNumberReader(@MustCallAlias Reader in);
-    @MustCallAlias LineNumberReader(@MustCallAlias Reader in);
-}
-
->>>>>>> 96bddc670b057595c05425877302590e093ea219
 package java.security;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
