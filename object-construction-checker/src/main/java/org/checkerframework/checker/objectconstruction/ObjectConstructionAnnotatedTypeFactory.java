@@ -20,9 +20,9 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallNoAccumulationFramesChecker;
+import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.mustcall.qual.MustCallChoice;
-import org.checkerframework.checker.mustcall.qual.ResetMustCall;
+import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.MustCallInvokedChecker.LocalVarWithTree;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
@@ -104,7 +104,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
 
-    // Need to get the LUB of the MC values, because if a ResetMustCall method was
+    // Need to get the LUB of the MC values, because if a CreatesObligation method was
     // called on just one of the locals then they all need to be treated as if
     // they need to call the relevant methods.
     AnnotationMirror mcLub = mustCallAnnotatedTypeFactory.BOTTOM;
@@ -201,33 +201,33 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     return !getMustCallValue(t).isEmpty();
   }
 
-  boolean hasMustCallChoice(Tree tree) {
+  boolean hasMustCallAlias(Tree tree) {
     Element elt = TreeUtils.elementFromTree(tree);
-    return hasMustCallChoice(elt);
+    return hasMustCallAlias(elt);
   }
 
-  boolean hasMustCallChoice(Element elt) {
+  boolean hasMustCallAlias(Element elt) {
     if (checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES)) {
       return false;
     }
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
-    return mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallChoice.class)
+    return mustCallAnnotatedTypeFactory.getDeclAnnotationNoAliases(elt, MustCallAlias.class)
         != null;
   }
 
   /**
    * Returns true if the declaration of the method being invoked has one or more {@link
-   * ResetMustCall} annotations.
+   * CreatesObligation} annotations.
    *
    * @param node a method invocation node
-   * @return true iff there is one or more reset must call annotations on the declaration of the
+   * @return true iff there is one or more create obligation annotations on the declaration of the
    *     invoked method
    */
-  public boolean hasResetMustCall(MethodInvocationNode node) {
+  public boolean hasCreatesObligation(MethodInvocationNode node) {
     ExecutableElement decl = TreeUtils.elementFromUse(node.getTree());
-    return getDeclAnnotation(decl, ResetMustCall.class) != null
-        || getDeclAnnotation(decl, ResetMustCall.List.class) != null;
+    return getDeclAnnotation(decl, CreatesObligation.class) != null
+        || getDeclAnnotation(decl, CreatesObligation.List.class) != null;
   }
 
   public boolean useAccumulationFrames() {

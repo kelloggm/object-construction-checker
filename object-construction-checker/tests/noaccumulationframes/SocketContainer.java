@@ -1,6 +1,6 @@
 // A simple class that has a Socket as an owning field.
 // This is a modified version of tests/socket/SocketContainer.java
-// for checking that without RMC support we can't assign to non-final owning fields at all.
+// for checking that without CO support we can't assign to non-final owning fields at all.
 
 import java.net.*;
 import java.io.*;
@@ -19,7 +19,7 @@ class SocketContainer {
         sock = new Socket(host, port);
     }
 
-    // No missing reset must call error is issued, since RMC is disabled...
+    // No missing create obligation error is issued, since CO is disabled...
     public void reassign(String host, int port) throws Exception {
         sock.close();
         // For the RHS, because the field can't take ownership

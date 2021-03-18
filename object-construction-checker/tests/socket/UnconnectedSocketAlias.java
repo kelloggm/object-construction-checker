@@ -1,4 +1,4 @@
-// A test case for an interaction between RMC and aliasing that could
+// A test case for an interaction between CO and aliasing that could
 // lead to a soundness bug if handled wrong.
 
 import java.net.*;

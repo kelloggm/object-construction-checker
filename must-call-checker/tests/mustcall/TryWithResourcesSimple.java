@@ -31,14 +31,14 @@ public class TryWithResourcesSimple {
 
     static void test_poly(String address, int port) {
         try (Socket socket = new Socket(address, port)) {
-            // getChannel is @MustCallChoice (= poly) with the socket, so it should also be @MC({})
+            // getChannel is @MustCallAlias (= poly) with the socket, so it should also be @MC({})
             @MustCall({}) Object s = socket.getChannel();
         } catch (Exception e) {
 
         }
     }
 
-    static void test_two_mcc_variables(String address, int port) {
+    static void test_two_mca_variables(String address, int port) {
         try (Socket socket = new Socket(address, port);
              InputStream in = socket.getInputStream()) {
             @MustCall({}) Object s = in;

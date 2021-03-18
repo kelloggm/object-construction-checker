@@ -5,7 +5,7 @@ import java.io.*;
 
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.checker.mustcall.qual.MustCall;
-import org.checkerframework.checker.mustcall.qual.ResetMustCall;
+import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -15,14 +15,14 @@ class NonFinalFieldOnlyOverwrittenIfNull {
     @Owning
     @MonotonicNonNull InputStream is;
 
-    @ResetMustCall
+    @CreatesObligation
     void set(String fn) throws FileNotFoundException {
         if (is == null) {
             is = new FileInputStream(fn);
         }
     }
 
-    @ResetMustCall
+    @CreatesObligation
     void set_after_close(String fn, boolean b) throws IOException {
         if (b) {
             is.close();
@@ -30,7 +30,7 @@ class NonFinalFieldOnlyOverwrittenIfNull {
         }
     }
 
-    @ResetMustCall
+    @CreatesObligation
     void set_error(String fn, boolean b) throws FileNotFoundException {
         if (b) {
             // :: error: required.method.not.called
@@ -39,14 +39,14 @@ class NonFinalFieldOnlyOverwrittenIfNull {
     }
 
     // These three methods are copies of the three above, without the appropriate annotation.
-    // :: error: missing.reset.mustcall
+    // :: error: missing.creates.obligation
     void set2(String fn) throws FileNotFoundException {
         if (is == null) {
             is = new FileInputStream(fn);
         }
     }
 
-    // :: error: missing.reset.mustcall
+    // :: error: missing.creates.obligation
     void set_after_close2(String fn, boolean b) throws IOException {
         if (b) {
             is.close();
@@ -54,7 +54,7 @@ class NonFinalFieldOnlyOverwrittenIfNull {
         }
     }
 
-    // :: error: missing.reset.mustcall
+    // :: error: missing.creates.obligation
     void set_error2(String fn, boolean b) throws FileNotFoundException {
         if (b) {
             // :: error: required.method.not.called
