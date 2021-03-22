@@ -26,7 +26,11 @@ import org.checkerframework.framework.qual.TypeUseLocation;
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({MustCallUnknown.class})
 @DefaultQualifierInHierarchy
-@DefaultFor({TypeUseLocation.EXCEPTION_PARAMETER})
+@DefaultFor({
+  TypeUseLocation.IMPLICIT_UPPER_BOUND,
+  TypeUseLocation.IMPLICIT_LOWER_BOUND,
+  TypeUseLocation.EXCEPTION_PARAMETER
+})
 public @interface MustCall {
   /**
    * Methods that must be called, on any expression whose type is annotated.
