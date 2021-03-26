@@ -97,3 +97,44 @@ all `Socket` objects are `@MustCall({"close"})`. Without special-casing string c
 
     Socket sock = ...;
     String str = "this is the result of my socket's toString() function, which is invoked implicitly: " + sock;
+
+#### Type parameters with implicit vs explicit bounds sometimes cause (fixable) false positives
+
+The defaulting rules for `@MustCall` sometimes produce unexpected errors in code
+that uses type parameters with implicit upper bounds (i.e. without an `extends` clause).
+The errors can be fixed by adding an explicit bound. For example, consider the following
+example of a class with a type parameter and a field of an interface type that uses that
+type parameter (from [plume-lib/plume-util](https://github.com/plume-lib/plume-util)):
+
+```java
+    class MultiRandSelector<T> {
+        private Partition<T, T> eq;
+    }
+
+    interface Partition<ELEMENT extends @Nullable Object, CLASS extends @Nullable Object> {}
+```
+
+Running the Must Call Checker on this code produces two unexpected errors, at each use
+of `T` in `MultiRandSelector`:
+
+```
+must-call-checker/tests/mustcall/PlumeUtilRequiredAnnotations.java:19: error: [type.argument.type.incompatible] incompatible type argument for type parameter ELEMENT of Partitioner.
+        private Partitioner<T, T> eq;
+                            ^
+  found   : T extends @MustCallUnknown Object
+  required: @MustCall Object
+must-call-checker/tests/mustcall/PlumeUtilRequiredAnnotations.java:19: error: [type.argument.type.incompatible] incompatible type argument for type parameter CLASS of Partitioner.
+        private Partitioner<T, T> eq;
+                               ^
+  found   : T extends @MustCallUnknown Object
+  required: @MustCall Object
+```
+
+The important mismatch here is that `Partitioner` has explicit bounds, but `MultiRandSelector`
+does not. You could eliminate this false positive by either:
+* adding an explicit bound to `MultiRandSelector`: i.e. changing its declaration to `class MultiRandSelector<T extends Object>`, or
+* removing the explicit bound from `Partition`: i.e. changing its declaration to `interface Partition<ELEMENT, CLASS>`.
+
+These two changes are semantically equivalent, but you might prefer one over the other (in this case, for example,
+we preferred the former, since changing to the latter would remove the explicit `@Nullable` annotations on
+`ELEMENT` and `CLASS`).
