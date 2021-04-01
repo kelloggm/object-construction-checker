@@ -20,7 +20,6 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class ObjectConstructionVisitor extends CalledMethodsVisitor {
@@ -73,12 +72,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
     if (varElement.getKind().isField()
         && !checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
         && atypeFactory.getDeclAnnotation(varElement, Owning.class) != null) {
-      if (ElementUtils.isFinal(varElement)) {
-        // Final, owning fields are checked once at the declaration. This class handles that check.
-        // Non-final owning fields are checked every time they are assigned to, by the
-        // MustCallInvokedChecker.
-        checkFinalOwningField(varElement);
-      }
+      checkOwningField(varElement);
     }
 
     return super.visitVariable(node, p);
@@ -91,7 +85,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
    * m2} has an annotation {@code @EnsuresCalledMethods(value = "this.field", methods = "m")},
    * guaranteeing that the {@code @MustCall} obligation of the field will be satisfied.
    */
-  private void checkFinalOwningField(Element field) {
+  private void checkOwningField(Element field) {
 
     if (checker.shouldSkipUses(field)) {
       return;
