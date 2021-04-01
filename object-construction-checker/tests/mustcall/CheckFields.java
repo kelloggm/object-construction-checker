@@ -120,4 +120,17 @@ class CheckFields {
         fooField.owningFoo = new Foo();
         fooField.b();
     }
+
+    static class Nested {
+
+        @Owning Foo foo;
+
+        @CreatesObligation("this")
+        void initFoo() {
+            if (this.foo == null) {
+                // :: error: required.method.not.called
+                this.foo = new Foo();
+            }
+        }
+    }
 }
