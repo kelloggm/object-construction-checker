@@ -65,16 +65,12 @@ class CheckFields {
             return this.owningFoo;
         }
 
-        @EnsuresCalledMethods(value = {"this.finalOwningFoo"}, methods = {"a", "c"})
+        @EnsuresCalledMethods(value = {"this.finalOwningFoo", "this.owningFoo"}, methods = {"a"})
         void b() {
             this.finalOwningFoo.a();
             this.finalOwningFoo.c();
             this.owningFoo.a();
-            this.owningFoo.c();
         }
-
-
-
     }
 
     void testField() {
@@ -119,5 +115,51 @@ class CheckFields {
         // :: error: required.method.not.called
         fooField.owningFoo = new Foo();
         fooField.b();
+    }
+
+    static class NestedWrong {
+
+        // Non-final owning fields also require the surrounding class to have an appropriate MC annotation.
+        // :: error: required.method.not.called
+        @Owning Foo foo;
+
+        @CreatesObligation("this")
+        void initFoo() {
+            if (this.foo == null) {
+                this.foo = new Foo();
+            }
+        }
+    }
+
+    @MustCall("f")
+    static class NestedWrong2 {
+        // Non-final owning fields also require the surrounding class to have an appropriate MC annotation.
+        // :: error: required.method.not.called
+        @Owning Foo foo;
+
+        @CreatesObligation("this")
+        void initFoo() {
+            if (this.foo == null) {
+                this.foo = new Foo();
+            }
+        }
+
+        void f() {}
+    }
+
+    @MustCall("f")
+    static class NestedRight {
+        // Non-final owning fields also require the surrounding class to have an appropriate MC annotation.
+        @Owning Foo foo;
+
+        @CreatesObligation("this")
+        void initFoo() {
+            if (this.foo == null) {
+                this.foo = new Foo();
+            }
+        }
+
+        @EnsuresCalledMethods(value="this.foo", methods="a")
+        void f() { this.foo.a(); }
     }
 }
