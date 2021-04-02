@@ -25,4 +25,8 @@ public @MustCall("shutdown") class MustCallAliasOwningField {
     public static void authenticate(InputStream is) {
 
     }
+
+    public void wrapField() {
+        DataInputStream dis = new DataInputStream(input);
+    }
 }
