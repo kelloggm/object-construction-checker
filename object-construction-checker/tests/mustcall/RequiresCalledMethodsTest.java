@@ -3,7 +3,7 @@ import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.objectconstruction.qual.*;
 import java.io.*;
 
-public class EnsuresRequiredCalledMethodsTest {
+public class RequiresCalledMethodsTest {
 
     @MustCall("a")
     static class Foo {
@@ -15,7 +15,7 @@ public class EnsuresRequiredCalledMethodsTest {
     static class FooField {
         private @Owning Foo foo = null;
 
-        @EnsuresRequiredCalledMethods(value = {"this.foo"}, methods = {"a"})
+        @RequiresCalledMethods(value = {"this.foo"}, methods = {"a"})
         @CreatesObligation("this")
         void overwriteFooCorrect() {
             this.foo = new Foo();

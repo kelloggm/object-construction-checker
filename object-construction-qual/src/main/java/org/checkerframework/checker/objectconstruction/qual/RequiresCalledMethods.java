@@ -8,7 +8,7 @@ import org.checkerframework.framework.qual.QualifierArgument;
 
 @PreconditionAnnotation(qualifier = CalledMethods.class)
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
-public @interface EnsuresRequiredCalledMethods {
+public @interface RequiresCalledMethods {
   /**
    * The Java expressions to which the qualifier applies.
    *
