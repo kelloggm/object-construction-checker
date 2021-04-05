@@ -1,5 +1,4 @@
-// A test for a bad interaction between CO and subtyping
-// that could happen if CO was unsound.
+// test for CO and inner classes
 
 import org.checkerframework.checker.objectconstruction.qual.*;
 import org.checkerframework.checker.calledmethods.qual.*;
@@ -20,6 +19,9 @@ class COAnonymousClass {
           resetFoo();
         }
       };
+      other2(r);
     }
+
+    void other2(Runnable r) { r.run(); }
   }
 }
