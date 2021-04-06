@@ -364,8 +364,9 @@ class MustCallInvokedChecker {
       } else if (!(sameResource instanceof LocalVariableNode
           || sameResource instanceof FieldAccessNode)) {
         // we do not track the temp var for the call if the MustCallAlias parameter is a local (that
-        // case is handled above; the local must already be in the defs) or a field (since handling
-        // of @Owning fields is a completely separate check)
+        // case is handled above; the local must already be in the defs) or a field (handling of
+        // @Owning fields is a completely separate check, and we never need to track an alias of
+        // non-@Owning fields)
         defs.add(ImmutableSet.of(lhsLocalVarWithTreeNew));
       }
     }
