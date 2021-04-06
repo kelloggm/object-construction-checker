@@ -122,8 +122,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
     }
 
     Set<JavaExpression> targetExprs =
-        MustCallTransfer.getCreatesObligationExpressions(
-            n, atypeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class));
+        MustCallTransfer.getCreatesObligationExpressions(n, atypeFactory);
     for (JavaExpression targetExpr : targetExprs) {
       AnnotationMirror defaultType = atypeFactory.top;
       if (result.containsTwoStores()) {

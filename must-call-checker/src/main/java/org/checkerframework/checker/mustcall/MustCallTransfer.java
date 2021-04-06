@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.SupportedOptions;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
@@ -31,6 +32,7 @@ import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFTransfer;
 import org.checkerframework.framework.flow.CFValue;
+import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.framework.util.StringToJavaExpression;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -161,7 +163,7 @@ public class MustCallTransfer extends CFTransfer {
    *     CreatesObligation method and the targets are parseable; the empty set otherwise.
    */
   public static Set<JavaExpression> getCreatesObligationExpressions(
-      MethodInvocationNode n, MustCallAnnotatedTypeFactory atypeFactory) {
+      MethodInvocationNode n, GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory) {
     return getCreatesObligationExpressions(n, atypeFactory, null);
   }
 
@@ -180,7 +182,7 @@ public class MustCallTransfer extends CFTransfer {
    */
   public static Set<JavaExpression> getCreatesObligationExpressions(
       MethodInvocationNode n,
-      MustCallAnnotatedTypeFactory atypeFactory,
+      GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
       @Nullable TreePath currentPath) {
     AnnotationMirror createsObligation =
         atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.class);
@@ -191,11 +193,12 @@ public class MustCallTransfer extends CFTransfer {
         return Collections.emptySet();
       }
       // Handle a set of create obligation annotations.
+      @SuppressWarnings("deprecation")
       List<AnnotationMirror> createsObligations =
           AnnotationUtils.getElementValueArray(
               createsObligationList,
-              atypeFactory.createsObligationListValueElement,
-              AnnotationMirror.class);
+              "value",
+              AnnotationMirror.class, true);
       Set<JavaExpression> results = new HashSet<>();
       if (currentPath == null) {
         currentPath = atypeFactory.getPath(n.getTree());
@@ -230,15 +233,12 @@ public class MustCallTransfer extends CFTransfer {
   private static @Nullable JavaExpression getCreatesObligationExpressionsImpl(
       AnnotationMirror createsObligation,
       MethodInvocationNode n,
-      MustCallAnnotatedTypeFactory atypeFactory,
+      GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
       TreePath currentPath) {
-    // TODO: apparently the default value ("this") here needs to be supplied, for performance
-    // reasons. Is there a way to change this so
-    // that if the default value of the annotation element changes, this defaulting will change,
-    // too?
+    @SuppressWarnings("deprecation")
     String targetStrWithoutAdaptation =
         AnnotationUtils.getElementValue(
-            createsObligation, atypeFactory.createsObligationValueElement, String.class, "this");
+            createsObligation, "value", String.class, true);
     // Note that it *is* necessary to parse this string twice - the first time to standardize
     // and viewpoint adapt it via the utility method called on the next line, and the second
     // time (in the try block below) to actually get the relevant expression.

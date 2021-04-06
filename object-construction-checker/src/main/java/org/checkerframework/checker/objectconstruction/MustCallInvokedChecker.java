@@ -243,7 +243,7 @@ class MustCallInvokedChecker {
     TreePath currentPath = typeFactory.getPath(node.getTree());
     Set<JavaExpression> targetExprs =
         MustCallTransfer.getCreatesObligationExpressions(
-            node, typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class), currentPath);
+            node, typeFactory, currentPath);
     Set<JavaExpression> missing = new HashSet<>();
     for (JavaExpression target : targetExprs) {
       if (target instanceof LocalVariable) {
