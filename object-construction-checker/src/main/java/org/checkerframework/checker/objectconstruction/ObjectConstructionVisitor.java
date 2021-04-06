@@ -17,7 +17,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
@@ -44,7 +43,8 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
   @Override
   public Void visitAnnotation(final AnnotationTree node, final Void p) {
     AnnotationMirror anno = TreeUtils.annotationFromAnnotationTree(node);
-    if (AnnotationUtils.areSameByClass(anno, EnsuresCalledMethodsVarArgs.class)) {
+    if (AnnotationUtils.areSameByName(
+        anno, "org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs")) {
       // we can't verify these yet.  emit an error (which will have to be suppressed) for now
       checker.report(node, new DiagMessage(Diagnostic.Kind.ERROR, "ensuresvarargs.unverified"));
       return null;
@@ -117,13 +117,17 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
 
             if (ensuresCalledMethodsAnno != null) {
               List<String> values =
-                  ValueCheckerUtils.getValueOfAnnotationWithStringArgument(
-                      ensuresCalledMethodsAnno);
+                  AnnotationUtils.getElementValueArray(
+                      ensuresCalledMethodsAnno,
+                      atypeFactory.ensuresCalledMethodsValueElement,
+                      String.class);
               if (values.stream()
                   .anyMatch(value -> value.contains(field.getSimpleName().toString()))) {
                 List<String> methods =
                     AnnotationUtils.getElementValueArray(
-                        ensuresCalledMethodsAnno, "methods", String.class, false);
+                        ensuresCalledMethodsAnno,
+                        atypeFactory.ensuresCalledMethodsMethodsElement,
+                        String.class);
                 fieldMCAnno.removeAll(methods);
               }
             }
