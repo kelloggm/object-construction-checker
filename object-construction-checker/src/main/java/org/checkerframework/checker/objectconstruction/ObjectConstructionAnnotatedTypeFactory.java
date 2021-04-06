@@ -159,7 +159,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
       mcLub = mustCallAnnotatedTypeFactory.getQualifierHierarchy().leastUpperBound(mcLub, mcAnno);
     }
     if (AnnotationUtils.areSameByName(
-        mcLub, "org.checkeframework.checker.mustcall.qual.MustCall")) {
+        mcLub, "org.checkerframework.checker.mustcall.qual.MustCall")) {
       return getMustCallValues(mcLub);
     } else {
       return null;

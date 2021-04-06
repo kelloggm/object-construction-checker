@@ -242,8 +242,7 @@ class MustCallInvokedChecker {
 
     TreePath currentPath = typeFactory.getPath(node.getTree());
     Set<JavaExpression> targetExprs =
-        MustCallTransfer.getCreatesObligationExpressions(
-            node, typeFactory, currentPath);
+        MustCallTransfer.getCreatesObligationExpressions(node, typeFactory, currentPath);
     Set<JavaExpression> missing = new HashSet<>();
     for (JavaExpression target : targetExprs) {
       if (target instanceof LocalVariable) {
@@ -300,8 +299,8 @@ class MustCallInvokedChecker {
           String enclosingTargetStr;
           try {
             enclosingTargetStr =
-                StringToJavaExpression.atMethodDecl(
-                        enclosingTargetStrWithoutAdaptation, enclosingElt, checker)
+                StringToJavaExpression.atMethodBody(
+                        enclosingTargetStrWithoutAdaptation, enclosingMethod, checker)
                     .toString();
           } catch (JavaExpressionParseException e) {
             enclosingTargetStr = enclosingTargetStrWithoutAdaptation;
@@ -794,7 +793,8 @@ class MustCallInvokedChecker {
       String targetStr = null;
       try {
         targetStr =
-            StringToJavaExpression.atMethodDecl(targetStrWithoutAdaptation, enclosingElt, checker)
+            StringToJavaExpression.atMethodBody(
+                    targetStrWithoutAdaptation, enclosingMethod, checker)
                 .toString();
       } catch (JavaExpressionParseException e) {
         targetStr = targetStrWithoutAdaptation;

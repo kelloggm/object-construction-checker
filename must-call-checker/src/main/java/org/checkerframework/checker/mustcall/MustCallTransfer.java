@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.annotation.processing.SupportedOptions;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
@@ -196,9 +195,7 @@ public class MustCallTransfer extends CFTransfer {
       @SuppressWarnings("deprecation")
       List<AnnotationMirror> createsObligations =
           AnnotationUtils.getElementValueArray(
-              createsObligationList,
-              "value",
-              AnnotationMirror.class, true);
+              createsObligationList, "value", AnnotationMirror.class, true);
       Set<JavaExpression> results = new HashSet<>();
       if (currentPath == null) {
         currentPath = atypeFactory.getPath(n.getTree());
@@ -237,8 +234,7 @@ public class MustCallTransfer extends CFTransfer {
       TreePath currentPath) {
     @SuppressWarnings("deprecation")
     String targetStrWithoutAdaptation =
-        AnnotationUtils.getElementValue(
-            createsObligation, "value", String.class, true);
+        AnnotationUtils.getElementValue(createsObligation, "value", String.class, true);
     // Note that it *is* necessary to parse this string twice - the first time to standardize
     // and viewpoint adapt it via the utility method called on the next line, and the second
     // time (in the try block below) to actually get the relevant expression.
