@@ -13,13 +13,11 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.calledmethods.CalledMethodsTransfer;
-import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallTransfer;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
-import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
@@ -190,7 +188,8 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
 
     // Don't attempt to strengthen @CalledMethodsPredicate annotations, because that would
     // require reasoning about the predicate itself. Instead, start over from top.
-    if (AnnotationUtils.areSameByClass(type, CalledMethodsPredicate.class)) {
+    if (AnnotationUtils.areSameByName(
+        type, "org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate")) {
       type = atypeFactory.top;
     }
 
@@ -198,7 +197,9 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
       return null;
     }
 
-    List<String> currentMethods = ValueCheckerUtils.getValueOfAnnotationWithStringArgument(type);
+    List<String> currentMethods =
+        AnnotationUtils.getElementValueArray(
+            type, atypeFactory.calledMethodsValueElement, String.class);
     List<String> newList =
         Stream.concat(Arrays.stream(methodNames), currentMethods.stream())
             .collect(Collectors.toList());
@@ -215,7 +216,8 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
       return;
     }
     String[] ensuredMethodNames =
-        AnnotationUtils.getElementValueArray(annot, "value", String.class, true)
+        AnnotationUtils.getElementValueArray(
+                annot, atypeFactory.ensuresCalledMethodsVarArgsValueElement, String.class)
             .toArray(new String[0]);
     List<? extends VariableElement> parameters = elt.getParameters();
     int varArgsPos = parameters.size() - 1;
@@ -260,14 +262,12 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
         for (AnnotationMirror anno : flowAnnos) {
           if (atypeFactory.isAccumulatorAnnotation(anno)) {
             List<String> oldFlowValues =
-                ValueCheckerUtils.getValueOfAnnotationWithStringArgument(anno);
-            if (oldFlowValues != null) {
-              // valuesAsList cannot have its length changed -- it is backed by an
-              // array.  getValueOfAnnotationWithStringArgument returns a new,
-              // modifiable list.
-              oldFlowValues.addAll(valuesAsList);
-              valuesAsList = oldFlowValues;
-            }
+                AnnotationUtils.getElementValueArray(
+                    anno, atypeFactory.calledMethodsValueElement, String.class);
+            // valuesAsList cannot have its length changed -- it is backed by an
+            // array.  getElementValueArray returns a new, modifiable list.
+            oldFlowValues.addAll(valuesAsList);
+            valuesAsList = oldFlowValues;
           }
         }
       }

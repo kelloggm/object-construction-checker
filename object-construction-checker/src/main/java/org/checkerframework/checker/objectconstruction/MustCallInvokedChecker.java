@@ -38,7 +38,6 @@ import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.com.google.common.base.Predicates;
 import org.checkerframework.com.google.common.collect.FluentIterable;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
-import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -62,8 +61,8 @@ import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
-import org.checkerframework.framework.util.JavaExpressionParseUtil;
-import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.StringToJavaExpression;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
@@ -292,15 +291,20 @@ class MustCallInvokedChecker {
         AnnotationMirror enclosingCreatesObligation =
             typeFactory.getDeclAnnotation(enclosingElt, CreatesObligation.class);
         if (enclosingCreatesObligation != null) {
+          MustCallAnnotatedTypeFactory mcAtf =
+              typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
           String enclosingTargetStrWithoutAdaptation =
               AnnotationUtils.getElementValue(
-                  enclosingCreatesObligation, "value", String.class, true);
-          JavaExpressionContext enclosingContext =
-              JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
-                  enclosingMethod, checker);
-          String enclosingTargetStr =
-              MustCallTransfer.standardizeAndViewpointAdapt(
-                  enclosingTargetStrWithoutAdaptation, currentPath, enclosingContext);
+                  enclosingCreatesObligation, mcAtf.createsObligationValueElement, String.class);
+          String enclosingTargetStr;
+          try {
+            enclosingTargetStr =
+                StringToJavaExpression.atMethodBody(
+                        enclosingTargetStrWithoutAdaptation, enclosingMethod, checker)
+                    .toString();
+          } catch (JavaExpressionParseException e) {
+            enclosingTargetStr = enclosingTargetStrWithoutAdaptation;
+          }
           if (enclosingTargetStr.equals(target.toString())) {
             // The enclosing method also has a corresponding CreatesObligation annotation, so this
             // satisfies case 3.
@@ -478,7 +482,10 @@ class MustCallInvokedChecker {
         Set<AnnotationMirror> annotationMirrors = typeFactory.getDeclAnnotations(formal);
 
         if (annotationMirrors.stream()
-            .anyMatch(anno -> AnnotationUtils.areSameByClass(anno, Owning.class))) {
+            .anyMatch(
+                anno ->
+                    AnnotationUtils.areSameByName(
+                        anno, "org.checkerframework.checker.objectconstruction.qual.Owning"))) {
           // transfer ownership!
           newDefs.remove(getSetContainingAssignmentTreeOfVar(newDefs, local));
         }
@@ -698,7 +705,9 @@ class MustCallInvokedChecker {
     AnnotationMirror mcAnno =
         mcTypeFactory.getAnnotationFromJavaExpression(
             JavaExpression.fromNode(lhs), node.getTree(), MustCall.class);
-    List<String> mcValues = ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mcAnno);
+    List<String> mcValues =
+        AnnotationUtils.getElementValueArray(
+            mcAnno, mcTypeFactory.mustCallValueElement, String.class);
 
     if (mcValues.isEmpty()) {
       return;
@@ -710,7 +719,10 @@ class MustCallInvokedChecker {
         cmValue == null
             ? typeFactory.top
             : cmValue.getAnnotations().stream()
-                .filter(anno -> AnnotationUtils.areSameByClass(anno, CalledMethods.class))
+                .filter(
+                    anno ->
+                        AnnotationUtils.areSameByName(
+                            anno, "org.checkerframework.checker.calledmethods.qual.CalledMethods"))
                 .findAny()
                 .orElse(typeFactory.top);
 
@@ -762,29 +774,36 @@ class MustCallInvokedChecker {
     }
 
     Set<String> targetStrsWithoutAdaptation;
+    MustCallAnnotatedTypeFactory mcAtf =
+        typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
     if (createsObligation != null) {
       targetStrsWithoutAdaptation =
           Collections.singleton(
-              AnnotationUtils.getElementValue(createsObligation, "value", String.class, true));
+              AnnotationUtils.getElementValue(
+                  createsObligation, mcAtf.createsObligationValueElement, String.class, "this"));
     } else {
       // multiple create obligations
       List<AnnotationMirror> createsObligationAnnos =
           AnnotationUtils.getElementValueArray(
-              createsObligations, "value", AnnotationMirror.class, false);
+              createsObligations, mcAtf.createsObligationListValueElement, AnnotationMirror.class);
       targetStrsWithoutAdaptation = new HashSet<>();
       for (AnnotationMirror co : createsObligationAnnos) {
         targetStrsWithoutAdaptation.add(
-            AnnotationUtils.getElementValue(co, "value", String.class, true));
+            AnnotationUtils.getElementValue(
+                co, mcAtf.createsObligationValueElement, String.class, "this"));
       }
     }
-    JavaExpressionContext context =
-        JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodDeclaration(
-            enclosingMethod, checker);
     String checked = "";
     for (String targetStrWithoutAdaptation : targetStrsWithoutAdaptation) {
-      String targetStr =
-          MustCallTransfer.standardizeAndViewpointAdapt(
-              targetStrWithoutAdaptation, currentPath, context);
+      String targetStr = null;
+      try {
+        targetStr =
+            StringToJavaExpression.atMethodBody(
+                    targetStrWithoutAdaptation, enclosingMethod, checker)
+                .toString();
+      } catch (JavaExpressionParseException e) {
+        targetStr = targetStrWithoutAdaptation;
+      }
       if (targetStr.equals(receiverString)) {
         // This create obligation annotation matches.
         return;
@@ -1147,7 +1166,10 @@ class MustCallInvokedChecker {
       if (lhsCFValue != null) { // When store contains the lhs
         cmAnno =
             lhsCFValue.getAnnotations().stream()
-                .filter(anno -> AnnotationUtils.areSameByClass(anno, CalledMethods.class))
+                .filter(
+                    anno ->
+                        AnnotationUtils.areSameByName(
+                            anno, "org.checkerframework.checker.calledmethods.qual.CalledMethods"))
                 .findAny()
                 .orElse(typeFactory.top);
       } else {
