@@ -5,6 +5,8 @@ import static javax.lang.model.element.ElementKind.METHOD;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.VariableTree;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -12,13 +14,16 @@ import javax.lang.model.element.ExecutableElement;
 import javax.tools.Diagnostic;
 import org.checkerframework.checker.calledmethods.CalledMethodsVisitor;
 import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
+import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class ObjectConstructionVisitor extends CalledMethodsVisitor {
@@ -54,15 +59,91 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
   @Override
   public Void visitMethod(MethodTree node, Void p) {
     ExecutableElement elt = TreeUtils.elementFromDeclaration(node);
-    AnnotationMirror annot = atypeFactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarArgs.class);
-    if (annot != null) {
+    AnnotationMirror ecmva = atypeFactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarArgs.class);
+    if (ecmva != null) {
       if (!elt.isVarArgs()) {
         checker.report(
             node, new DiagMessage(Diagnostic.Kind.ERROR, "ensuresvarargs.annotation.invalid"));
         return null;
       }
     }
+    MustCallAnnotatedTypeFactory mcAtf =
+        atypeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+    List<String> coValues = getCOValues(elt, mcAtf);
+    if (!coValues.isEmpty()) {
+      // Check the validity of the annotation, by ensuring that if this method is overriding another
+      // method
+      // it also creates at least as many obligations. Without this check, dynamic dispatch might
+      // allow e.g. a field to
+      // be overwritten by a CO method, but the CO effect wouldn't occur.
+      for (ExecutableElement overridden : ElementUtils.getOverriddenMethods(elt, this.types)) {
+        List<String> overriddenCoValues = getCOValues(overridden, mcAtf);
+        if (!overriddenCoValues.containsAll(coValues)) {
+          String foundCoValueString = String.join(", ", coValues);
+          String neededCoValueString = String.join(", ", overriddenCoValues);
+          checker.reportError(
+              node,
+              "creates.obligation.override.invalid",
+              elt,
+              overridden,
+              coValues,
+              overriddenCoValues);
+        }
+      }
+    }
     return super.visitMethod(node, p);
+  }
+
+  /**
+   * Returns the literal string present in the given @CreatesObligation annotation, or "this" if
+   * there is none.
+   *
+   * @param createsObligation an @CreatesObligation annotation
+   * @param mcAtf a MustCallAnnotatedTypeFactory, to source the value element
+   * @return the string value
+   */
+  private String getCOValue(
+      AnnotationMirror createsObligation, MustCallAnnotatedTypeFactory mcAtf) {
+    return AnnotationUtils.getElementValue(
+        createsObligation, mcAtf.createsObligationValueElement, String.class, "this");
+  }
+
+  /**
+   * Returns all the literal strings present in the @CreatesObligation annotations on the given
+   * element. This version correctly handles multiple CreatesObligation annotations on the same
+   * element.
+   *
+   * @param elt an executable element
+   * @param mcAtf a MustCallAnnotatedTypeFactory, to source the value element
+   * @return the literal strings present in the @CreatesObligation annotation(s) of that element,
+   *     substituting the default "this" for empty annotations. This method returns the empty list
+   *     iff there are no @CreatesObligation annotations on elt. The returned list is always
+   *     modifiable if it is non-empty.
+   */
+  private List<String> getCOValues(ExecutableElement elt, MustCallAnnotatedTypeFactory mcAtf) {
+    AnnotationMirror createsObligation =
+        atypeFactory.getDeclAnnotation(elt, CreatesObligation.class);
+    if (createsObligation != null) {
+      // don't use Collections.singletonList because it's not guaranteed to be mutable
+      List<String> result = new ArrayList<>(1);
+      result.add(getCOValue(createsObligation, mcAtf));
+      return result;
+    }
+    AnnotationMirror createsObligationList =
+        atypeFactory.getDeclAnnotation(elt, CreatesObligation.List.class);
+    if (createsObligationList != null) {
+      List<AnnotationMirror> createObligations =
+          AnnotationUtils.getElementValueArray(
+              createsObligationList,
+              mcAtf.createsObligationListValueElement,
+              AnnotationMirror.class);
+      List<String> result = new ArrayList<>();
+      for (AnnotationMirror co : createObligations) {
+        result.add(getCOValue(co, mcAtf));
+      }
+      return result;
+    }
+    return Collections.emptyList();
   }
 
   @Override

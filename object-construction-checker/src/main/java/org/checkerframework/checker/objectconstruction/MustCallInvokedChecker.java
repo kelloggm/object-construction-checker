@@ -295,7 +295,10 @@ class MustCallInvokedChecker {
               typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
           String enclosingTargetStrWithoutAdaptation =
               AnnotationUtils.getElementValue(
-                  enclosingCreatesObligation, mcAtf.createsObligationValueElement, String.class, "this");
+                  enclosingCreatesObligation,
+                  mcAtf.createsObligationValueElement,
+                  String.class,
+                  "this");
           String enclosingTargetStr;
           try {
             enclosingTargetStr =

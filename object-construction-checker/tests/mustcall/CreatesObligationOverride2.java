@@ -2,6 +2,8 @@
 // CO is permitted, and 2) that all overridden versions of a CO method are always also CO.
 
 import org.checkerframework.checker.mustcall.qual.*;
+import org.checkerframework.checker.objectconstruction.qual.*;
+import org.checkerframework.checker.calledmethods.qual.*;
 
 class CreatesObligationOverride2 {
 
@@ -27,6 +29,40 @@ class CreatesObligationOverride2 {
 
     static class Qux extends Foo {
         @Override
+        public void b() { }
+    }
+
+    static class Razz extends Foo {
+
+        public @Owning Foo myFoo;
+
+        @Override
+        @EnsuresCalledMethods(value="this.myFoo", methods="a")
+        public void a() {
+            super.a();
+            myFoo.a();
+        }
+
+        @Override
+        @CreatesObligation("this.myFoo")
+        // :: error: creates.obligation.override.invalid
+        public void b() { }
+    }
+
+    static class Thud extends Foo {
+
+        public @Owning Foo myFoo;
+
+        @Override
+        @EnsuresCalledMethods(value="this.myFoo", methods="a")
+        public void a() {
+            super.a();
+            myFoo.a();
+        }
+
+        @Override
+        @CreatesObligation("this.myFoo")
+        @CreatesObligation("this")
         public void b() { }
     }
 
@@ -75,6 +111,35 @@ class CreatesObligationOverride2 {
     static void test7() {
         // :: error: required.method.not.called
         Qux foo = new Qux();
+        foo.a();
+        foo.b();
+    }
+
+    static void test8() {
+        // :: error: required.method.not.called
+        Foo foo = new Razz();
+        foo.a();
+        foo.b();
+    }
+
+    static void test9() {
+        // No error is issued here, because Razz#b is *only* @CreatesObligation("this.myFoo"), not
+        // @CreatesObligation("this"). An error is issued at the declaration of Razz#b instead.
+        Razz foo = new Razz();
+        foo.a();
+        foo.b();
+    }
+
+    static void test10() {
+        // :: error: required.method.not.called
+        Foo foo = new Thud();
+        foo.a();
+        foo.b();
+    }
+
+    static void test11() {
+        // :: error: required.method.not.called
+        Thud foo = new Thud();
         foo.a();
         foo.b();
     }

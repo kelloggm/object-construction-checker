@@ -12,8 +12,8 @@ class COAnonymousClass {
 
             Runnable r = new Runnable() {
                 @Override
-                // :: error: creates.obligation.override.invalid
                 @CreatesObligation
+                // :: error: creates.obligation.override.invalid
                 public void run() {
                     resetFoo();
                 }
