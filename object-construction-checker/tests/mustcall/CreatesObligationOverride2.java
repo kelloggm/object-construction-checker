@@ -43,6 +43,7 @@ class CreatesObligationOverride2 {
             myFoo.a();
         }
 
+        // this version isn't permitted, since it adds a new obligation
         @Override
         @CreatesObligation("this.myFoo")
         // :: error: creates.obligation.override.invalid
@@ -60,9 +61,20 @@ class CreatesObligationOverride2 {
             myFoo.a();
         }
 
+        // this method isn't permitted, since it's also adding a new obligation
         @Override
         @CreatesObligation("this.myFoo")
         @CreatesObligation("this")
+        // :: error: creates.obligation.override.invalid
+        public void b() { }
+    }
+
+    static class Thudless extends Thud {
+        // this method override is also NOT permitted, because the @CreatesObligation("this.myFoo") annotation
+        // from Thud is inherited!
+        @Override
+        @CreatesObligation("this")
+        // :: error: creates.obligation.override.invalid
         public void b() { }
     }
 
@@ -140,6 +152,27 @@ class CreatesObligationOverride2 {
     static void test11() {
         // :: error: required.method.not.called
         Thud foo = new Thud();
+        foo.a();
+        foo.b();
+    }
+
+    static void test12() {
+        // :: error: required.method.not.called
+        Foo foo = new Thudless();
+        foo.a();
+        foo.b();
+    }
+
+    static void test13() {
+        // :: error: required.method.not.called
+        Thud foo = new Thudless();
+        foo.a();
+        foo.b();
+    }
+
+    static void test14() {
+        // :: error: required.method.not.called
+        Thudless foo = new Thudless();
         foo.a();
         foo.b();
     }

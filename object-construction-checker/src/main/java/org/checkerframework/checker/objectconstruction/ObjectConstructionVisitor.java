@@ -81,13 +81,15 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
         if (!overriddenCoValues.containsAll(coValues)) {
           String foundCoValueString = String.join(", ", coValues);
           String neededCoValueString = String.join(", ", overriddenCoValues);
+          String actualClassname = ElementUtils.getEnclosingClassName(elt);
+          String overriddenClassname = ElementUtils.getEnclosingClassName(overridden);
           checker.reportError(
               node,
               "creates.obligation.override.invalid",
-              elt,
-              overridden,
-              coValues,
-              overriddenCoValues);
+              actualClassname + "#" + elt,
+              overriddenClassname + "#" + overridden,
+              foundCoValueString,
+              neededCoValueString);
         }
       }
     }
@@ -121,14 +123,6 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
    *     modifiable if it is non-empty.
    */
   private List<String> getCOValues(ExecutableElement elt, MustCallAnnotatedTypeFactory mcAtf) {
-    AnnotationMirror createsObligation =
-        atypeFactory.getDeclAnnotation(elt, CreatesObligation.class);
-    if (createsObligation != null) {
-      // don't use Collections.singletonList because it's not guaranteed to be mutable
-      List<String> result = new ArrayList<>(1);
-      result.add(getCOValue(createsObligation, mcAtf));
-      return result;
-    }
     AnnotationMirror createsObligationList =
         atypeFactory.getDeclAnnotation(elt, CreatesObligation.List.class);
     if (createsObligationList != null) {
@@ -141,6 +135,14 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
       for (AnnotationMirror co : createObligations) {
         result.add(getCOValue(co, mcAtf));
       }
+      return result;
+    }
+    AnnotationMirror createsObligation =
+        atypeFactory.getDeclAnnotation(elt, CreatesObligation.class);
+    if (createsObligation != null) {
+      // don't use Collections.singletonList because it's not guaranteed to be mutable
+      List<String> result = new ArrayList<>(1);
+      result.add(getCOValue(createsObligation, mcAtf));
       return result;
     }
     return Collections.emptyList();
