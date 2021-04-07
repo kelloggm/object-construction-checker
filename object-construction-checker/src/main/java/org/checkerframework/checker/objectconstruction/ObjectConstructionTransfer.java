@@ -265,8 +265,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
                 AnnotationUtils.getElementValueArray(
                     anno, atypeFactory.calledMethodsValueElement, String.class);
             // valuesAsList cannot have its length changed -- it is backed by an
-            // array.  getElementValueArray returns a new,
-            // modifiable list.
+            // array.  getElementValueArray returns a new, modifiable list.
             oldFlowValues.addAll(valuesAsList);
             valuesAsList = oldFlowValues;
           }
