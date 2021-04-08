@@ -11,6 +11,7 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -573,85 +574,88 @@ class MustCallInvokedChecker {
             getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
         newDefs.remove(setContainingRhs);
       }
-    } else if (lhs instanceof LocalVariableNode
-        && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
-      // Reassignment to the lhs, ignoring the case where lhs and rhs are identical local variables
-      if (isVarInDefs(newDefs, (LocalVariableNode) lhs) && !sameLocal(lhs, rhs)) {
-        ImmutableSet<LocalVarWithTree> setContainingLhs =
-            getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-        LocalVarWithTree latestAssignmentPair =
-            getAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
-        // If the rhs is not MCA with the lhs, we will remove the latest assignment pair of lhs
-        // from the newDefs. If the lhs is the only pointer to the previous resource then we will
-        // do MustCall checks for that resource
-        if (setContainingLhs.size() > 1) {
-          // If the setContainingLatestAssignmentPair has more LocalVarWithTree, remove
-          // latestAssignmentPair
-          ImmutableSet<LocalVarWithTree> newSetContainingLhs =
-              FluentIterable.from(setContainingLhs)
-                  .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
-                  .toSet();
-          newDefs.remove(setContainingLhs);
-          newDefs.add(newSetContainingLhs);
-        } else {
-          // If the setContainingLatestAssignmentPair size is one and the rhs is not MCA with the
-          // lhs
-          MustCallAnnotatedTypeFactory mcAtf =
-              typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
-
-          checkMustCall(
-              setContainingLhs,
-              typeFactory.getStoreBefore(node),
-              mcAtf.getStoreBefore(node),
-              "variable overwritten by assignment " + node.getTree());
-          newDefs.remove(setContainingLhs);
-        }
-      }
-
-      // If the rhs is a temporary variable, we replace it with the lhs
-      if (typeFactory.tempVarToNode.containsKey(rhs)) {
-        if (isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
-          LocalVarWithTree latestAssignmentPair =
-              getAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
-          ImmutableSet<LocalVarWithTree> setContainingRhsTempVar =
+    } else if (lhs instanceof LocalVariableNode) {
+      LocalVariableNode lhsVar = (LocalVariableNode) lhs;
+      if (isTryWithResourcesVariable(lhsVar)) {
+        // don't track try-with-resources variables.  Also, we know that whatever value gets
+        // assigned to the variable will be closed.  So, if the RHS is a tracked variable, remove
+        // its set from the defs
+        if (rhs instanceof LocalVariableNode) {
+          Set<LocalVarWithTree> setContainingRhs =
               getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
-          ImmutableSet<LocalVarWithTree> newSetContainingRhsTempVar =
-              FluentIterable.from(setContainingRhsTempVar)
-                  .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
-                  .append(
-                      new LocalVarWithTree(
-                          new LocalVariable((LocalVariableNode) lhs), node.getTree()))
-                  .toSet();
-
-          newDefs.remove(setContainingRhsTempVar);
-          newDefs.add(newSetContainingRhsTempVar);
+          newDefs.remove(setContainingRhs);
+        }
+      } else {
+        // Update defs as in a gen-kill dataflow analysis problem.  kill is always the lhsVar
+        // Set replacements to perform in newDefs.  We keep this map to avoid a
+        // ConcurrentModificationException in the loop below
+        Map<ImmutableSet<LocalVarWithTree>, ImmutableSet<LocalVarWithTree>> replacements =
+            new LinkedHashMap<>();
+        // construct this once outside the loop for efficiency
+        LocalVarWithTree lhsVarWithTreeToGen =
+            new LocalVarWithTree(new LocalVariable(lhsVar), node.getTree());
+        for (ImmutableSet<LocalVarWithTree> varWithTreeSet : newDefs) {
+          Set<LocalVarWithTree> kill = new LinkedHashSet<>();
+          // always kill the lhs var if present
+          addLocalVarWithTreeToSetIfPresent(varWithTreeSet, lhsElement, kill);
+          LocalVarWithTree gen = null;
+          // if rhs is a variable tracked in the set, gen the lhs
+          if (rhs instanceof LocalVariableNode) {
+            LocalVariableNode rhsVar = (LocalVariableNode) rhs;
+            if (varWithTreeSet.stream()
+                .anyMatch(lvwt -> lvwt.localVar.getElement().equals(rhsVar.getElement()))) {
+              gen = lhsVarWithTreeToGen;
+              // we remove temp vars from tracking once they are assigned elsewhere
+              if (typeFactory.isTempVar(rhsVar)) {
+                addLocalVarWithTreeToSetIfPresent(varWithTreeSet, rhsVar.getElement(), kill);
+              }
+            }
+          }
+          // check if there is something to do before creating a new set, for efficiency
+          if (kill.isEmpty() && gen == null) {
+            continue;
+          }
+          Set<LocalVarWithTree> newVarWithTreeSet = new LinkedHashSet<>(varWithTreeSet);
+          newVarWithTreeSet.removeAll(kill);
+          if (gen != null) {
+            newVarWithTreeSet.add(gen);
+          }
+          if (newVarWithTreeSet.size() == 0) {
+            // we have killed the last reference to the resource; check the must-call obligation
+            MustCallAnnotatedTypeFactory mcAtf =
+                typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+            checkMustCall(
+                varWithTreeSet,
+                typeFactory.getStoreBefore(node),
+                mcAtf.getStoreBefore(node),
+                "variable overwritten by assignment " + node.getTree());
+          }
+          replacements.put(varWithTreeSet, ImmutableSet.copyOf(newVarWithTreeSet));
+        }
+        // finally, update newDefs according to the replacements
+        for (Map.Entry<ImmutableSet<LocalVarWithTree>, ImmutableSet<LocalVarWithTree>> entry :
+            replacements.entrySet()) {
+          newDefs.remove(entry.getKey());
+          if (!entry.getValue().isEmpty()) {
+            newDefs.add(entry.getValue());
+          }
         }
       }
-      // Ownership Transfer
-      if (rhs instanceof LocalVariableNode && isVarInDefs(newDefs, (LocalVariableNode) rhs)) {
-        // If the rhs is a LocalVariableNode that exists in the newDefs (Note that if a
-        // localVariableNode exists in the newDefs it means it isn't assigned to a null
-        // literals), then it adds the lhs to the set containing rhs
-        ImmutableSet<LocalVarWithTree> setContainingRhs =
-            getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
-        LocalVarWithTree lhsLocalVarWithTreeNew =
-            new LocalVarWithTree(new LocalVariable((LocalVariableNode) lhs), node.getTree());
-        // It is important that newDefs contains the set of these locals - that is, their
-        // aliasing relationship - because either one could have a reset method called on it,
-        // which would create a new obligation.
-        ImmutableSet<LocalVarWithTree> newSetContainingRhsTempVar =
-            FluentIterable.from(setContainingRhs).append(lhsLocalVarWithTreeNew).toSet();
-        newDefs.add(newSetContainingRhsTempVar);
-        newDefs.remove(setContainingRhs);
-      }
-    } else if (lhs instanceof LocalVariableNode
-        && isTryWithResourcesVariable((LocalVariableNode) lhs)
-        && rhs instanceof LocalVariableNode) {
-      // If the lhs is a resource variable, then we remove the set containing rhs from the newDefs
-      Set<LocalVarWithTree> setContainingRhs =
-          getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
-      newDefs.remove(setContainingRhs);
     }
+  }
+
+  /**
+   * If a {@link LocalVarWithTree} is present in {@code varWithTreeSet} whose variable element is
+   * {@code element}, add it to {@code lvwtSet}
+   */
+  private void addLocalVarWithTreeToSetIfPresent(
+      ImmutableSet<LocalVarWithTree> varWithTreeSet,
+      Element element,
+      Set<LocalVarWithTree> lvwtSet) {
+    varWithTreeSet.stream()
+        .filter(lvwt -> lvwt.localVar.getElement().equals(element))
+        .findFirst()
+        .ifPresent(lvwtSet::add);
   }
 
   /** Do n1 and n2 represent the same local variable? */

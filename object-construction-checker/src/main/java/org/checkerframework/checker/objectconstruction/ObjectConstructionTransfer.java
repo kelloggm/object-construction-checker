@@ -166,7 +166,7 @@ public class ObjectConstructionTransfer extends CalledMethodsTransfer {
           atypeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
       LocalVariableNode temp = mcAtf.getTempVar(node);
       if (temp != null) {
-        atypeFactory.tempVarToNode.put(temp, node.getTree());
+        atypeFactory.addTempVar(temp, node.getTree());
         JavaExpression localExp = JavaExpression.fromNode(temp);
         AnnotationMirror anm =
             atypeFactory
