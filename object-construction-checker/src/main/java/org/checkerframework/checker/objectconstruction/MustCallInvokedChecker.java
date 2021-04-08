@@ -585,7 +585,7 @@ class MustCallInvokedChecker {
           newDefs.remove(setContainingRhs);
         }
       } else {
-        // Update defs as in a gen-kill dataflow analysis problem.  kill is always the lhsVar
+        // Update defs as in a gen-kill dataflow analysis problem.
         // Set replacements to perform in newDefs.  We keep this map to avoid a
         // ConcurrentModificationException in the loop below
         Map<ImmutableSet<LocalVarWithTree>, ImmutableSet<LocalVarWithTree>> replacements =
