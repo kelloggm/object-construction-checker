@@ -69,7 +69,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
     }
     MustCallAnnotatedTypeFactory mcAtf =
         atypeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
-    List<String> coValues = getCOValues(elt, mcAtf);
+    List<String> coValues = getCOValues(elt, mcAtf, atypeFactory);
     if (!coValues.isEmpty()) {
       // Check the validity of the annotation, by ensuring that if this method is overriding another
       // method
@@ -77,7 +77,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
       // allow e.g. a field to
       // be overwritten by a CO method, but the CO effect wouldn't occur.
       for (ExecutableElement overridden : ElementUtils.getOverriddenMethods(elt, this.types)) {
-        List<String> overriddenCoValues = getCOValues(overridden, mcAtf);
+        List<String> overriddenCoValues = getCOValues(overridden, mcAtf, atypeFactory);
         if (!overriddenCoValues.containsAll(coValues)) {
           String foundCoValueString = String.join(", ", coValues);
           String neededCoValueString = String.join(", ", overriddenCoValues);
@@ -104,7 +104,7 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
    * @param mcAtf a MustCallAnnotatedTypeFactory, to source the value element
    * @return the string value
    */
-  private String getCOValue(
+  private static String getCOValue(
       AnnotationMirror createsObligation, MustCallAnnotatedTypeFactory mcAtf) {
     return AnnotationUtils.getElementValue(
         createsObligation, mcAtf.createsObligationValueElement, String.class, "this");
@@ -117,12 +117,13 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
    *
    * @param elt an executable element
    * @param mcAtf a MustCallAnnotatedTypeFactory, to source the value element
+   * @param atypeFactory a ObjectConstructionAnnotatedTypeFactory
    * @return the literal strings present in the @CreatesObligation annotation(s) of that element,
    *     substituting the default "this" for empty annotations. This method returns the empty list
    *     iff there are no @CreatesObligation annotations on elt. The returned list is always
    *     modifiable if it is non-empty.
    */
-  private List<String> getCOValues(ExecutableElement elt, MustCallAnnotatedTypeFactory mcAtf) {
+  /*package-private*/ static List<String> getCOValues(ExecutableElement elt, MustCallAnnotatedTypeFactory mcAtf, ObjectConstructionAnnotatedTypeFactory atypeFactory) {
     AnnotationMirror createsObligationList =
         atypeFactory.getDeclAnnotation(elt, CreatesObligation.List.class);
     if (createsObligationList != null) {

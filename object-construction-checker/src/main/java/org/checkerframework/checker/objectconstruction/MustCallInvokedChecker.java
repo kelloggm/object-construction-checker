@@ -700,7 +700,7 @@ class MustCallInvokedChecker {
     if (!(receiver instanceof LocalVariableNode
             && isVarInDefs(newDefs, (LocalVariableNode) receiver))
         && !(node.getExpression() instanceof NullLiteralNode)) {
-      checkEnclosingMethodIsCreatesObligation(node, enclosingMethod, currentPath);
+      checkEnclosingMethodIsCreatesObligation(node, enclosingMethod);
     }
 
     MustCallAnnotatedTypeFactory mcTypeFactory =
@@ -748,10 +748,9 @@ class MustCallInvokedChecker {
    *
    * @param node an assignment node whose lhs is a non-final, owning field
    * @param enclosingMethod the MethodTree in which the re-assignment takes place
-   * @param currentPath the currentPath
    */
   private void checkEnclosingMethodIsCreatesObligation(
-      AssignmentNode node, MethodTree enclosingMethod, TreePath currentPath) {
+      AssignmentNode node, MethodTree enclosingMethod) {
     Node lhs = node.getTarget();
     if (!(lhs instanceof FieldAccessNode)) {
       return;
@@ -763,11 +762,12 @@ class MustCallInvokedChecker {
       return;
     }
     ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
-    AnnotationMirror createsObligation =
-        typeFactory.getDeclAnnotation(enclosingElt, CreatesObligation.class);
-    AnnotationMirror createsObligations =
-        typeFactory.getDeclAnnotation(enclosingElt, CreatesObligation.List.class);
-    if (createsObligation == null && createsObligations == null) {
+    MustCallAnnotatedTypeFactory mcAtf =
+            typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+
+    List<String> coValues = ObjectConstructionVisitor.getCOValues(enclosingElt, mcAtf, typeFactory);
+
+    if (coValues.isEmpty()) {
       checker.reportError(
           enclosingMethod,
           "missing.creates.obligation",
@@ -776,28 +776,8 @@ class MustCallInvokedChecker {
       return;
     }
 
-    Set<String> targetStrsWithoutAdaptation;
-    MustCallAnnotatedTypeFactory mcAtf =
-        typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
-    if (createsObligation != null) {
-      targetStrsWithoutAdaptation =
-          Collections.singleton(
-              AnnotationUtils.getElementValue(
-                  createsObligation, mcAtf.createsObligationValueElement, String.class, "this"));
-    } else {
-      // multiple create obligations
-      List<AnnotationMirror> createsObligationAnnos =
-          AnnotationUtils.getElementValueArray(
-              createsObligations, mcAtf.createsObligationListValueElement, AnnotationMirror.class);
-      targetStrsWithoutAdaptation = new HashSet<>();
-      for (AnnotationMirror co : createsObligationAnnos) {
-        targetStrsWithoutAdaptation.add(
-            AnnotationUtils.getElementValue(
-                co, mcAtf.createsObligationValueElement, String.class, "this"));
-      }
-    }
     String checked = "";
-    for (String targetStrWithoutAdaptation : targetStrsWithoutAdaptation) {
+    for (String targetStrWithoutAdaptation : coValues) {
       String targetStr = null;
       try {
         targetStr =

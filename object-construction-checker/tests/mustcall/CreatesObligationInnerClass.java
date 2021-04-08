@@ -8,22 +8,6 @@ class CreatesObligationInnerClass {
         @CreatesObligation("this")
         void resetFoo() { }
 
-        void other() {
-
-            Runnable r = new Runnable() {
-                @Override
-                @CreatesObligation
-                // :: error: creates.obligation.override.invalid
-                public void run() {
-                    resetFoo();
-                }
-            };
-            other2(r);
-        }
-
-        // If this call to run() were permitted with no errors, this would be unsound.
-        void other2(Runnable r) { r.run(); }
-
         /**
          * non-static inner class
          */
