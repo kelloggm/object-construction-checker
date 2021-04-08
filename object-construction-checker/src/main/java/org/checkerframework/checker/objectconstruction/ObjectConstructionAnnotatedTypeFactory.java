@@ -64,7 +64,7 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
    * Bidirectional map to preserve temporary variables created for nodes with non-empty @MustCall
    * annotation and the corresponding nodes.
    */
-  protected BiMap<LocalVariableNode, Tree> tempVarToNode = HashBiMap.create();
+  private BiMap<LocalVariableNode, Tree> tempVarToNode = HashBiMap.create();
   /**
    * Default constructor matching super. Should be called automatically.
    *
@@ -210,9 +210,21 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
     return mustCallValues;
   }
 
-  protected LocalVariableNode getTempVarForTree(Node node) {
+  /* package-private */
+  LocalVariableNode getTempVarForTree(Node node) {
     return tempVarToNode.inverse().get(node.getTree());
   }
+
+  /* package-private */
+  boolean isTempVar(Node node) {
+    return tempVarToNode.containsKey(node);
+  }
+
+  /* package-private */
+  void addTempVar(LocalVariableNode tmpVar, Tree tree) {
+    tempVarToNode.put(tmpVar, tree);
+  }
+
   /**
    * Returns true if the type of the tree includes a must-call annotation. Note that this method may
    * not consider dataflow, and is only safe to use on declarations, such as method trees or
