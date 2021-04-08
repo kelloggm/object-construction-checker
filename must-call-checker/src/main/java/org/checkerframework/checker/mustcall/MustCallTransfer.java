@@ -183,14 +183,10 @@ public class MustCallTransfer extends CFTransfer {
       MethodInvocationNode n,
       GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
       @Nullable TreePath currentPath) {
-    AnnotationMirror createsObligation =
-        atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.class);
-    if (createsObligation == null) {
-      AnnotationMirror createsObligationList =
-          atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.List.class);
-      if (createsObligationList == null) {
-        return Collections.emptySet();
-      }
+
+    AnnotationMirror createsObligationList =
+            atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.List.class);
+    if (createsObligationList != null) {
       // Handle a set of create obligation annotations.
       @SuppressWarnings("deprecation")
       List<AnnotationMirror> createsObligations =
@@ -208,6 +204,12 @@ public class MustCallTransfer extends CFTransfer {
       }
       return results;
     }
+    AnnotationMirror createsObligation =
+            atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.class);
+    if (createsObligation == null) {
+      return Collections.emptySet();
+    }
+
     // Handle a single create obligation annotation.
     if (currentPath == null) {
       currentPath = atypeFactory.getPath(n.getTree());
