@@ -1,6 +1,9 @@
 package org.checkerframework.checker.mustcall;
 
-import com.sun.source.tree.*;
+import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.IdentifierTree;
+import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import java.util.Collections;
 import java.util.HashSet;
@@ -12,16 +15,25 @@ import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.analysis.RegularTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
-import org.checkerframework.dataflow.cfg.node.*;
+import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
+import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
+import org.checkerframework.dataflow.cfg.node.Node;
+import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
+import org.checkerframework.dataflow.cfg.node.StringConcatenateAssignmentNode;
+import org.checkerframework.dataflow.cfg.node.StringConcatenateNode;
+import org.checkerframework.dataflow.cfg.node.TernaryExpressionNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
-import org.checkerframework.framework.flow.*;
+import org.checkerframework.framework.flow.CFAnalysis;
+import org.checkerframework.framework.flow.CFStore;
+import org.checkerframework.framework.flow.CFTransfer;
+import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
-import org.checkerframework.framework.util.JavaExpressionParseUtil;
-import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.StringToJavaExpression;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
@@ -29,15 +41,22 @@ import org.checkerframework.javacutil.TypesUtils;
 import org.checkerframework.javacutil.trees.TreeBuilder;
 
 /**
- * Transfer function for the must-call type system. Handles defaulting for string concatenations.
+ * Transfer function for the must-call type system. Handles defaulting for string concatenations and
+ * some logic for creating temporary variables for expressions.
  */
 public class MustCallTransfer extends CFTransfer {
 
   /** TreeBuilder for building new AST nodes */
   private final TreeBuilder treeBuilder;
 
+  /** The type factory */
   private MustCallAnnotatedTypeFactory atypeFactory;
 
+  /**
+   * Create a MustCallTransfer
+   *
+   * @param analysis the analysis
+   */
   public MustCallTransfer(CFAnalysis analysis) {
     super(analysis);
     atypeFactory = (MustCallAnnotatedTypeFactory) analysis.getTypeFactory();
@@ -111,6 +130,13 @@ public class MustCallTransfer extends CFTransfer {
     return result;
   }
 
+  /**
+   * Adds newAnno as the value for target to all stores contained in result.
+   *
+   * @param result a TransferResult containing one or more stores
+   * @param target a JavaExpression whose type is being modified
+   * @param newAnno the new type for target
+   */
   public void insertIntoStores(
       TransferResult<CFValue, CFStore> result, JavaExpression target, AnnotationMirror newAnno) {
     if (result.containsTwoStores()) {
@@ -166,9 +192,10 @@ public class MustCallTransfer extends CFTransfer {
         return Collections.emptySet();
       }
       // Handle a set of create obligation annotations.
+      @SuppressWarnings("deprecation")
       List<AnnotationMirror> createsObligations =
           AnnotationUtils.getElementValueArray(
-              createsObligationList, "value", AnnotationMirror.class, false);
+              createsObligationList, "value", AnnotationMirror.class, true);
       Set<JavaExpression> results = new HashSet<>();
       if (currentPath == null) {
         currentPath = atypeFactory.getPath(n.getTree());
@@ -192,11 +219,12 @@ public class MustCallTransfer extends CFTransfer {
 
   /**
    * Implementation of parsing a single CreatesObligation annotation. See {@link
-   * #getCreatesObligationExpressions(MethodInvocationNode, GenericAnnotatedTypeFactory)}.
+   * #getCreatesObligationExpressions(MethodInvocationNode, MustCallAnnotatedTypeFactory)}.
    *
    * @param createsObligation a create obligation annotation
    * @param n the method invocation of a reset method
    * @param atypeFactory the type factory
+   * @param currentPath the current path
    * @return the java expression representing the target, or null if the target is unparseable
    */
   private static @Nullable JavaExpression getCreatesObligationExpressionsImpl(
@@ -204,17 +232,15 @@ public class MustCallTransfer extends CFTransfer {
       MethodInvocationNode n,
       GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
       TreePath currentPath) {
+    @SuppressWarnings("deprecation")
     String targetStrWithoutAdaptation =
         AnnotationUtils.getElementValue(createsObligation, "value", String.class, true);
-    JavaExpressionContext context =
-        JavaExpressionParseUtil.JavaExpressionContext.buildContextForMethodUse(
-            n, atypeFactory.getChecker());
     // Note that it *is* necessary to parse this string twice - the first time to standardize
     // and viewpoint adapt it via the utility method called on the next line, and the second
     // time (in the try block below) to actually get the relevant expression.
     String targetStr =
         MustCallTransfer.standardizeAndViewpointAdapt(
-            targetStrWithoutAdaptation, currentPath, context);
+            targetStrWithoutAdaptation, n, atypeFactory.getChecker());
     // TODO: find a way to also check if the target is a known tempvar, and if so return that. That
     // should
     // improve the quality of the error messages we give, e.g. in tests/socket/BindChannel.java.
@@ -234,15 +260,21 @@ public class MustCallTransfer extends CFTransfer {
     return targetExpr;
   }
 
-  /*
-   * Helper function to standardize and viewpoint adapt a String given a path and a context.
-   * Wraps JavaExpressionParseUtil#parse. If a parse exception is encountered, this returns
-   * its argument.
+  /**
+   * Helper function to standardize and viewpoint adapt a String within the context of a method
+   * invocation. Wraps JavaExpressionParseUtil#parse. If a parse exception is encountered, this
+   * returns its argument.
+   *
+   * @param s the string to standardize viewpoint adapt
+   * @param miNode the method invocation node in whose context s should be standardized and
+   *     viewpoint adapted
+   * @param checker the checker
+   * @return a standardized and viewpoint adapted view of s, or s if s could not be parsed
    */
   public static String standardizeAndViewpointAdapt(
-      String s, TreePath currentPath, JavaExpressionContext context) {
+      String s, MethodInvocationNode miNode, BaseTypeChecker checker) {
     try {
-      return JavaExpressionParseUtil.parse(s, context, currentPath).toString();
+      return StringToJavaExpression.atMethodInvocation(s, miNode, checker).toString();
     } catch (JavaExpressionParseException e) {
       return s;
     }
@@ -260,6 +292,14 @@ public class MustCallTransfer extends CFTransfer {
     return handleStringConcatenation(super.visitStringConcatenateAssignment(n, in));
   }
 
+  /**
+   * Create a new result for a string concatenation that forces their type to always be bottom.
+   * Without this logic, implicit string conversions can cause string-typed expressions to take on
+   * types from non-string arguments to a concatenation, which is undesirable.
+   *
+   * @param result the current transfer result
+   * @return the modified result
+   */
   private TransferResult<CFValue, CFStore> handleStringConcatenation(
       TransferResult<CFValue, CFStore> result) {
     TypeMirror underlyingType = result.getResultValue().getUnderlyingType();
@@ -289,6 +329,13 @@ public class MustCallTransfer extends CFTransfer {
     }
   }
 
+  /**
+   * Either returns the temporary variable associated with node, or creates one if one does not
+   * exist. node must be an expression, not a statement.
+   *
+   * @param node a node
+   * @return a temporary variable node representing node that can be placed into a store
+   */
   private @Nullable LocalVariableNode getOrCreateTempVar(Node node) {
     LocalVariableNode localVariableNode = atypeFactory.tempVars.get(node.getTree());
     if (localVariableNode == null) {
@@ -303,10 +350,17 @@ public class MustCallTransfer extends CFTransfer {
     return localVariableNode;
   }
 
-  protected @Nullable VariableTree createTemporaryVar(Node method) {
-    ExpressionTree tree = (ExpressionTree) method.getTree();
+  /**
+   * Creates a variable declaration for the given expression node, if possible.
+   *
+   * @param node an expression node
+   * @return a variable tree for the node, or null if an appropriate containing element cannot be
+   *     located
+   */
+  protected @Nullable VariableTree createTemporaryVar(Node node) {
+    ExpressionTree tree = (ExpressionTree) node.getTree();
     TypeMirror treeType = TreeUtils.typeOf(tree);
-    Element enclosingElement = null;
+    Element enclosingElement;
     TreePath path = atypeFactory.getPath(tree);
     if (path == null) {
       enclosingElement = TreeUtils.elementFromTree(tree).getEnclosingElement();
@@ -327,8 +381,16 @@ public class MustCallTransfer extends CFTransfer {
     return tmpVarTree;
   }
 
+  /** A unique identifier counter for node names. */
   protected long uid = 0;
 
+  /**
+   * Creates a unique name using the given prefix. Can be used up to Long.MAX_VALUE times for each
+   * prefix.
+   *
+   * @param prefix the prefix for the name
+   * @return a unique name that starts with the prefix
+   */
   protected String uniqueName(String prefix) {
     return prefix + "-" + uid++;
   }

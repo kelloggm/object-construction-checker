@@ -17,6 +17,7 @@ import org.checkerframework.checker.calledmethods.CalledMethodsAnnotatedTypeFact
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsBottom;
 import org.checkerframework.checker.calledmethods.qual.CalledMethodsPredicate;
+import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallNoAccumulationFramesChecker;
@@ -25,9 +26,9 @@ import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.MustCallInvokedChecker.LocalVarWithTree;
+import org.checkerframework.checker.objectconstruction.qual.EnsuresCalledMethodsVarArgs;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
@@ -47,11 +48,23 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotatedTypeFactory {
 
+  final ExecutableElement calledMethodsValueElement =
+      TreeUtils.getMethod(CalledMethods.class, "value", 0, processingEnv);
+
+  final ExecutableElement ensuresCalledMethodsVarArgsValueElement =
+      TreeUtils.getMethod(EnsuresCalledMethodsVarArgs.class, "value", 0, processingEnv);
+
+  final ExecutableElement ensuresCalledMethodsValueElement =
+      TreeUtils.getMethod(EnsuresCalledMethods.class, "value", 0, processingEnv);
+
+  final ExecutableElement ensuresCalledMethodsMethodsElement =
+      TreeUtils.getMethod(EnsuresCalledMethods.class, "methods", 0, processingEnv);
+
   /**
    * Bidirectional map to preserve temporary variables created for nodes with non-empty @MustCall
    * annotation and the corresponding nodes.
    */
-  protected BiMap<LocalVariableNode, Tree> tempVarToNode = HashBiMap.create();
+  private BiMap<LocalVariableNode, Tree> tempVarToNode = HashBiMap.create();
   /**
    * Default constructor matching super. Should be called automatically.
    *
@@ -115,7 +128,10 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
       if (value != null) {
         mcAnno =
             value.getAnnotations().stream()
-                .filter(anno -> AnnotationUtils.areSameByClass(anno, MustCall.class))
+                .filter(
+                    anno ->
+                        AnnotationUtils.areSameByName(
+                            anno, "org.checkerframework.checker.mustcall.qual.MustCall"))
                 .findAny()
                 .orElse(null);
       }
@@ -142,8 +158,12 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
       }
       mcLub = mustCallAnnotatedTypeFactory.getQualifierHierarchy().leastUpperBound(mcLub, mcAnno);
     }
-
-    return getMustCallValues(mcLub);
+    if (AnnotationUtils.areSameByName(
+        mcLub, "org.checkerframework.checker.mustcall.qual.MustCall")) {
+      return getMustCallValues(mcLub);
+    } else {
+      return null;
+    }
   }
 
   /**
@@ -181,16 +201,30 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   }
 
   private List<String> getMustCallValues(AnnotationMirror mustCallAnnotation) {
+    MustCallAnnotatedTypeFactory mcAtf = getTypeFactoryOfSubchecker(MustCallChecker.class);
     List<String> mustCallValues =
         (mustCallAnnotation != null)
-            ? ValueCheckerUtils.getValueOfAnnotationWithStringArgument(mustCallAnnotation)
+            ? AnnotationUtils.getElementValueArray(
+                mustCallAnnotation, mcAtf.mustCallValueElement, String.class)
             : Collections.emptyList();
     return mustCallValues;
   }
 
-  protected LocalVariableNode getTempVarForTree(Node node) {
+  /* package-private */
+  LocalVariableNode getTempVarForTree(Node node) {
     return tempVarToNode.inverse().get(node.getTree());
   }
+
+  /* package-private */
+  boolean isTempVar(Node node) {
+    return tempVarToNode.containsKey(node);
+  }
+
+  /* package-private */
+  void addTempVar(LocalVariableNode tmpVar, Tree tree) {
+    tempVarToNode.put(tmpVar, tree);
+  }
+
   /**
    * Returns true if the type of the tree includes a must-call annotation. Note that this method may
    * not consider dataflow, and is only safe to use on declarations, such as method trees or
@@ -231,7 +265,8 @@ public class ObjectConstructionAnnotatedTypeFactory extends CalledMethodsAnnotat
   }
 
   public boolean useAccumulationFrames() {
-    return !checker.hasOption(MustCallChecker.NO_ACCUMULATION_FRAMES);
+    return checker.hasOption(ObjectConstructionChecker.CHECK_MUST_CALL)
+        && !checker.hasOption(MustCallChecker.NO_ACCUMULATION_FRAMES);
   }
 
   @Override

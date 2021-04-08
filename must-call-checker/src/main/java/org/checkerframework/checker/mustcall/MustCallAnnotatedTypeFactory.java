@@ -1,7 +1,5 @@
 package org.checkerframework.checker.mustcall;
 
-import static javax.lang.model.element.ElementKind.PARAMETER;
-
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
@@ -21,6 +19,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
+import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
@@ -30,7 +29,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.common.value.ValueCheckerUtils;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.Node;
@@ -78,6 +76,22 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /* package-private */ HashMap<Tree, LocalVariableNode> tempVars =
       new HashMap<>(this.getCacheSize());
 
+  /** The MustCall.value field/element. */
+  public final ExecutableElement mustCallValueElement =
+      TreeUtils.getMethod(MustCall.class, "value", 0, processingEnv);
+
+  /** The InheritableMustCall.value field/element. */
+  final ExecutableElement inheritableMustCallValueElement =
+      TreeUtils.getMethod(InheritableMustCall.class, "value", 0, processingEnv);
+
+  /** The CreatesObligation.List.value field/element. */
+  public final ExecutableElement createsObligationListValueElement =
+      TreeUtils.getMethod(CreatesObligation.List.class, "value", 0, processingEnv);
+
+  /** The CreatesObligation.value field/element. */
+  public final ExecutableElement createsObligationValueElement =
+      TreeUtils.getMethod(CreatesObligation.class, "value", 0, processingEnv);
+
   /**
    * Default constructor matching super. Should be called automatically.
    *
@@ -102,7 +116,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     elementsIssuedInconsistentMustCallSubtypeErrors.clear();
     // TODO: this should probably be guarded by isSafeToClearSharedCFG from
     // GenericAnnotatedTypeFactory,
-    // but this works here because we know the MCA is always the first subchecker that's sharing
+    // but this works here because we know the MCC is always the first subchecker that's sharing
     // tempvars.
     tempVars.clear();
   }
@@ -117,6 +131,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         Arrays.asList(MustCall.class, MustCallUnknown.class, PolyMustCall.class));
   }
 
+  @Override
   protected TreeAnnotator createTreeAnnotator() {
     return new ListTreeAnnotator(super.createTreeAnnotator(), new MustCallTreeAnnotator(this));
   }
@@ -149,22 +164,28 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Creates a new @MustCall annotation that is identical to the input, but does not have "close".
+   * Creates a new MustCall annotation that is identical to the input, but does not have "close".
    * Returns the same annotation mirror if the input annotation didn't have "close" as one of its
    * element.
    *
    * <p>The argument is permitted to be null. If it is null, then bottom is returned.
    *
    * <p>Package private to permit usage from the visitor in the common assignment check.
+   *
+   * @param anno a MustCall annotation
+   * @return a MustCall annotation that does not have "close" as one of its values, but is otherwise
+   *     identical to anno
    */
   /* package-private */ AnnotationMirror withoutClose(@Nullable AnnotationMirror anno) {
     // shortcut for easy paths
     if (anno == null || AnnotationUtils.areSame(anno, BOTTOM)) {
       return BOTTOM;
-    } else if (!AnnotationUtils.areSameByClass(anno, MustCall.class)) {
+    } else if (!AnnotationUtils.areSameByName(
+        anno, "org.checkerframework.checker.mustcall.qual.MustCall")) {
       return anno;
     }
-    List<String> values = ValueCheckerUtils.getValueOfAnnotationWithStringArgument(anno);
+    List<String> values =
+        AnnotationUtils.getElementValueArray(anno, mustCallValueElement, String.class);
     if (!values.contains("close")) {
       return anno;
     }
@@ -244,7 +265,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       AnnotationMirror inheritableMustCall = getDeclAnnotation(elt, InheritableMustCall.class);
       if (inheritableMustCall != null) {
         List<String> mustCallVal =
-            ValueCheckerUtils.getValueOfAnnotationWithStringArgument(inheritableMustCall);
+            AnnotationUtils.getElementValueArray(
+                inheritableMustCall, inheritableMustCallValueElement, String.class);
         AnnotationMirror inheritedMCAnno = createMustCall(mustCallVal.toArray(new String[0]));
         // Ensure that there isn't an inconsistent, user-written @MustCall annotation and
         // issue an error if there is. Otherwise, replace the implicit @MustCall({}) with
@@ -303,7 +325,18 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     return noSuccInfo ? flowResult.getStoreAfter(block) : flowResult.getStoreBefore(succ);
   }
 
+  /**
+   * The TreeAnnotator for the MustCall type system. This tree annotator treats non-owning method
+   * parameters as bottom, regardless of their declared type, when they appear in the body of the
+   * method. Doing so is safe because being non-owning means, by definition, that their must-call
+   * obligations are only relevant at the call site.
+   */
   private class MustCallTreeAnnotator extends TreeAnnotator {
+    /**
+     * Create a MustCallTreeAnnotator
+     *
+     * @param mustCallAnnotatedTypeFactory the type factory
+     */
     public MustCallTreeAnnotator(MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory) {
       super(mustCallAnnotatedTypeFactory);
     }
@@ -313,7 +346,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
       Element elt = TreeUtils.elementFromTree(node);
-      if (elt.getKind() == PARAMETER
+      if (elt.getKind() == ElementKind.PARAMETER
           && (checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
               || getDeclAnnotation(elt, Owning.class) == null)) {
         type.replaceAnnotation(BOTTOM);
@@ -322,6 +355,12 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
   }
 
+  /**
+   * Return the temporary variable for node, if it exists.
+   *
+   * @param node a CFG node
+   * @return the corresponding temporary variable, or null if there is not one
+   */
   public @Nullable LocalVariableNode getTempVar(Node node) {
     return tempVars.get(node.getTree());
   }
