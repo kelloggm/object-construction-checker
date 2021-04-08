@@ -123,7 +123,10 @@ public class ObjectConstructionVisitor extends CalledMethodsVisitor {
    *     iff there are no @CreatesObligation annotations on elt. The returned list is always
    *     modifiable if it is non-empty.
    */
-  /*package-private*/ static List<String> getCOValues(ExecutableElement elt, MustCallAnnotatedTypeFactory mcAtf, ObjectConstructionAnnotatedTypeFactory atypeFactory) {
+  /*package-private*/ static List<String> getCOValues(
+      ExecutableElement elt,
+      MustCallAnnotatedTypeFactory mcAtf,
+      ObjectConstructionAnnotatedTypeFactory atypeFactory) {
     AnnotationMirror createsObligationList =
         atypeFactory.getDeclAnnotation(elt, CreatesObligation.List.class);
     if (createsObligationList != null) {

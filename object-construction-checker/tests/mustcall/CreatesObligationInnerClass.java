@@ -12,11 +12,10 @@ class CreatesObligationInnerClass {
          * non-static inner class
          */
         class Bar {
-
             // this should be disallowed! not sure of the right error message
-            // :: error: creates.obligation.override.invalid
             @CreatesObligation
             void bar() {
+                // :: error: reset.not.owning
                 resetFoo();
             }
         }
