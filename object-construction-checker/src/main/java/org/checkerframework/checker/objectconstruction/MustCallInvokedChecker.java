@@ -38,6 +38,7 @@ import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.com.google.common.base.Predicates;
 import org.checkerframework.com.google.common.collect.FluentIterable;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
+import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -574,8 +575,8 @@ class MustCallInvokedChecker {
       }
     } else if (lhs instanceof LocalVariableNode
         && !isTryWithResourcesVariable((LocalVariableNode) lhs)) {
-      // Reassignment to the lhs
-      if (isVarInDefs(newDefs, (LocalVariableNode) lhs)) {
+      // Reassignment to the lhs, ignoring the case where lhs and rhs are identical local variables
+      if (isVarInDefs(newDefs, (LocalVariableNode) lhs) && !sameLocal(lhs, rhs)) {
         ImmutableSet<LocalVarWithTree> setContainingLhs =
             getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) lhs);
         LocalVarWithTree latestAssignmentPair =
@@ -651,6 +652,13 @@ class MustCallInvokedChecker {
           getSetContainingAssignmentTreeOfVar(newDefs, (LocalVariableNode) rhs);
       newDefs.remove(setContainingRhs);
     }
+  }
+
+  /** Do n1 and n2 represent the same local variable? */
+  private boolean sameLocal(Node n1, Node n2) {
+    return n1 instanceof LocalVariableNode
+        && n2 instanceof LocalVariableNode
+        && ((LocalVariableNode) n1).getElement().equals(((LocalVariableNode) n2).getElement());
   }
 
   /**
@@ -978,12 +986,12 @@ class MustCallInvokedChecker {
                   + ((ExceptionBlock) block).getNode().getTree()
                   + " with exception type "
                   + exceptionType.toString();
-      CFStore succRegularStore = analysis.getInput(succ).getRegularStore();
+      TransferInput<CFValue, CFStore> transferInput = analysis.getInput(succ);
+      CFStore succRegularStore = transferInput.getRegularStore();
       for (ImmutableSet<LocalVarWithTree> setAssign : defs) {
         // If the successor block is the exit block or if the variable is going out of scope
         boolean noSuccInfo =
-            setAssign.stream()
-                .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null);
+            setAssign.stream().allMatch(assign -> varGoingOutOfScope(transferInput, assign));
         if (succ instanceof SpecialBlockImpl || noSuccInfo) {
           MustCallAnnotatedTypeFactory mcAtf =
               typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
@@ -1039,7 +1047,7 @@ class MustCallInvokedChecker {
         } else {
           // handling the case where some vars go out of scope in the set
           Set<LocalVarWithTree> setAssignCopy = new LinkedHashSet<>(setAssign);
-          setAssignCopy.removeIf(assign -> succRegularStore.getValue(assign.localVar) == null);
+          setAssignCopy.removeIf(assign -> varGoingOutOfScope(transferInput, assign));
           defsCopy.remove(setAssign);
           defsCopy.add(ImmutableSet.copyOf(setAssignCopy));
         }
@@ -1047,6 +1055,18 @@ class MustCallInvokedChecker {
 
       defsCopy.removeAll(toRemove);
       propagate(new BlockWithLocals(succ, defsCopy), visited, worklist);
+    }
+  }
+
+  private boolean varGoingOutOfScope(
+      TransferInput<CFValue, CFStore> transferInput, LocalVarWithTree assign) {
+    LocalVariable localVar = assign.localVar;
+    if (transferInput.containsTwoStores()) {
+      // only going out of scope if variable is in *neither* of the stores
+      return transferInput.getThenStore().getValue(localVar) == null
+          && transferInput.getElseStore().getValue(localVar) == null;
+    } else {
+      return transferInput.getRegularStore().getValue(localVar) == null;
     }
   }
 

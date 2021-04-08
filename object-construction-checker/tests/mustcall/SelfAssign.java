@@ -24,7 +24,7 @@ class SelfAssign {
       selfAssignIn.close();
     }
   }
-
+//
 //  static void test2(boolean b) throws IOException {
 //    InputStream in = new FileInputStream("file.txt");
 //    try {
