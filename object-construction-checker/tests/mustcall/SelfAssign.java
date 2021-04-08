@@ -16,6 +16,8 @@ class SelfAssign {
     }
 
   }
+
+  // this case still needs to be handled
 //  static void test1(boolean b) throws IOException {
 //    InputStream selfAssignIn = new FileInputStream("file.txt");
 //    try {
@@ -24,14 +26,14 @@ class SelfAssign {
 //      selfAssignIn.close();
 //    }
 //  }
-//
-//  static void test2(boolean b) throws IOException {
-//    InputStream in = new FileInputStream("file.txt");
-//    try {
-//      in = new BufferedInputStream(in);
-//    } finally {
-//      in.close();
-//    }
-//  }
+
+  static void test2(boolean b) throws IOException {
+    InputStream in = new FileInputStream("file.txt");
+    try {
+      in = new BufferedInputStream(in);
+    } finally {
+      in.close();
+    }
+  }
 
 }
