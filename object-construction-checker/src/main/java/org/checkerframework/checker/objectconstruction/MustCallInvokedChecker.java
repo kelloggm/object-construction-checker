@@ -1,5 +1,6 @@
 package org.checkerframework.checker.objectconstruction;
 
+import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
@@ -36,7 +37,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
 import org.checkerframework.checker.objectconstruction.qual.Owning;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
-import org.checkerframework.com.google.common.base.Predicates;
 import org.checkerframework.com.google.common.collect.FluentIterable;
 import org.checkerframework.com.google.common.collect.ImmutableSet;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
@@ -138,44 +138,10 @@ class MustCallInvokedChecker {
           handleReturn((ReturnNode) node, cfg, newDefs);
         } else if (node instanceof MethodInvocationNode || node instanceof ObjectCreationNode) {
           handleInvocation(newDefs, node);
-        } else if (node instanceof TernaryExpressionNode) {
-          handleTernary(node, newDefs);
         }
       }
 
       handleSuccessorBlocks(visited, worklist, newDefs, curBlockLocals.block);
-    }
-  }
-
-  private void handleTernary(Node node, Set<ImmutableSet<LocalVarWithTree>> defs) {
-    LocalVariableNode ternaryLocal = typeFactory.getTempVarForTree(node);
-    // This can happen when one side of the ternary is null, I think.
-    // Without this, we get a crash in tests/mustcall/ZookeeperTernaryCrash.java
-    // on the only ternary in that program snippet.
-    if (ternaryLocal == null) {
-      return;
-    }
-    // First check then operand
-    Node operand = removeCasts(((TernaryExpressionNode) node).getThenOperand());
-    LocalVariableNode operandLocal = typeFactory.getTempVarForTree(operand);
-    // If operandLocal is null (it happens when then operand is a field or a local variable node),
-    // or not tracked by defs (it means we are in else branch), we check else branch
-    if (operandLocal == null || !isVarInDefs(defs, operandLocal)) {
-      operand = removeCasts(((TernaryExpressionNode) node).getElseOperand());
-      operandLocal = typeFactory.getTempVarForTree(operand);
-    }
-    if (operandLocal != null && isVarInDefs(defs, operandLocal)) {
-      LocalVarWithTree latestAssignmentPair = getAssignmentTreeOfVar(defs, operandLocal);
-      ImmutableSet<LocalVarWithTree> setContainingOperandLocal =
-          getSetContainingAssignmentTreeOfVar(defs, operandLocal);
-      ImmutableSet<LocalVarWithTree> newSetContainingOperandLocal =
-          FluentIterable.from(setContainingOperandLocal)
-              .filter(Predicates.not(Predicates.equalTo(latestAssignmentPair)))
-              .append(new LocalVarWithTree(new LocalVariable(ternaryLocal), node.getTree()))
-              .toSet();
-
-      defs.remove(setContainingOperandLocal);
-      defs.add(newSetContainingOperandLocal);
     }
   }
 
@@ -585,60 +551,65 @@ class MustCallInvokedChecker {
           newDefs.remove(setContainingRhs);
         }
       } else {
-        // Update defs as in a gen-kill dataflow analysis problem.
-        // Set replacements to perform in newDefs.  We keep this map to avoid a
-        // ConcurrentModificationException in the loop below
-        Map<ImmutableSet<LocalVarWithTree>, ImmutableSet<LocalVarWithTree>> replacements =
-            new LinkedHashMap<>();
-        // construct this once outside the loop for efficiency
-        LocalVarWithTree lhsVarWithTreeToGen =
-            new LocalVarWithTree(new LocalVariable(lhsVar), node.getTree());
-        for (ImmutableSet<LocalVarWithTree> varWithTreeSet : newDefs) {
-          Set<LocalVarWithTree> kill = new LinkedHashSet<>();
-          // always kill the lhs var if present
-          addLocalVarWithTreeToSetIfPresent(varWithTreeSet, lhsElement, kill);
-          LocalVarWithTree gen = null;
-          // if rhs is a variable tracked in the set, gen the lhs
-          if (rhs instanceof LocalVariableNode) {
-            LocalVariableNode rhsVar = (LocalVariableNode) rhs;
-            if (varWithTreeSet.stream()
-                .anyMatch(lvwt -> lvwt.localVar.getElement().equals(rhsVar.getElement()))) {
-              gen = lhsVarWithTreeToGen;
-              // we remove temp vars from tracking once they are assigned elsewhere
-              if (typeFactory.isTempVar(rhsVar)) {
-                addLocalVarWithTreeToSetIfPresent(varWithTreeSet, rhsVar.getElement(), kill);
-              }
-            }
-          }
-          // check if there is something to do before creating a new set, for efficiency
-          if (kill.isEmpty() && gen == null) {
-            continue;
-          }
-          Set<LocalVarWithTree> newVarWithTreeSet = new LinkedHashSet<>(varWithTreeSet);
-          newVarWithTreeSet.removeAll(kill);
-          if (gen != null) {
-            newVarWithTreeSet.add(gen);
-          }
-          if (newVarWithTreeSet.size() == 0) {
-            // we have killed the last reference to the resource; check the must-call obligation
-            MustCallAnnotatedTypeFactory mcAtf =
-                typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
-            checkMustCall(
-                varWithTreeSet,
-                typeFactory.getStoreBefore(node),
-                mcAtf.getStoreBefore(node),
-                "variable overwritten by assignment " + node.getTree());
-          }
-          replacements.put(varWithTreeSet, ImmutableSet.copyOf(newVarWithTreeSet));
-        }
-        // finally, update newDefs according to the replacements
-        for (Map.Entry<ImmutableSet<LocalVarWithTree>, ImmutableSet<LocalVarWithTree>> entry :
-            replacements.entrySet()) {
-          newDefs.remove(entry.getKey());
-          if (!entry.getValue().isEmpty()) {
-            newDefs.add(entry.getValue());
+        doGenKillForAssignment(node, newDefs, lhsVar, rhs);
+      }
+    }
+  }
+
+  private void doGenKillForAssignment(
+      Node node, Set<ImmutableSet<LocalVarWithTree>> newDefs, LocalVariableNode lhsVar, Node rhs) {
+    // Update defs as in a gen-kill dataflow analysis problem.
+    // Set replacements to perform in newDefs.  We keep this map to avoid a
+    // ConcurrentModificationException in the loop below
+    Map<ImmutableSet<LocalVarWithTree>, ImmutableSet<LocalVarWithTree>> replacements =
+        new LinkedHashMap<>();
+    // construct this once outside the loop for efficiency
+    LocalVarWithTree lhsVarWithTreeToGen =
+        new LocalVarWithTree(new LocalVariable(lhsVar), node.getTree());
+    for (ImmutableSet<LocalVarWithTree> varWithTreeSet : newDefs) {
+      Set<LocalVarWithTree> kill = new LinkedHashSet<>();
+      // always kill the lhs var if present
+      addLocalVarWithTreeToSetIfPresent(varWithTreeSet, lhsVar.getElement(), kill);
+      LocalVarWithTree gen = null;
+      // if rhs is a variable tracked in the set, gen the lhs
+      if (rhs instanceof LocalVariableNode) {
+        LocalVariableNode rhsVar = (LocalVariableNode) rhs;
+        if (varWithTreeSet.stream()
+            .anyMatch(lvwt -> lvwt.localVar.getElement().equals(rhsVar.getElement()))) {
+          gen = lhsVarWithTreeToGen;
+          // we remove temp vars from tracking once they are assigned elsewhere
+          if (typeFactory.isTempVar(rhsVar)) {
+            addLocalVarWithTreeToSetIfPresent(varWithTreeSet, rhsVar.getElement(), kill);
           }
         }
+      }
+      // check if there is something to do before creating a new set, for efficiency
+      if (kill.isEmpty() && gen == null) {
+        continue;
+      }
+      Set<LocalVarWithTree> newVarWithTreeSet = new LinkedHashSet<>(varWithTreeSet);
+      newVarWithTreeSet.removeAll(kill);
+      if (gen != null) {
+        newVarWithTreeSet.add(gen);
+      }
+      if (newVarWithTreeSet.size() == 0) {
+        // we have killed the last reference to the resource; check the must-call obligation
+        MustCallAnnotatedTypeFactory mcAtf =
+            typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+        checkMustCall(
+            varWithTreeSet,
+            typeFactory.getStoreBefore(node),
+            mcAtf.getStoreBefore(node),
+            "variable overwritten by assignment " + node.getTree());
+      }
+      replacements.put(varWithTreeSet, ImmutableSet.copyOf(newVarWithTreeSet));
+    }
+    // finally, update newDefs according to the replacements
+    for (Map.Entry<ImmutableSet<LocalVarWithTree>, ImmutableSet<LocalVarWithTree>> entry :
+        replacements.entrySet()) {
+      newDefs.remove(entry.getKey());
+      if (!entry.getValue().isEmpty()) {
+        newDefs.add(entry.getValue());
       }
     }
   }
@@ -968,10 +939,11 @@ class MustCallInvokedChecker {
       Block block) {
     List<Node> nodes = block.getNodes();
     for (Pair<Block, @Nullable TypeMirror> succAndExcType : getRelevantSuccessors(block)) {
-      Set<ImmutableSet<LocalVarWithTree>> defsCopy = new LinkedHashSet<>(defs);
-      Set<ImmutableSet<LocalVarWithTree>> toRemove = new LinkedHashSet<>();
       Block succ = succAndExcType.first;
       TypeMirror exceptionType = succAndExcType.second;
+      Set<ImmutableSet<LocalVarWithTree>> defsToUse = handleTernarySucc(block, succ, defs);
+      Set<ImmutableSet<LocalVarWithTree>> defsCopy = new LinkedHashSet<>(defsToUse);
+      Set<ImmutableSet<LocalVarWithTree>> toRemove = new LinkedHashSet<>();
       String reasonForSucc =
           exceptionType == null
               ?
@@ -983,11 +955,10 @@ class MustCallInvokedChecker {
                   + " with exception type "
                   + exceptionType.toString();
       CFStore succRegularStore = analysis.getInput(succ).getRegularStore();
-      for (ImmutableSet<LocalVarWithTree> setAssign : defs) {
+      for (ImmutableSet<LocalVarWithTree> setAssign : defsToUse) {
         // If the successor block is the exit block or if the variable is going out of scope
         boolean noSuccInfo =
-            setAssign.stream()
-                .allMatch(assign -> succRegularStore.getValue(assign.localVar) == null);
+            setAssign.stream().allMatch(assign -> varGoingOutOfScope(succRegularStore, assign));
         if (succ instanceof SpecialBlockImpl || noSuccInfo) {
           MustCallAnnotatedTypeFactory mcAtf =
               typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
@@ -1043,7 +1014,7 @@ class MustCallInvokedChecker {
         } else {
           // handling the case where some vars go out of scope in the set
           Set<LocalVarWithTree> setAssignCopy = new LinkedHashSet<>(setAssign);
-          setAssignCopy.removeIf(assign -> succRegularStore.getValue(assign.localVar) == null);
+          setAssignCopy.removeIf(assign -> varGoingOutOfScope(succRegularStore, assign));
           defsCopy.remove(setAssign);
           defsCopy.add(ImmutableSet.copyOf(setAssignCopy));
         }
@@ -1052,6 +1023,35 @@ class MustCallInvokedChecker {
       defsCopy.removeAll(toRemove);
       propagate(new BlockWithLocals(succ, defsCopy), visited, worklist);
     }
+  }
+
+  private boolean varGoingOutOfScope(CFStore succRegularStore, LocalVarWithTree assign) {
+    return succRegularStore.getValue(assign.localVar) == null
+        && !(assign.tree instanceof ConditionalExpressionTree);
+  }
+
+  private Set<ImmutableSet<LocalVarWithTree>> handleTernarySucc(
+      Block block, Block succ, Set<ImmutableSet<LocalVarWithTree>> defs) {
+    List<Node> succNodes = succ.getNodes();
+    if (succNodes.isEmpty() || !(succNodes.get(0) instanceof TernaryExpressionNode)) {
+      return defs;
+    }
+    TernaryExpressionNode ternaryNode = (TernaryExpressionNode) succNodes.get(0);
+    LocalVariableNode ternaryTempVar = typeFactory.getTempVarForTree(ternaryNode);
+    if (ternaryTempVar == null) {
+      return defs;
+    }
+    List<Node> predNodes = block.getNodes();
+    Node fakeRhs = removeCasts(predNodes.get(predNodes.size() - 1));
+    if (!(fakeRhs instanceof LocalVariableNode)) {
+      fakeRhs = typeFactory.getTempVarForTree(fakeRhs);
+      if (fakeRhs == null) {
+        return defs;
+      }
+    }
+    Set<ImmutableSet<LocalVarWithTree>> newDefs = new LinkedHashSet<>(defs);
+    doGenKillForAssignment(ternaryNode, newDefs, ternaryTempVar, fakeRhs);
+    return newDefs;
   }
 
   /**

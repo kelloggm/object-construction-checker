@@ -330,8 +330,6 @@ class ACRegularExitPointTest {
         Foo ternary3 = b ? new Foo() : x;
         ternary3.a();
 
-        // This is a false positive
-        // :: error: required.method.not.called
         Foo y = new Foo();
         Foo ternary4 = b ? y : y;
         ternary4.a();
