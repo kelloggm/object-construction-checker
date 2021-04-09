@@ -248,6 +248,7 @@ public class MustCallTransfer extends CFTransfer {
               targetStrWithoutAdaptation, n, atypeFactory.getChecker());
       if (targetExpr instanceof Unknown) {
         issueUnparseableError(n, atypeFactory, targetStrWithoutAdaptation);
+        return null;
       }
     } catch (JavaExpressionParseException e) {
       issueUnparseableError(n, atypeFactory, targetStrWithoutAdaptation);
