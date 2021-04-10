@@ -17,15 +17,14 @@ class SelfAssign {
 
   }
 
-  // this case still needs to be handled
-//  static void test1(boolean b) throws IOException {
-//    InputStream selfAssignIn = new FileInputStream("file.txt");
-//    try {
-//      selfAssignIn = selfAssignIn.markSupported()? selfAssignIn: new BufferedInputStream(selfAssignIn);
-//    } finally {
-//      selfAssignIn.close();
-//    }
-//  }
+  static void test1(boolean b) throws IOException {
+    InputStream selfAssignIn = new FileInputStream("file.txt");
+    try {
+      selfAssignIn = selfAssignIn.markSupported()? selfAssignIn: new BufferedInputStream(selfAssignIn);
+    } finally {
+      selfAssignIn.close();
+    }
+  }
 
   static void test2(boolean b) throws IOException {
     InputStream in = new FileInputStream("file.txt");
