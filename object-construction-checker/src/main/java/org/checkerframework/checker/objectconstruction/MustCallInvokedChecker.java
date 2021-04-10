@@ -9,7 +9,6 @@ import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -31,7 +30,6 @@ import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.MustCallTransfer;
-import org.checkerframework.checker.mustcall.qual.CreatesObligation;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.objectconstruction.qual.NotOwning;
@@ -59,6 +57,7 @@ import org.checkerframework.dataflow.cfg.node.TypeCastNode;
 import org.checkerframework.dataflow.expression.FieldAccess;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
+import org.checkerframework.dataflow.expression.ThisReference;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
@@ -212,8 +211,8 @@ class MustCallInvokedChecker {
         MustCallTransfer.getCreatesObligationExpressions(node, typeFactory, currentPath);
     Set<JavaExpression> missing = new HashSet<>();
     for (JavaExpression target : targetExprs) {
+      boolean validTarget = false;
       if (target instanceof LocalVariable) {
-
         ImmutableSet<LocalVarWithTree> toRemoveSet = null;
         ImmutableSet<LocalVarWithTree> toAddSet = null;
         for (ImmutableSet<LocalVarWithTree> defAliasSet : newDefs) {
@@ -233,57 +232,91 @@ class MustCallInvokedChecker {
         if (toRemoveSet != null) {
           newDefs.remove(toRemoveSet);
           newDefs.add(toAddSet);
-          return;
+          // satisfies case 2
+          validTarget = true;
         }
 
         Element elt = ((LocalVariable) target).getElement();
-        if (!checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
+        if (!validTarget
+            && !checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
             && typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
           // if the target is an Owning param, this satisfies case 1
-          return;
+          validTarget = true;
         }
       }
-      if (target instanceof FieldAccess) {
+      if (!validTarget && target instanceof FieldAccess) {
         Element elt = ((FieldAccess) target).getField();
         if (!checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
             && typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
           // if the target is an Owning field, this satisfies case 1
-          return;
+          validTarget = true;
         }
       }
 
-      MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
-      if (enclosingMethod != null) {
-        ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
-        AnnotationMirror enclosingCreatesObligation =
-            typeFactory.getDeclAnnotation(enclosingElt, CreatesObligation.class);
-        if (enclosingCreatesObligation != null) {
+      if (!validTarget) {
+        // TODO: getting this every time is inefficient if a method has many @CreatesObligation
+        // annotations,
+        //  but that should be a rare path
+        MethodTree enclosingMethod = TreePathUtil.enclosingMethod(currentPath);
+        if (enclosingMethod != null) {
+          ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
           MustCallAnnotatedTypeFactory mcAtf =
               typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
-          String enclosingTargetStrWithoutAdaptation =
-              AnnotationUtils.getElementValue(
-                  enclosingCreatesObligation, mcAtf.createsObligationValueElement, String.class);
-          String enclosingTargetStr;
-          try {
-            enclosingTargetStr =
-                StringToJavaExpression.atMethodBody(
-                        enclosingTargetStrWithoutAdaptation, enclosingMethod, checker)
-                    .toString();
-          } catch (JavaExpressionParseException e) {
-            enclosingTargetStr = enclosingTargetStrWithoutAdaptation;
-          }
-          if (enclosingTargetStr.equals(target.toString())) {
-            // The enclosing method also has a corresponding CreatesObligation annotation, so this
-            // satisfies case 3.
-            return;
+          List<String> enclosingCoValues =
+              ObjectConstructionVisitor.getCOValues(enclosingElt, mcAtf, typeFactory);
+          if (!enclosingCoValues.isEmpty()) {
+            for (String enclosingCoValue : enclosingCoValues) {
+              JavaExpression enclosingTarget;
+              try {
+                enclosingTarget =
+                    StringToJavaExpression.atMethodBody(enclosingCoValue, enclosingMethod, checker);
+              } catch (JavaExpressionParseException e) {
+                // TODO: or issue an unparseable error?
+                enclosingTarget = null;
+              }
+
+              if (representSame(target, enclosingTarget)) {
+                // this satisifies case 3
+                validTarget = true;
+              }
+            }
           }
         }
       }
-      missing.add(target);
+      if (!validTarget) {
+        missing.add(target);
+      }
     }
+
+    if (missing.isEmpty()) {
+      // all targets were valid
+      return;
+    }
+
     String missingStrs =
         missing.stream().map(JavaExpression::toString).collect(Collectors.joining(", "));
     checker.reportError(node.getTree(), "reset.not.owning", missingStrs);
+  }
+
+  /**
+   * Checks whether the two JavaExpressions are the same. This is identical to calling equals() on
+   * one of them, with two exceptions: the second expression can be null, and this references are
+   * compared using their underlying type (ThisReference#equals always returns true, which isn't
+   * accurate in the case of nested classes).
+   *
+   * @param target a JavaExpression
+   * @param enclosingTarget another, possibly null, JavaExpression
+   * @return true iff they represent the same program element
+   */
+  private boolean representSame(JavaExpression target, @Nullable JavaExpression enclosingTarget) {
+    if (enclosingTarget == null) {
+      return false;
+    }
+    if (enclosingTarget instanceof ThisReference && target instanceof ThisReference) {
+      return enclosingTarget.getType().toString().equals(target.getType().toString());
+    } else {
+      return enclosingTarget.equals(target);
+    }
   }
 
   /**
@@ -683,7 +716,7 @@ class MustCallInvokedChecker {
     if (!(receiver instanceof LocalVariableNode
             && isVarInDefs(newDefs, (LocalVariableNode) receiver))
         && !(node.getExpression() instanceof NullLiteralNode)) {
-      checkEnclosingMethodIsCreatesObligation(node, enclosingMethod, currentPath);
+      checkEnclosingMethodIsCreatesObligation(node, enclosingMethod);
     }
 
     MustCallAnnotatedTypeFactory mcTypeFactory =
@@ -731,10 +764,9 @@ class MustCallInvokedChecker {
    *
    * @param node an assignment node whose lhs is a non-final, owning field
    * @param enclosingMethod the MethodTree in which the re-assignment takes place
-   * @param currentPath the currentPath
    */
   private void checkEnclosingMethodIsCreatesObligation(
-      AssignmentNode node, MethodTree enclosingMethod, TreePath currentPath) {
+      AssignmentNode node, MethodTree enclosingMethod) {
     Node lhs = node.getTarget();
     if (!(lhs instanceof FieldAccessNode)) {
       return;
@@ -746,11 +778,12 @@ class MustCallInvokedChecker {
       return;
     }
     ExecutableElement enclosingElt = TreeUtils.elementFromDeclaration(enclosingMethod);
-    AnnotationMirror createsObligation =
-        typeFactory.getDeclAnnotation(enclosingElt, CreatesObligation.class);
-    AnnotationMirror createsObligations =
-        typeFactory.getDeclAnnotation(enclosingElt, CreatesObligation.List.class);
-    if (createsObligation == null && createsObligations == null) {
+    MustCallAnnotatedTypeFactory mcAtf =
+        typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
+
+    List<String> coValues = ObjectConstructionVisitor.getCOValues(enclosingElt, mcAtf, typeFactory);
+
+    if (coValues.isEmpty()) {
       checker.reportError(
           enclosingMethod,
           "missing.creates.obligation",
@@ -759,28 +792,8 @@ class MustCallInvokedChecker {
       return;
     }
 
-    Set<String> targetStrsWithoutAdaptation;
-    MustCallAnnotatedTypeFactory mcAtf =
-        typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
-    if (createsObligation != null) {
-      targetStrsWithoutAdaptation =
-          Collections.singleton(
-              AnnotationUtils.getElementValue(
-                  createsObligation, mcAtf.createsObligationValueElement, String.class, "this"));
-    } else {
-      // multiple create obligations
-      List<AnnotationMirror> createsObligationAnnos =
-          AnnotationUtils.getElementValueArray(
-              createsObligations, mcAtf.createsObligationListValueElement, AnnotationMirror.class);
-      targetStrsWithoutAdaptation = new HashSet<>();
-      for (AnnotationMirror co : createsObligationAnnos) {
-        targetStrsWithoutAdaptation.add(
-            AnnotationUtils.getElementValue(
-                co, mcAtf.createsObligationValueElement, String.class, "this"));
-      }
-    }
     String checked = "";
-    for (String targetStrWithoutAdaptation : targetStrsWithoutAdaptation) {
+    for (String targetStrWithoutAdaptation : coValues) {
       String targetStr = null;
       try {
         targetStr =

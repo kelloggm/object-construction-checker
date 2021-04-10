@@ -27,6 +27,7 @@ import org.checkerframework.dataflow.cfg.node.StringConcatenateAssignmentNode;
 import org.checkerframework.dataflow.cfg.node.StringConcatenateNode;
 import org.checkerframework.dataflow.cfg.node.TernaryExpressionNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
+import org.checkerframework.dataflow.expression.Unknown;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFTransfer;
@@ -183,14 +184,10 @@ public class MustCallTransfer extends CFTransfer {
       MethodInvocationNode n,
       GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
       @Nullable TreePath currentPath) {
-    AnnotationMirror createsObligation =
-        atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.class);
-    if (createsObligation == null) {
-      AnnotationMirror createsObligationList =
-          atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.List.class);
-      if (createsObligationList == null) {
-        return Collections.emptySet();
-      }
+
+    AnnotationMirror createsObligationList =
+        atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.List.class);
+    if (createsObligationList != null) {
       // Handle a set of create obligation annotations.
       @SuppressWarnings("deprecation")
       List<AnnotationMirror> createsObligations =
@@ -208,6 +205,12 @@ public class MustCallTransfer extends CFTransfer {
       }
       return results;
     }
+    AnnotationMirror createsObligation =
+        atypeFactory.getDeclAnnotation(n.getTarget().getMethod(), CreatesObligation.class);
+    if (createsObligation == null) {
+      return Collections.emptySet();
+    }
+
     // Handle a single create obligation annotation.
     if (currentPath == null) {
       currentPath = atypeFactory.getPath(n.getTree());
@@ -235,29 +238,43 @@ public class MustCallTransfer extends CFTransfer {
     @SuppressWarnings("deprecation")
     String targetStrWithoutAdaptation =
         AnnotationUtils.getElementValue(createsObligation, "value", String.class, true);
-    // Note that it *is* necessary to parse this string twice - the first time to standardize
-    // and viewpoint adapt it via the utility method called on the next line, and the second
-    // time (in the try block below) to actually get the relevant expression.
-    String targetStr =
-        MustCallTransfer.standardizeAndViewpointAdapt(
-            targetStrWithoutAdaptation, n, atypeFactory.getChecker());
     // TODO: find a way to also check if the target is a known tempvar, and if so return that. That
     // should
     // improve the quality of the error messages we give, e.g. in tests/socket/BindChannel.java.
     JavaExpression targetExpr;
     try {
-      targetExpr = atypeFactory.parseJavaExpressionString(targetStr, currentPath);
+      targetExpr =
+          StringToJavaExpression.atMethodInvocation(
+              targetStrWithoutAdaptation, n, atypeFactory.getChecker());
+      if (targetExpr instanceof Unknown) {
+        issueUnparseableError(n, atypeFactory, targetStrWithoutAdaptation);
+        return null;
+      }
     } catch (JavaExpressionParseException e) {
-      atypeFactory
-          .getChecker()
-          .reportError(
-              n.getTree(),
-              "mustcall.not.parseable",
-              n.getTarget().getMethod().getSimpleName(),
-              targetStr);
+      issueUnparseableError(n, atypeFactory, targetStrWithoutAdaptation);
       return null;
     }
     return targetExpr;
+  }
+
+  /**
+   * Issues a mustcall.not.parseable error. This exists to avoid duplicating this code above.
+   *
+   * @param n the node
+   * @param atypeFactory the type factory to use to issue the error
+   * @param targetStrWithoutAdaptation the unparseable string
+   */
+  private static void issueUnparseableError(
+      MethodInvocationNode n,
+      GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
+      String targetStrWithoutAdaptation) {
+    atypeFactory
+        .getChecker()
+        .reportError(
+            n.getTree(),
+            "mustcall.not.parseable",
+            n.getTarget().getMethod().getSimpleName(),
+            targetStrWithoutAdaptation);
   }
 
   /**
