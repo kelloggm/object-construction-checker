@@ -97,6 +97,9 @@ public class ObjectConstructionChecker extends CalledMethodsChecker {
     messages.setProperty(
         "reset.not.owning",
         "Calling this method resets the must-call obligations of the expression %s, which is non-owning. Either annotate its declaration with an @Owning annotation or write a corresponding @CreatesObligation annotation on the method that encloses this statement.\n");
+    messages.setProperty(
+        "creates.obligation.override.invalid",
+        "Method %s cannot override method %s, which defines fewer @CreatesObligation targets.\nfound:    %s\nrequired: %s\n");
     return messages;
   }
 

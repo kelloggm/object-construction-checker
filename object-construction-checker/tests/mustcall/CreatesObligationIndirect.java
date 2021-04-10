@@ -41,7 +41,9 @@ class CreatesObligationIndirect {
     public static void reset_local3() {
         // :: error: required.method.not.called
         CreatesObligationIndirect r = new CreatesObligationIndirect();
-        // :: error: mustcall.not.parseable :: error: reset.not.owning
+        // Ideally, we'd issue a reset.not.owning error on the next line instead, but not being able to parse
+        // the case and requiring it to be in a local var is okay too.
+        // :: error: mustcall.not.parseable
         ((CreatesObligationIndirect) r).reset();
     }
 
