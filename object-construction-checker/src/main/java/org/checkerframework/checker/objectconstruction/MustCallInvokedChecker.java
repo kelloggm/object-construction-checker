@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -732,7 +733,11 @@ class MustCallInvokedChecker {
       return;
     }
 
+    typeFactory.getAnnotatedType(lhsNode.getTree());
+    System.out.println("checking that a non-final owning field is not overwritten");
     CFStore cmStoreBefore = typeFactory.getStoreBefore(node);
+    System.out.println("cmStoreBefore: " + cmStoreBefore);
+    System.out.println("gat on the field: " + typeFactory.getAnnotatedType(lhsNode.getTree()));
     CFValue cmValue = cmStoreBefore == null ? null : cmStoreBefore.getValue(lhs);
     AnnotationMirror cmAnno =
         cmValue == null
@@ -744,6 +749,9 @@ class MustCallInvokedChecker {
                             anno, "org.checkerframework.checker.calledmethods.qual.CalledMethods"))
                 .findAny()
                 .orElse(typeFactory.top);
+
+    System.out.println("cmAnno: " + cmAnno);
+    System.out.println("mcValues: " + String.join(", ", mcValues));
 
     if (!calledMethodsSatisfyMustCall(mcValues, cmAnno)) {
       Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
