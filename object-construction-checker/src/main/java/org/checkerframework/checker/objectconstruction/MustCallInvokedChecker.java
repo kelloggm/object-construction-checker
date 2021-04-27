@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -680,6 +679,7 @@ class MustCallInvokedChecker {
    *
    * @param node an assignment to a non-final, owning field
    * @param newDefs
+   * @param rhs
    */
   private void checkReassignmentToField(
       AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
@@ -713,7 +713,7 @@ class MustCallInvokedChecker {
 
     // Check that there is a corresponding createsObligation annotation, unless this is
     // 1) an assignment to a field of a newly-declared local variable that can't be in scope
-    // for the containing method, 2) the rhs is a null literal (so there's nothing to reset).
+    // for the containing method, or 2) the rhs is a null literal (so there's nothing to reset).
     if (!(receiver instanceof LocalVariableNode
             && isVarInDefs(newDefs, (LocalVariableNode) receiver))
         && !(node.getExpression() instanceof NullLiteralNode)) {
@@ -733,11 +733,11 @@ class MustCallInvokedChecker {
       return;
     }
 
-    typeFactory.getAnnotatedType(lhsNode.getTree());
-    System.out.println("checking that a non-final owning field is not overwritten");
-    CFStore cmStoreBefore = typeFactory.getStoreBefore(node);
-    System.out.println("cmStoreBefore: " + cmStoreBefore);
-    System.out.println("gat on the field: " + typeFactory.getAnnotatedType(lhsNode.getTree()));
+    // Get the store before the RHS rather than the assignment node, because the CFG always has
+    // the RHS first. If the RHS has side-effects, then the assignment node's store will have
+    // had its inferred types erased.
+    Node rhs = node.getExpression();
+    CFStore cmStoreBefore = typeFactory.getStoreBefore(rhs);
     CFValue cmValue = cmStoreBefore == null ? null : cmStoreBefore.getValue(lhs);
     AnnotationMirror cmAnno =
         cmValue == null
@@ -749,9 +749,6 @@ class MustCallInvokedChecker {
                             anno, "org.checkerframework.checker.calledmethods.qual.CalledMethods"))
                 .findAny()
                 .orElse(typeFactory.top);
-
-    System.out.println("cmAnno: " + cmAnno);
-    System.out.println("mcValues: " + String.join(", ", mcValues));
 
     if (!calledMethodsSatisfyMustCall(mcValues, cmAnno)) {
       Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
