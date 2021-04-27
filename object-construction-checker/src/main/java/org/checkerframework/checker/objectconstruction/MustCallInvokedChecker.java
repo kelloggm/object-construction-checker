@@ -712,7 +712,7 @@ class MustCallInvokedChecker {
 
     // Check that there is a corresponding createsObligation annotation, unless this is
     // 1) an assignment to a field of a newly-declared local variable that can't be in scope
-    // for the containing method, 2) the rhs is a null literal (so there's nothing to reset).
+    // for the containing method, or 2) the rhs is a null literal (so there's nothing to reset).
     if (!(receiver instanceof LocalVariableNode
             && isVarInDefs(newDefs, (LocalVariableNode) receiver))
         && !(node.getExpression() instanceof NullLiteralNode)) {
@@ -732,7 +732,11 @@ class MustCallInvokedChecker {
       return;
     }
 
-    CFStore cmStoreBefore = typeFactory.getStoreBefore(node);
+    // Get the store before the RHS rather than the assignment node, because the CFG always has
+    // the RHS first. If the RHS has side-effects, then the assignment node's store will have
+    // had its inferred types erased.
+    Node rhs = node.getExpression();
+    CFStore cmStoreBefore = typeFactory.getStoreBefore(rhs);
     CFValue cmValue = cmStoreBefore == null ? null : cmStoreBefore.getValue(lhs);
     AnnotationMirror cmAnno =
         cmValue == null
