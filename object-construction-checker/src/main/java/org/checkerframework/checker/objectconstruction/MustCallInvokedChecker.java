@@ -679,7 +679,6 @@ class MustCallInvokedChecker {
    *
    * @param node an assignment to a non-final, owning field
    * @param newDefs
-   * @param rhs
    */
   private void checkReassignmentToField(
       AssignmentNode node, Set<ImmutableSet<LocalVarWithTree>> newDefs) {
