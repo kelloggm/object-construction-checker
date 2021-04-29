@@ -1,0 +1,35 @@
+version: 2
+updates:
+- package-ecosystem: gradle
+  directory: "/"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: org.sosy-lab:java-smt
+    versions:
+    - "> 3.2.0"
+  - dependency-name: com.google.errorprone:javac
+    versions:
+    - 1.8.0-u20
+  - dependency-name: com.diffplug.spotless
+    versions:
+    - 5.12.1
+  - dependency-name: com.amazonaws:aws-java-sdk-bom
+    versions:
+    - 1.11.1000
+  - dependency-name: org.checkerframework:checker-qual
+    versions:
+    - 3.10.0
+    - 3.11.0
+    - 3.9.1
+  - dependency-name: org.checkerframework:framework-test
+    versions:
+    - 3.10.0
+    - 3.11.0
+    - 3.9.1
+  - dependency-name: org.checkerframework:checker
+    versions:
+    - 3.10.0
+    - 3.11.0
+    - 3.9.1
