@@ -32,7 +32,7 @@ dependencies {
 
     // For subtyping between @CalledMethodsPredicate annotations
     implementation 'org.sosy-lab:java-smt:3.2.0'
-    implementation 'com.github.javaparser:javaparser-core:3.15.11'
+    implementation 'com.github.javaparser:javaparser-core:3.20.2'
 
     // Use JUnit test framework
     testImplementation "junit:junit:4.13.2"
