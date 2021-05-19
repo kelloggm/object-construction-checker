@@ -221,6 +221,10 @@ class LineNumberReader {
     @MustCallAlias LineNumberReader(@MustCallAlias Reader in);
 }
 
+class ObjectOutputStream extends OutputStream implements ObjectOutput, ObjectStreamConstants {
+    @MustCallAlias ObjectOutputStream(@MustCallAlias OutputStream arg0) throws IOException;
+}
+
 package java.security;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
@@ -279,4 +283,9 @@ class GZIPOutputStream extends DeflaterOutputStream {
     @MustCallAlias GZIPOutputStream​(@MustCallAlias OutputStream in, boolean syncFlush);
     @MustCallAlias GZIPOutputStream​(@MustCallAlias OutputStream in, int size);
     @MustCallAlias GZIPOutputStream​(@MustCallAlias OutputStream in, int size, boolean syncFlush);
+}
+
+class ZipInputStream extends InflaterInputStream implements ZipConstants {
+    @MustCallAlias ZipInputStream(@MustCallAlias InputStream arg0);
+    @MustCallAlias ZipInputStream(@MustCallAlias InputStream arg0, Charset arg1);
 }
