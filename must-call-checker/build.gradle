@@ -21,7 +21,7 @@ dependencies {
     implementation project(":must-call-qual")
 
     // Use JUnit test framework
-    testImplementation "junit:junit:4.13"
+    testImplementation "junit:junit:4.13.2"
 
     // CF testing infrastructure
     testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
