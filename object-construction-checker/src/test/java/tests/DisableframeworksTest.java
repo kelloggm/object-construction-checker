@@ -5,6 +5,7 @@ import static org.checkerframework.framework.test.TestConfigurationBuilder.build
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import org.checkerframework.checker.objectconstruction.ObjectConstructionChecker;
 import org.checkerframework.com.google.common.collect.ImmutableList;
 import org.checkerframework.framework.test.CheckerFrameworkPerDirectoryTest;
 import org.checkerframework.framework.test.TestConfiguration;
@@ -22,16 +23,15 @@ public class DisableframeworksTest extends CheckerFrameworkPerDirectoryTest {
           "com.google.auto.value.processor.AutoOneOfProcessor",
           "com.google.auto.value.processor.AutoValueBuilderProcessor",
           "com.google.auto.value.processor.AutoValueProcessor",
-          org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class
-              .getName());
+          ObjectConstructionChecker.class.getName());
 
   public DisableframeworksTest(List<File> testFiles) {
     super(
         testFiles,
-        org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
+        ObjectConstructionChecker.class,
         "diableframeworks",
         "-Anomsgtext",
-        "-AdisableFrameworkSupports=AutoValue,Lombok",
+        "-AdisableBuilderFrameworkSupports=autovalue,lombok",
         "-nowarn");
   }
 
@@ -52,6 +52,6 @@ public class DisableframeworksTest extends CheckerFrameworkPerDirectoryTest {
         buildDefaultConfiguration(
             testDir, testFiles, ANNOTATION_PROCS, customizedOptions, shouldEmitDebugInfo);
     TypecheckResult testResult = new TypecheckExecutor().runTest(config);
-    TestUtilities.assertResultsAreValid(testResult);
+    TestUtilities.assertTestDidNotFail(testResult);
   }
 }

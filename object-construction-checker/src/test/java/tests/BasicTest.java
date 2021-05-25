@@ -2,6 +2,7 @@ package tests;
 
 import java.io.File;
 import java.util.List;
+import org.checkerframework.checker.objectconstruction.ObjectConstructionChecker;
 import org.checkerframework.framework.test.CheckerFrameworkPerDirectoryTest;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -26,12 +27,7 @@ import org.junit.runners.Parameterized.Parameters;
  */
 public class BasicTest extends CheckerFrameworkPerDirectoryTest {
   public BasicTest(List<File> testFiles) {
-    super(
-        testFiles,
-        org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.class,
-        "basic",
-        "-Anomsgtext",
-        "-nowarn");
+    super(testFiles, ObjectConstructionChecker.class, "basic", "-Anomsgtext", "-nowarn");
   }
 
   @Parameters

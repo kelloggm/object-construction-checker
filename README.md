@@ -1,3 +1,9 @@
+## Note: this project is no longer maintained.
+
+The Object Construction Checker has been replaced by the Checker Framework's
+[Called Methods Checker](https://checkerframework.org/manual/#called-methods-checker).
+This repository is in a "keep-alive" state for historical interest only.
+
 # Object Construction Checker
 
 The builder pattern is a flexible and readable way to construct objects, but
@@ -61,8 +67,8 @@ If your project has subprojects or you need other customizations, see the docume
         extraJavacArgs = ['-AsuppressWarnings=type.anno.before']
     }
     dependencies {
-        checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.9'
-        implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.9'
+        checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.13'
+        implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.13'
     }
     ```
 
@@ -244,6 +250,14 @@ Lombok will set them to empty collections if the appropriate setter is not calle
 and assigning a default value to the builder's field), the checker will treat that field as defaulted
 *most of the time*. In particular, it will not treat it as defaulted if it is defined in bytecode rather
 than in source code.
+
+## Checking must-call obligations
+
+By specifying the `-AcheckMustCall` command-line option, the checker can also check that
+each expressions **must-call obligations** are satisfied before it is de-allocated. A must-call
+obligation is a method that an object should call before it is de-allocated, such as `close()`
+for a `Socket`. See the file `must-call-checker/README.md` for details on how to specify must-call
+obligations; the checker runs with a default set that checks classes that implement `java.io.Closeable`.
 
 ## More information
 

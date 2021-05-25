@@ -1,13 +1,6 @@
 plugins {
     // Apply the java plugin to add support for Java
     id 'java-library'
-
-    // For bringing in AWS dependencies. We're using the "legacy" version
-    // listed here: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-project-gradle.html,
-    // because the build fails when we use the Gradle 5+ way, saying that it can't find ec2.
-    // I believe that this is because we need the AWS SDK during testing, but not during the build.
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-
 }
 
 sourceCompatibility = 1.8
@@ -27,23 +20,22 @@ dependencies {
     // api dependencies
     implementation project(":object-construction-qual")
 
-    // For the @CalledMethodsPredicate evaluation
-    implementation "org.springframework:spring-expression:5.3.6"
-
-    // For subtyping between @CalledMethodsPredicate annotations
-    implementation 'org.sosy-lab:java-smt:3.2.0'
-    implementation 'com.github.javaparser:javaparser-core:3.22.1'
+    // For MustCall support
+    implementation project(":must-call-qual")
+    implementation project(":must-call-checker")
 
     // Use JUnit test framework
     testImplementation "junit:junit:4.13.2"
 
     // CF testing infrastructure
-    testCompile "org.checkerframework:framework-test:${versions.checkerFramework}"
+    testImplementation "org.checkerframework:framework-test:${versions.checkerFramework}"
 
+    // CVE and KMS tests both rely on this:
+    testImplementation platform("com.amazonaws:aws-java-sdk-bom:1.11.923")
     // For CVE tests
-    testCompile "com.amazonaws:aws-java-sdk-ec2"
+    testImplementation "com.amazonaws:aws-java-sdk-ec2:1.11.950"
     // For KMS tests
-    testCompile "com.amazonaws:aws-java-sdk-kms"
+    testImplementation "com.amazonaws:aws-java-sdk-kms:1.11.950"
 
     // For AutoValue Builders
     implementation "com.google.auto.value:auto-value-annotations:${versions.autoValue}"
@@ -57,12 +49,6 @@ dependencies {
 
     errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
 
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "com.amazonaws:aws-java-sdk-bom:1.11.1024"
-    }
 }
 
 tasks.withType(JavaCompile).all {
@@ -79,9 +65,15 @@ spotless {
 }
 
 test {
-    inputs.files("tests/basic", "tests/cve", "tests/lombok", "tests/autovalue")
+    inputs.files("tests/basic", "tests/cve", "tests/lombok", "tests/autovalue", "tests/disableframeworks", "tests/mustcall", "tests/socket")
     if (!JavaVersion.current().java9Compatible) {
         jvmArgs "-Xbootclasspath/p:${configurations.errorproneJavac.asPath}"
+    }
+    testLogging {
+        showStandardStreams = true
+        // Show the found unexpected diagnostics and expected diagnostics not found.
+        exceptionFormat "full"
+        events "failed"
     }
 }
 
@@ -94,5 +86,16 @@ apply from: rootProject.file("gradle-mvn-push.gradle")
 task printClasspath {
     doLast {
         println sourceSets.main.runtimeClasspath.asPath
+    }
+}
+
+apply plugin: 'java'
+
+sourceSets {
+    main {
+        resources {
+            // Stub files, message.properties, etc.
+            srcDirs += ['src/main/java']
+        }
     }
 }

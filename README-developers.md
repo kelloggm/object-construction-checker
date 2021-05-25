@@ -13,4 +13,4 @@ repositories {
 }
 ```
 
-Then, follow the instructions in the other READMEs, using version `0.1.10-SNAPSHOT` of the Object Construction Checker artifacts.
+Then, follow the instructions in the other READMEs, using version `0.1.14-SNAPSHOT` of the Object Construction Checker artifacts.

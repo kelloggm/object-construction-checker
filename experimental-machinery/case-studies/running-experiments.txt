@@ -1,0 +1,54 @@
+This file contains instructions on how to run our resource leak checker on
+Zookeeper, HBase, and Hadoop-hdfs using the scripts in this directory and
+../ablation. ../ablation/ablation-instructions.txt has more information about
+running an ablation experiment on a new benchmark.
+
+Here is a list of the scripts in this directory and ../ablation:
+* setup.sh: this script builds and installs the tool (i.e. what's in this repo). It also
+has code to build and install a custom version of the Checker Framework, which is commented
+out by default.
+* build-all-and-collect-timing-info.sh: this script was used to collect timing numbers for
+running our tool on each case study. It checks out and builds each repo a fixed number of times,
+and reports how long each took. See the comment at the start of the script for more information.
+* ../ablation/run-always-call-on-hadoop.sh: run the checker on hadoop once. This script assumes
+that hadoop is already checked out in the same directory from which the script is run, and that
+the checker is already installed.
+* ../ablation/run-always-call-on-hbase.sh: run the checker on hbase once. This script assumes
+that hbase is already checked out in the same directory from which the script is run, and that
+the checker is already installed.
+* ../ablation/run-always-call-on-zookeeper.sh: run the checker on zookeeper once. This script assumes
+that zookeeper is already checked out in the same directory from which the script is run, and that
+the checker is already installed.
+* ../ablation/errors-without-custom-types.sh: this script post-processes the results of running
+on zookeeper to remove errors that are issued about types that aren't in the JDK. A usual scenario
+while annotating zookeeper was to run run-always-call-on-zookeeper.sh and then pipe the results
+through this script before examining errors by hand.
+* ../ablation/warnings-without-custom-types.sh: this script post-processes the results of running
+on hbase or hadoop to remove errors that are issued about types that aren't in the JDK. A usual scenario
+while annotating either of these projects was to run
+run-always-call-on-hadoop.sh/run-always-call-on-hbase.sh and then pipe the results
+through this script before examining errors by hand.
+* ../ablation/zookeeper-ablation.sh, ../ablation/hbase-ablation.sh, ../ablation/hadoop-ablation.sh:
+these scripts run the ablation study that ablation-instructions.txt describes how to setup on
+the benchmark named by the script. Each is fully self-contained - you should be able to just
+run one of these scripts and then get the results.
+
+When updating the annotations on a benchmark, you're usually only interested in the run-always-call-on-*.sh
+script and one of the errors-without-custom-types.sh or warnings-without-custom-types.sh scripts. The latter
+two are similar, but warnings-without-custom-types.sh has more exclusions that are specific to hbase
+and hadoop.
+
+When running the tool on a new benchmark, follow these steps:
+1. Fork the benchmark's repository at the commit you want to analyze.
+2. Create a new branch called "with-checker", and make whatever modifications are necessary to
+the build system to run the tool. Commit and push the results to the with-checker branch.
+3. Create a new branch called "with-annotations" from "with-checker".
+4. Create a new script, modeled on the existing run-always-call-on-*.sh in the ../ablation
+directory, that typechecks the new benchmark. Commit it here, to the ../ablation/ directory.
+5. Iteratively run that script (optionally using ../ablation/errors-without-custom-types.sh
+to filter out errors that are about non-JDK types) and add new annotations to the benchmark
+until no errors are reported about types you're interested in. Make sure to include justifications
+each time you suppress a warning, with an argument for why a given warning is a true or false positive.
+6. Follow the instructions in ../ablation/ablation-instructions.txt to create an ablation script
+for the new benchmark, similar to ../ablation/*-ablation.sh.
+7. Add the new benchmark to build-all-and-collect-timing-info.sh.

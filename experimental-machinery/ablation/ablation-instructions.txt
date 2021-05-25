@@ -1,0 +1,101 @@
+Here are the instructions for running the ablation study on a new case study:
+
+1. first, you need to have the case study set up correctly. This
+means: a) that all the bugs we care about are triaged *and* suppressed
+with a specific warning key. In particular, that needs to include both
+the true and false positives. For example, here's a suppression of a
+TP and an FP from Zookeeper:
+
+TP:
+@SuppressWarnings("objectconstruction:required.method.not.called") // TP: setLength can throw, which would cause raf not to be closed.
+
+
+FP:
+@SuppressWarnings("objectconstruction:required.method.not.called") // FP: need support for owning lists
+
+
+Note the "objectconstruction:" before the suppression key - this is
+important, because otherwise the scripts won't be able to detect false
+positives that our full approach does warn about, but that each
+variant does not. For errors from the OCC, you should use
+"objectconstruction" as the checker key; for errors from the Must Call
+Checker, you should use "mustcall".
+
+To get that working, I had to add two new arguments to the
+checker. Here's the Maven code from Zookeeper:
+
+            <arg>-ArequirePrefixInWarningSuppressions</arg>
+
+            <arg>-AwarnUnneededSuppressions</arg>
+
+
+Before you run the ablation experiment, you should run with just those
+new arguments (if you're not using them already) and make sure that
+there aren't warnings or errors you don't expect (I also use this
+configuration to count how many FPs are fixed when I make bug fixes to
+the checker).
+
+2. create three new branch for each case study, each of which should
+be based on the `with-annotations` branch. I ran commands like this:
+
+git checkout -b no-lo kelloggm/with-annotations
+
+On each branch, add the appropriate argument to the checker. For
+no-lo, here's the diff:
+
++            <arg>-AnoLightweightOwnership</arg>
+
+
+The three branches you need to create (new argument to the checker in
+parens) are:
+
+no-lo (-AnoLightweightOwnership)
+no-ra (-AnoResourceAliases)
+no-af (-AnoAccumulationFrames)
+
+These branch names are hard-coded into later scripts, so they need to
+be exact.
+
+Commit the changes on each branch (and push them, probably).
+
+3. you're now ready to run the experiment. I used the script zookeeper-ablation.sh, which should be in the same directory as this file.
+
+You should be able to use a copy of it with a little modification. The
+most important thing to change is the reference to the
+run-always-call-on-zookeeper.sh script, which should contain the Maven
+command to run the checker - you'll want to replace that with the
+appropriate script for your benchmark. Likewise with the cd command.
+You can find the version of this script for zookeeper along with this
+file, but I expect you'll have to replace it.
+
+You'll also need errors-without-custom-types.sh, which is also found
+along with this file. You shouldn't need to modify it.  This script
+filters out the errors that apply to java.* classes from those that
+don't.
+
+4. When you've done those things, you can run the script. It takes
+about 3 times as long as compiling the benchmark once (since it
+compiles the benchmark in each configuration from scratch). It should
+produce output that looks like this:
+
+> Already on 'no-lo'
+> new errors produced by no-lo configuration:
+> 73
+> old errors no longer produced by no-lo configuration:
+> 7
+
+The result for the paper is the difference between these two numbers
+(that's just the results of the first configuration).
+
+The script produces two numbers: the number of new errors (73 in the
+example above) and the number of old errors that were removed (7
+above). The result for the paper is the difference, so 77-7=66 new
+false positives on Zookeeper when running in no-lo configuration. The
+7 we're subtracting are false positives that are shifted from one
+location to another (or, equivalently, TPs that are reported
+elsewhere) because of the lack of ownership.
+
+(I didn't have the script subtract the number because doing arithmetic
+in bash is a nightmare and a half.)
+
+5. that's it, you're done

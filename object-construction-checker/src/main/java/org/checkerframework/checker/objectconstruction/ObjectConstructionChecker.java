@@ -1,10 +1,21 @@
 package org.checkerframework.checker.objectconstruction;
 
+import static javax.tools.Diagnostic.Kind.WARNING;
+import static org.checkerframework.checker.mustcall.MustCallChecker.NO_ACCUMULATION_FRAMES;
+import static org.checkerframework.checker.mustcall.MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP;
+import static org.checkerframework.checker.mustcall.MustCallChecker.NO_RESOURCE_ALIASES;
+import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.CHECK_MUST_CALL;
+import static org.checkerframework.checker.objectconstruction.ObjectConstructionChecker.COUNT_MUST_CALL;
+
 import java.util.LinkedHashSet;
 import java.util.Properties;
+import org.checkerframework.checker.calledmethods.CalledMethodsChecker;
+import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
+import org.checkerframework.checker.mustcall.MustCallChecker;
+import org.checkerframework.checker.mustcall.MustCallNoAccumulationFramesChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.common.returnsreceiver.ReturnsReceiverChecker;
-import org.checkerframework.common.value.ValueChecker;
+import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.framework.qual.StubFiles;
 import org.checkerframework.framework.source.SupportedOptions;
 import org.checkerframework.framework.source.SuppressWarningsPrefix;
 
@@ -14,35 +25,49 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
  * objects from being instantiated.
  */
 @SuppressWarningsPrefix({"builder", "object.construction", "objectconstruction"})
-@SupportedOptions({
-  ObjectConstructionChecker.USE_VALUE_CHECKER,
-  ObjectConstructionChecker.COUNT_FRAMEWORK_BUILD_CALLS,
-  ObjectConstructionChecker.DISABLED_FRAMEWORK_SUPPORTS,
+@StubFiles({
+  "Socket.astub",
+  "NotOwning.astub",
+  "Stream.astub",
+  "NoObligationGenerics.astub",
+  "NoObligationStreams.astub",
+  "IOUtils.astub",
+  "Reflection.astub",
 })
-public class ObjectConstructionChecker extends BaseTypeChecker {
+@SupportedOptions({
+  CHECK_MUST_CALL,
+  COUNT_MUST_CALL,
+  NO_ACCUMULATION_FRAMES,
+  NO_LIGHTWEIGHT_OWNERSHIP,
+  NO_RESOURCE_ALIASES
+})
+public class ObjectConstructionChecker extends CalledMethodsChecker {
 
-  public static final String USE_VALUE_CHECKER = "useValueChecker";
+  public static final String CHECK_MUST_CALL = "checkMustCall";
 
-  public static final String COUNT_FRAMEWORK_BUILD_CALLS = "countFrameworkBuildCalls";
+  public static final String COUNT_MUST_CALL = "countMustCall";
 
-  public static final String DISABLED_FRAMEWORK_SUPPORTS = "disableFrameworkSupports";
+  /**
+   * The number of expressions with must-call obligations that were checked. Incremented only if the
+   * {@link #COUNT_MUST_CALL} option was supplied.
+   */
+  int numMustCall = 0;
 
-  public static final String LOMBOK_SUPPORT = "LOMBOK";
-
-  public static final String AUTOVALUE_SUPPORT = "AUTOVALUE";
+  int numMustCallFailed = 0;
 
   @Override
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
     LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
         super.getImmediateSubcheckerClasses();
-    checkers.add(ReturnsReceiverChecker.class);
 
-    // BaseTypeChecker#hasOption calls this method (so that all subcheckers' options are
-    // considered),
-    // so the processingEnvironment must be checked for the option directly.
-    if (this.processingEnv.getOptions().containsKey(USE_VALUE_CHECKER)) {
-      checkers.add(ValueChecker.class);
+    if (this.processingEnv.getOptions().containsKey(CHECK_MUST_CALL)) {
+      if (this.processingEnv.getOptions().containsKey(NO_ACCUMULATION_FRAMES)) {
+        checkers.add(MustCallNoAccumulationFramesChecker.class);
+      } else {
+        checkers.add(MustCallChecker.class);
+      }
     }
+
     return checkers;
   }
 
@@ -55,20 +80,54 @@ public class ObjectConstructionChecker extends BaseTypeChecker {
   public Properties getMessagesProperties() {
     Properties messages = super.getMessagesProperties();
     messages.setProperty(
-        "finalizer.invocation.invalid",
-        "This finalizer cannot be invoked, because the following methods have not been called: %s\n");
+        "ensuresvarargs.annotation.invalid",
+        "@EnsuresCalledMethodsVarArgs cannot be written on a non-varargs method");
     messages.setProperty(
-        "predicate.invalid",
-        "An unparseable predicate was found in an annotation. Predicates must be produced by this grammar: S --> method name | (S) | S && S | S || S. The message from the evaluator was: %s \\n");
+        "ensuresvarargs.unverified",
+        "@EnsuresCalledMethodsVarArgs cannot be verified yet.  Please check that the implementation of the method actually does call the given methods on the varargs parameters by hand, and then suppress the warning.");
+    messages.setProperty(
+        "required.method.not.called",
+        "@MustCall %s not invoked.  The type of object is: %s.  Reason for going out of scope: %s\n");
+    messages.setProperty(
+        "missing.creates.obligation",
+        "This method re-assigns the non-final, owning field %s.%s, but does not have a corresponding @CreatesObligation annotation.\n");
+    messages.setProperty(
+        "incompatible.creates.obligation",
+        "This method re-assigns the non-final, owning field %s.%s, but its @CreatesObligation annotation targets %s.\n");
+    messages.setProperty(
+        "reset.not.owning",
+        "Calling this method resets the must-call obligations of the expression %s, which is non-owning. Either annotate its declaration with an @Owning annotation or write a corresponding @CreatesObligation annotation on the method that encloses this statement.\n");
+    messages.setProperty(
+        "creates.obligation.override.invalid",
+        "Method %s cannot override method %s, which defines fewer @CreatesObligation targets.\nfound:    %s\nrequired: %s\n");
     return messages;
   }
 
-  int numBuildCalls = 0;
+  @Override
+  protected BaseTypeVisitor<?> createSourceVisitor() {
+    return new ObjectConstructionVisitor(this);
+  }
+
+  @Override
+  public void reportError(Object source, @CompilerMessageKey String messageKey, Object... args) {
+    if (messageKey.equals("required.method.not.called")) {
+      // This looks crazy but it's safe because of the warning key.
+      String qualifiedTypeName = (String) args[1];
+      if (qualifiedTypeName.startsWith("java")) {
+        numMustCallFailed++;
+      }
+    }
+    super.reportError(source, messageKey, args);
+  }
 
   @Override
   public void typeProcessingOver() {
-    if (getBooleanOption(COUNT_FRAMEWORK_BUILD_CALLS)) {
-      System.out.printf("Found %d build() method calls.\n", numBuildCalls);
+    if (hasOption(COUNT_MUST_CALL)) {
+      message(WARNING, "Found %d must call obligation(s).%n", numMustCall);
+      message(
+          WARNING,
+          "Successfully verified %d must call obligation(s).%n",
+          numMustCall - numMustCallFailed);
     }
     super.typeProcessingOver();
   }
