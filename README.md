@@ -39,12 +39,12 @@ annotationProcessor() ...`.
 
 The following example uses Gradle.
 
-1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file:
+1. Add the [org.checkerframework](https://github.com/kelloggm/checkerframework-gradle-plugin) Gradle plugin to the `plugins` block of your `build.gradle` file.  Instead of the below version number, use the latest version (number available [here](https://github.com/kelloggm/checkerframework-gradle-plugin#download) and [here](https://plugins.gradle.org/plugin/org.checkerframework)).
 
     ```groovy
     plugins {
         ...
-        id "org.checkerframework" version "0.5.1"
+        id "org.checkerframework" version "0.5.17"
     }
     ```
 
