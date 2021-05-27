@@ -1,4 +1,6 @@
 #set -x
 
 cd hbase
-mvn --projects hbase-server --also-make clean compile -DskipTest
+# the install task must be run (as opposed to compile), as hbase
+# requires that sub-project jars be installed in the local maven repo
+mvn --projects hbase-server --also-make clean install -DskipTests
