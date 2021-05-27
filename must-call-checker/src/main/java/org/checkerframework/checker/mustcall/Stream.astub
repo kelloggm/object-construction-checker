@@ -289,3 +289,20 @@ class ZipInputStream extends InflaterInputStream implements ZipConstants {
     @MustCallAlias ZipInputStream(@MustCallAlias InputStream arg0);
     @MustCallAlias ZipInputStream(@MustCallAlias InputStream arg0, Charset arg1);
 }
+
+package java.nio.channels;
+
+class Channels {
+    static @MustCallAlias InputStream newInputStream(@MustCallAlias ReadableByteChannel arg0);
+    static @MustCallAlias OutputStream newOutputStream(@MustCallAlias WritableByteChannel arg0);
+    static @MustCallAlias InputStream newInputStream(@MustCallAlias AsynchronousByteChannel arg0);
+    static @MustCallAlias OutputStream newOutputStream(@MustCallAlias AsynchronousByteChannel arg0);
+    static @MustCallAlias ReadableByteChannel newChannel(@MustCallAlias InputStream arg0);
+    static @MustCallAlias WritableByteChannel newChannel(@MustCallAlias OutputStream arg0);
+    static @MustCallAlias Reader newReader(@MustCallAlias ReadableByteChannel arg0, CharsetDecoder arg1, int arg2);
+    static @MustCallAlias Reader newReader(@MustCallAlias ReadableByteChannel arg0, String arg1);
+    static @MustCallAlias Reader newReader(@MustCallAlias ReadableByteChannel arg0, Charset arg1);
+    static @MustCallAlias Writer newWriter(@MustCallAlias WritableByteChannel arg0, CharsetEncoder arg1, int arg2);
+    static @MustCallAlias Writer newWriter(@MustCallAlias WritableByteChannel arg0, String arg1);
+    static @MustCallAlias Writer newWriter(@MustCallAlias WritableByteChannel arg0, Charset arg1);
+}
