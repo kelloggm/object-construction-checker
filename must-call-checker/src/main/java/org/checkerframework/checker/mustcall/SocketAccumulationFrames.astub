@@ -40,9 +40,3 @@ class SocketChannel extends AbstractSelectableChannel implements ByteChannel, Sc
 class ServerSocketChannel extends AbstractSelectableChannel implements NetworkChannel {
     static @MustCall({})  ServerSocketChannel open() throws IOException;
 }
-
-class Selector implements Closeable {
-    @MustCall({}) protected Selector();
-    @CreatesObligation
-    static Selector open() throws IOException;
-}
