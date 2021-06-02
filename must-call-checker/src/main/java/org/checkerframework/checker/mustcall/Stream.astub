@@ -225,6 +225,10 @@ class ObjectOutputStream extends OutputStream implements ObjectOutput, ObjectStr
     @MustCallAlias ObjectOutputStream(@MustCallAlias OutputStream arg0) throws IOException;
 }
 
+class SequenceInputStream extends InputStream {
+    @MustCallAlias SequenceInputStream(@MustCallAlias InputStream arg0, InputStream arg1);
+}
+
 package java.security;
 
 import org.checkerframework.checker.objectconstruction.qual.*;
@@ -305,4 +309,8 @@ class Channels {
     static @MustCallAlias Writer newWriter(@MustCallAlias WritableByteChannel arg0, CharsetEncoder arg1, int arg2);
     static @MustCallAlias Writer newWriter(@MustCallAlias WritableByteChannel arg0, String arg1);
     static @MustCallAlias Writer newWriter(@MustCallAlias WritableByteChannel arg0, Charset arg1);
+}
+
+class Selector implements Closeable {
+    @MustCallAlias Selector wakeup(@MustCallAlias Selector this);
 }
