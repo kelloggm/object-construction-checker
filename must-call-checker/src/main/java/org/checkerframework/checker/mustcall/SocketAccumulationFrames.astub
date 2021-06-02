@@ -43,5 +43,6 @@ class ServerSocketChannel extends AbstractSelectableChannel implements NetworkCh
 
 class Selector implements Closeable {
     @MustCall({}) protected Selector();
+    @CreatesObligation
     static Selector open() throws IOException;
 }
