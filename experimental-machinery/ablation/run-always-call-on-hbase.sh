@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [ "x${JAVA8_HOME}" = "x" ]; then
-  echo "Please set JAVA8_HOME to run the checker on ZooKeeper. ZooKeeper requires Java 8."
+  echo "Please set JAVA8_HOME to run the checker on hbase. hbase requires Java 8."
   exit 1
 else
   java_home_old="${JAVA_HOME}"
