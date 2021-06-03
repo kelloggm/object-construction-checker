@@ -68,3 +68,8 @@ interface ServletResponse {
     @NotOwning ServletOutputStream getOutputStream() throws IOException;
     @NotOwning PrintWriter getWriter() throws IOException;
 }
+
+package java.nio.file;
+
+@InheritableMustCall({}) class FileSystem { }
+@InheritableMustCall({}) class WatchService { }
