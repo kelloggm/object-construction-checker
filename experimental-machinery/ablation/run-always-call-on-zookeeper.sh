@@ -8,6 +8,6 @@ else
   export JAVA_HOME="${JAVA8_HOME}"
 fi
 
-cd zookeeper
-mvn --projects zookeeper-server --also-make clean install -DskipTests
+cd zookeeper || exit 1
+mvn -B --projects zookeeper-server --also-make clean install -DskipTests
 export JAVA_HOME="${java_home_old}"
