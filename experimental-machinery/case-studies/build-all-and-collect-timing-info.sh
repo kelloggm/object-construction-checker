@@ -59,6 +59,11 @@ HBASE_REPO=https://github.com/Nargeshdb/hbase
 HBASE_CMD="mvn --projects hbase-server --also-make clean compile -DskipTests"
 HBASE_CLEAN="mvn clean"
 
+PU_BRANCH=with-annotations
+PU_REPO=https://github.com/kelloggm/plume-util.git
+PU_CMD="./gradlew compileJava"
+PU_CLEAN="./gradlew clean"
+
 # script starts
 
 # testing for JAVA8_HOME, not an unintentional reference to JAVA8_HOME
@@ -160,6 +165,22 @@ for i in $(seq "${ATTEMPTS}"); do
     ${HBASE_CLEAN} &> /dev/null
     echo "attempt ${i} on HBase starting:"
     time (${HBASE_CMD} &> "${RESULTS}/hbase.run.${i}.log" || true) &> "${RESULTS}/hbase.run.${i}.time"
+done
+cd ..
+
+# download plume-util
+if [ ! -d plume-util ]; then
+    git clone "${PU_REPO}"
+fi
+
+cd plume-util
+git checkout "${PU_BRANCH}"
+git pull
+# do $ATTEMPTS trials on plume-util
+for i in $(seq "${ATTEMPTS}"); do
+    ${PU_CLEAN} &> /dev/null
+    echo "attempt ${i} on plume-util starting:"
+    time (${PU_CMD} &> "${RESULTS}/plume-util.run.${i}.log" || true) &> "${RESULTS}/plume-util.run.${i}.time"
 done
 cd ..
 
