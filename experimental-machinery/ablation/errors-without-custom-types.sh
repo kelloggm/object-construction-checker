@@ -1,12 +1,10 @@
 #!/bin/sh
 
-# a simple script to post-process a run of the must-call checker on zookeeper
-
-# to remove 1) irrelevant lines not related to errors, and 2) required.method.not.called
-
-# errors on custom types
-
 # input: a file containing the output of ./run-always-call-on-zookeeper.sh
+
+# output: the input, without
+# 1) irrelevant lines not related to errors, and
+# 2) required.method.not.called errors on custom types (those starting with "org.").
 
 zookeeper_out=$1
 
