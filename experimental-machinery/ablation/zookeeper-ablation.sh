@@ -11,6 +11,7 @@ set -o pipefail
 # prereq: zookeeper is checked out in the current directory, with the no-lo, no-ra, no-af branches available locally.
 # prereq: run-always-call-on-zookeeper.sh is in the current directory
 # prereq: the checker and the Checker Framework are built in the appropriate places
+# prereq: the JAVA8_HOME environment variable is set
 
 run_ablation () {
 
@@ -35,6 +36,11 @@ run_ablation () {
     echo "the result for the paper is the difference between these two numbers"
 
 }
+
+if [ "x${JAVA8_HOME}" = "x" ]; then
+  echo "Please set JAVA8_HOME to run the checker on ZooKeeper. ZooKeeper requires Java 8."
+  exit 1
+else
 
 run_ablation "no-lo"
 
