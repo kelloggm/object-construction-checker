@@ -16,6 +16,16 @@ class SelectionKey {
     @NotOwning SelectableChannel channel();
 }
 
+class Channel {
+    @EnsuresCalledMethodsIf(expression="this", result=false, methods={"close"})
+    public final boolean isOpen();
+}
+
+class Selector {
+    @EnsuresCalledMethodsIf(expression="this", result=false, methods={"close"})
+    public final boolean isOpen();
+}
+
 class FileChannel {
     @NotOwning FileChannel position(long arg0) throws IOException;
     @NotOwning FileChannel truncate(long arg0) throws IOException;
@@ -58,6 +68,11 @@ class AbstractSelectableChannel {
 class AbstractInterruptibleChannel {
     @EnsuresCalledMethodsIf(expression="this", result=false, methods={"close"})
     boolean isOpen(AbstractInterruptibleChannel this);
+}
+
+class AbstractSelector {
+    @EnsuresCalledMethodsIf(expression="this", result=false, methods={"close"})
+    public final boolean isOpen();
 }
 
 package javax.servlet;
