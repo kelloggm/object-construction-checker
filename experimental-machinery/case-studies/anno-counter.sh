@@ -8,22 +8,25 @@
 project=$1
 
 echo "@Owning:"
-grep -EoniR "@Owning" "${project}" | wc -l
+grep -EoniR --include \*.java "@Owning" "${project}" | wc -l
 
-echo "@NotOwning:"
-grep -EoniR "@NotOwning" "${project}" | wc -l
+echo "@NotOwning (counted with @Owning):"
+grep -EoniR --include \*.java "@NotOwning" "${project}" | wc -l
 
-echo "@EnsuresCalledMethods:"
-grep -EoniR "@EnsuresCalledMethods" "${project}" | wc -l
+echo "@EnsuresCalledMethods:" # This will also count @EnsuresCalledMethodsIf. That's by design.
+grep -EoniR --include \*.java "@EnsuresCalledMethods" "${project}" | wc -l
 
 echo "@MustCall:"
-grep -EoniR "@MustCall" "${project}" | grep -v "MustCallAlias" | wc -l
+grep -EoniR --include \*.java "@MustCall\(" "${project}" | wc -l
 
-echo "@InheritableMustCall:"
-grep -EoniR "@InheritableMustCall" "${project}" | wc -l
+echo "@InheritableMustCall (counted with @MustCall):"
+grep -EoniR --include \*.java "@InheritableMustCall" "${project}" | wc -l
 
 echo "@MustCallAlias:"
-grep -EoniR "@MustCallAlias" "${project}" | wc -l
+grep -EoniR --include \*.java "@MustCallAlias" "${project}" | wc -l
+
+echo "@PolyMustCall (counted with @MustCallAlias):"
+grep -EoniR --include \*.java "@PolyMustCall" "${project}" | wc -l
 
 echo "@CreatesObligation:"
-grep -EoniR "@CreatesObligation" "${project}" | wc -l
+grep -EoniR --include \*.java "@CreatesObligation" "${project}" | wc -l
