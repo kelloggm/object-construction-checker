@@ -314,8 +314,8 @@ program. Each is named `*-ablation.sh`, where `*` is the name of the benchmark.
 Running one of these scripts produces 6 numbers: for each variant, the number
 of new warnings introduced when running in that configuration and the number
 of old errors that are no longer issued. For each variant, the entry in Table 3
-is the difference of these (`no-lo` is the "without LO" column; `no-ra` is the
-"without RA" column; `no-af` is the "without CO" column) summed with the number of
+is the difference of these (`no-lo` is the "w/o LO" column; `no-ra` is the
+"w/o RA" column; `no-af` is the "w/o OC" column) summed with the number of
 false positives produced by the full checker (i.e. these scripts measure the number
 of **extra** false positives). These scripts take
 about 3 times the normal compilation time for the benchmark to run, which can
