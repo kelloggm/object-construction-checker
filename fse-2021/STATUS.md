@@ -1,8 +1,8 @@
 Artifacts evaluated - Reusable: This replication package allows other
-researchers to repeat our experiments and to edit the source code.  We are
-currently merging it into a large open-source project
-(https://github.com/typetools/checker-framework/pull/4687) to ensure that
-it will be maintained and enhanced, enabling future researchers to build on
+researchers to repeat our experiments and to edit the source code.  The Resource
+Leak Checker has been incorporated into the [Checker
+Framework](https://checkerframework.org) as of version 3.15.0, and it will be
+maintained and enhanced going forward, enabling future researchers to build on
 our work.
 
 Artifacts evaluated - available: our tool, case studies, and scripts
