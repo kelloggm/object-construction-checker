@@ -191,7 +191,7 @@ The result for Zookeeper is:
 [WARNING] Successfully verified 131 must call obligation(s).
 ```
 
-The "Resources" column in table 1 corresponds to the first number (181 in the
+The "Resources" column in table 1 corresponds to the first number (177 in the
 example).  For Hadoop, the script prints two sets of results like the above; the
 second result (corresponding to the `hadoop-hdfs-project/hadoop-hdfs` module,
 whose warnings we studied) appears in the paper.  For HBase, the script also
