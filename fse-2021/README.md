@@ -6,7 +6,8 @@ contains the implementation of the tool ("Resource Leak Checker", section 6) and
 study programs used in the experiments in section 7.
 
 The artifact is a Docker environment, to ease reproduction. You
-can access it on Zenodo [here](https://zenodo.org/record/4902322#.YLrTMC1h1TY).
+can access it on Zenodo [here](https://zenodo.org/record/4902322#.YLrTMC1h1TY)
+(get the latest version).
 Install docker (instructions are [here](https://www.docker.com/get-started)),
 and then download the artifact.
 Then, run the following commands (substituting as
@@ -15,7 +16,7 @@ appropriate for your machine):
 ```
 gunzip -c path/to/resource-leak-checker.tar.gz > resource-leak-checker.tar
 docker load < resource-leak-checker.tar
-docker run -it msridhar/rlc:manual-update
+docker run -it msridhar/rlc:latest
 ```
 
 This command will log you into a bash shell inside the Docker container as the
@@ -65,7 +66,7 @@ or false positive.
 suppressions.  This branch is useful to see the actual warning messages
 emitted by the tool.
 
-In addition, the zookeeper, hbase, and hadoop repositories have three other
+In addition, the case study repositories have three other
 branches: `no-lo`, `no-ra`, and `no-af`. Each branch corresponds to
 one of the conditions for the ablation study in section 7.2: `no-lo` is set up
 to run without lightweight ownership (section 3), `no-ra` without resource
@@ -222,6 +223,14 @@ and `@PolyMustCall` annotations are included in the `@MustCallAlias` counts.
 subclasses when written on a class declaration. Because for technical reasons
 Java doesn't allow type annotations---like `@MustCall`---to be inherited,
 this other annotation was necessary.) These numbers were summed manually.
+
+Note that the version of the checker in the artifact used the name
+`@CreatesObligation` for the annotation named `@CreatesMustCallFor` in the
+paper.  The counts given for the `@CreatesMustCallFor` annotation in the paper
+correspond to the counts for `@CreatesObligation` given by the scripts in the
+artifact.  A more recent version of the checker renamed the annotation to
+`@CreatesMustCallFor`, but it was not the version used for the paper
+experiments.
 
 For example, the output of running `./anno-counter.sh zookeeper` on
 the `with-annotations` branch is:
