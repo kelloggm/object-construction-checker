@@ -2,8 +2,8 @@
 
 This file describes the artifact for "Lightweight and Modular Resource Leak
 Verification", which will be published at ESEC/FSE 2021. The artifact
-contains the implementation of the tool ("Resource Leak Checker", section 7) and the case
-study programs used in the experiments in section 8.
+contains the implementation of the tool ("Resource Leak Checker", section 6) and the case
+study programs used in the experiments in section 7.
 
 The artifact is a Docker environment, to ease reproduction. You
 can access it on Zenodo [here](https://zenodo.org/record/4902322#.YLrTMC1h1TY).
@@ -35,11 +35,11 @@ rather than reproducing the results in the paper.
 
 The Docker image contains the following 5 git repositories, all under `/home/fse`:
 * the Resource Leak Checker tool itself, in the `object-construction-checker` sub-directory. The three
-parts of section 3 of the paper correspond to three parts of this repository:
-section 3.1 corresponds to the must-call-checker subproject; section 3.2
+parts of section 2 of the paper correspond to three parts of this repository:
+section 2.2 corresponds to the must-call-checker subproject; section 2.3
 corresponds to most of the object-construction-checker subproject (this
 is our prior work from ICSE 2020, which served as the starting point for
-this project); section 3.3 corresponds to the file
+this project); section 2.4 corresponds to the file
 `object-construction-checker/src/main/java/org/checkerframework/checker/objectconstruction/MustCallInvokedChecker.java`. The implementations of the
 features described in sections 4-6 are scattered throughout these files, as
 appropriate.
@@ -67,10 +67,10 @@ emitted by the tool.
 
 In addition, the zookeeper, hbase, and hadoop repositories have three other
 branches: `no-lo`, `no-ra`, and `no-af`. Each branch corresponds to
-one of the conditions for the ablation study in section 8.2: `no-lo` is set up
-to run without lightweight ownership (section 4), `no-ra` without resource
-aliasing (section 5), and `no-af` without ownership creation annotations
-(section 6).
+one of the conditions for the ablation study in section 7.2: `no-lo` is set up
+to run without lightweight ownership (section 3), `no-ra` without resource
+aliasing (section 4), and `no-af` without ownership creation annotations
+(section 5).
 
 ### How to run the experiments
 
@@ -93,9 +93,9 @@ Check that you get a "BUILD SUCCESSFUL" message at the end.
 
 Running this command should take less than a minute on commodity hardware.
 
-#### Case studies in section 8.1
+#### Case studies in section 7.1
 
-This section describes how the numbers in tables 1 and 2 in section 8.1 were
+This section describes how the numbers in tables 1 and 2 in section 7.1 were
 computed, and describes the scripts you can use to reproduce them.
 
 We have provided the raw output from our tool for the case studies in files
@@ -179,6 +179,8 @@ resources. To acquire these numbers:
 ./resource-counts.sh hadoop-out
 
 ./resource-counts.sh hbase-out
+
+./resource-counts.sh plume-util-out
 ```
 (See above for instructions on how to generate the `-out` files from scratch.)
 
@@ -295,16 +297,18 @@ the typechecker 5 times on each benchmark. The result in the paper was
 median of these five runs, on the machine the paper describes. This script
 took ~2 hours to run on our hardware.
 
-#### Ablation study (section 8.2)
+#### Ablation study (section 7.2)
 
-There are three scripts that run the ablation study: one for each benchmark
+There are four scripts that run the ablation study: one for each benchmark
 program. Each is named `*-ablation.sh`, where `*` is the name of the benchmark.
 
 Running one of these scripts produces 6 numbers: for each variant, the number
 of new warnings introduced when running in that configuration and the number
 of old errors that are no longer issued. For each variant, the entry in Table 3
 is the difference of these (`no-lo` is the "without LO" column; `no-ra` is the
-"without RA" column; `no-af` is the "without CO" column). These scripts take
+"without RA" column; `no-af` is the "without CO" column) summed with the number of
+false positives produced by the full checker (i.e. these scripts measure the number
+of **extra** false positives). These scripts take
 about 3 times the normal compilation time for the benchmark to run, which can
 make them expensive (especially for hadoop, which will take 45+ minutes); see
 the "wall-clock time" column of Table 1 and multiply by 3 for an estimate.
