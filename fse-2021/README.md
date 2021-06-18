@@ -288,8 +288,8 @@ diffs. You can also check the numbers by running these commands in the relevant
 project directories (note that on ZooKeeper these commands give a few duplicates
 for true positives, so the numbers in the paper are slightly lower):
 ```
-grep -EoniR "//\s*TP:" * | wc -l
-grep -EoniR "//\s*FP:" * | wc -l
+grep -EonR "//\s*TP.*:" * | wc -l
+grep -EonR "//\s*FP.*:" * | wc -l
 ```
 
 *Wall-clock time*: the script `build-all-and-collect-timing-info.sh` runs
