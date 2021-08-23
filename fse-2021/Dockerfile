@@ -24,9 +24,9 @@ RUN apt-get update && \
     update-ca-certificates -f;
 
 # Install required softwares (curl & zip & wget)
-RUN apt install curl
-RUN apt install zip -y
-RUN apt install wget -y
+RUN apt-get install curl -y
+RUN apt-get install zip -y
+RUN apt-get install wget -y
 
 # update
 RUN apt-get update -y
