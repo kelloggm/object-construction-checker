@@ -1,6 +1,16 @@
-# Released under MIT License
+Our tool itself is distributed under an MIT license. This license also applies to our scripts, which were originally part of the tool repository.
+
+Our modifications to the case study programs (and those programs themselves) are distributed under their respective open-source licenses.
+
+# MIT License
 
 Copyright (c) 2021 Martin Kellogg
+
+Copyright (c) 2021 Narges Shadab
+
+Copyright (c) 2021 Manu Sridharan
+
+Copyright (c) 2021 Michael Ernst
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
