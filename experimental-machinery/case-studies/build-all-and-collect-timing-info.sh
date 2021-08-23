@@ -41,7 +41,7 @@ ATTEMPTS=5
 CF_BRANCH=current-occ-version
 CF_REPO=https://github.com/msridhar/checker-framework.git
 
-OCC_BRANCH=always-call-checker
+OCC_BRANCH=master
 OCC_REPO=https://github.com/kelloggm/object-construction-checker.git
 
 ZK_BRANCH=with-annotations
@@ -92,17 +92,6 @@ fi
 mkdir "${RESULTS}"
 
 export JAVA_HOME="${JAVA11_HOME}"
-
-# clone + build the CF
-if [ ! -d checker-framework ]; then
-    git clone "${CF_REPO}"
-fi
-
-cd checker-framework
-git checkout "${CF_BRANCH}"
-git pull
-./gradlew publishToMavenLocal
-cd ..
 
 # clone + build OCC
 if [ ! -d object-construction-checker ]; then
