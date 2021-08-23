@@ -6,6 +6,12 @@ LABEL Narges Shadab <nshad001@ucr.edu>
 RUN apt-get update && \
     apt-get install --yes software-properties-common
 
+# Install Java 11
+RUN apt-get update && \
+    apt-get install -y openjdk-11-jdk && \
+    apt-get install -y ant && \
+    apt-get clean;
+
 # Install Java 8
 RUN apt-get update && \
     apt-get install -y openjdk-8-jdk && \
@@ -104,6 +110,9 @@ RUN export JAVA_HOME
 
 ENV JAVA8_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 RUN export JAVA8_HOME
+
+ENV JAVA11_HOME /usr/lib/jvm/java-11-openjdk-amd64/
+RUN export JAVA11_HOME
 
 ENV OCC_BRANCH master
 ENV OCC_REPO https://github.com/kelloggm/object-construction-checker.git

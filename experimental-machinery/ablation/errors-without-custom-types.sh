@@ -15,4 +15,4 @@
 zookeeper_out=$1
 
 # shellcheck disable=SC2002
-cat "${zookeeper_out}" | grep "ERROR" | grep -v "The type of object is: org." | grep -v "mustcall:inconsistent.mustcall.subtype"
+cat "${zookeeper_out}" | grep "ERROR" | grep -e "objectconstruction:" -e "mustcall:" | grep -v "The type of object is: org." | grep -v "mustcall:inconsistent.mustcall.subtype" | sort -u
