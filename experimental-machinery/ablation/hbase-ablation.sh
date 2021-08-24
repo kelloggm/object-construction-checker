@@ -24,7 +24,7 @@ run_ablation () {
     ./warnings-without-custom-types.sh "${variant_name}-results" | sort | uniq | wc -l
     echo "old errors no longer produced by ${variant_name} configuration:"
     grep "unneeded.suppression" "${variant_name}-results" | wc -l
-    echo "the result for the paper is the difference between these two numbers plus the number of false positives on the with-annotations branch"
+    echo "the result for the RLC paper's table 3 is the difference between these two numbers plus the number of false positives on the with-annotations branch"
 }
 
 if [ "x${JAVA8_HOME}" = "x" ]; then

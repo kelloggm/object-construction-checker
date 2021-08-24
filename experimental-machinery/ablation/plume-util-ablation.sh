@@ -32,7 +32,8 @@ run_ablation () {
 
     grep "unneeded.suppression" "${variant_name}-results" | wc -l
 
-    echo "the result for the paper is the difference between these two numbers plus the number of false positives on the with-annotations branch"
+
+    echo "the result for the RLC paper's table 3 is the difference between these two numbers plus the number of false positives on the with-annotations branch"
 
 }
 
