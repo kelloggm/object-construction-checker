@@ -1,10 +1,16 @@
-FROM ubuntu:16.04
+FROM ubuntu:20.04
 
 LABEL Narges Shadab <nshad001@ucr.edu>
 
 # Install basic software support
 RUN apt-get update && \
     apt-get install --yes software-properties-common
+
+# Install Java 11
+RUN apt-get update && \
+    apt-get install -y openjdk-11-jdk && \
+    apt-get install -y ant && \
+    apt-get clean;
 
 # Install Java 8
 RUN apt-get update && \
@@ -18,9 +24,9 @@ RUN apt-get update && \
     update-ca-certificates -f;
 
 # Install required softwares (curl & zip & wget)
-RUN apt install curl
-RUN apt install zip -y
-RUN apt install wget -y
+RUN apt-get install curl -y
+RUN apt-get install zip -y
+RUN apt-get install wget -y
 
 # update
 RUN apt-get update -y
@@ -104,6 +110,9 @@ RUN export JAVA_HOME
 
 ENV JAVA8_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 RUN export JAVA8_HOME
+
+ENV JAVA11_HOME /usr/lib/jvm/java-11-openjdk-amd64/
+RUN export JAVA11_HOME
 
 ENV OCC_BRANCH master
 ENV OCC_REPO https://github.com/kelloggm/object-construction-checker.git
