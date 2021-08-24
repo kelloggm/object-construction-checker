@@ -30,7 +30,7 @@ run_ablation () {
 if [ "x${JAVA8_HOME}" = "x" ]; then
   echo "Please set JAVA8_HOME to run the checker on hadoop. hadoop requires Java 8."
   exit 1
-else
+fi
 
 run_ablation "no-lo"
 echo ""
