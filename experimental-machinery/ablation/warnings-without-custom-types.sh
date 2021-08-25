@@ -8,4 +8,4 @@
 
 out=$1
 
-cat "${out}" | grep "WARNING" | grep -e "objectconstruction:" -e "mustcall:" | grep -v "The type of object is: org." | grep -v "mustcall:inconsistent.mustcall.subtype" | grep -v "The type of object is: <anonymous org." | grep -v "unneeded.suppression" | grep -v "annotation.not.completed" | grep -v "mustcall:type.invalid.annotations.on.use" | grep -v "hadoop/hadoop-common-project/hadoop-common" | grep -v "The type of object is: com."
+cat "${out}" | grep "WARNING" | grep -e "objectconstruction:" -e "mustcall:" -e "mustcallnoaccumulationframes:" | grep -v "The type of object is: org." | grep -v "mustcall:inconsistent.mustcall.subtype" | grep -v "The type of object is: <anonymous org." | grep -v "unneeded.suppression" | grep -v "annotation.not.completed" | grep -v "mustcall:type.invalid.annotations.on.use" | grep -v "hadoop/hadoop-common-project/hadoop-common" | grep -v "The type of object is: com."
